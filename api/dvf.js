@@ -1,3 +1,4 @@
+// version debug 2
 export default async function handler(req, res) {
   const { code_postal } = req.query;
   
