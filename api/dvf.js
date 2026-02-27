@@ -18,7 +18,11 @@ export default async function handler(req, res) {
     // Étape 2 : DVF - 100 dernières transactions depuis 2022
     const dvfRes = await fetch(`https://apidf-preprod.cerema.fr/dvf_opendata/mutations/?code_insee=${code_insee}&ordering=-date_mutation&page_size=100&date_mutation_min=2022-01-01`);
     const dvfData = await dvfRes.json();
-    const transactions = dvfData.results || [];
+    const allTransactions = dvfData.results || [];
+    const transactions = allTransactions.filter(t => {
+      const annee = parseInt(t.anneemut) || 0;
+      return annee >= 2022;
+    });
     
     // Étape 3 : extraire section et convertir les types
     const enriched = transactions.map(t => {
