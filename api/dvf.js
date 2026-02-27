@@ -21,7 +21,7 @@ export default async function handler(req, res) {
     const allTransactions = dvfData.results || [];
     const transactions = allTransactions.filter(t => {
       const annee = parseInt(t.anneemut) || 0;
-      return annee >= 2022;
+      return annee >= 2020;
     });
     
     // Étape 3 : extraire section et convertir les types
