@@ -1,4 +1,3 @@
-// version debug 2
 export default async function handler(req, res) {
   const { code_postal } = req.query;
   
@@ -16,8 +15,8 @@ export default async function handler(req, res) {
     const code_insee = communes[0].code;
     const nom_commune = communes[0].nom;
     
-    // Étape 2 : DVF sans filtre de date
-    const dvfRes = await fetch(`https://apidf-preprod.cerema.fr/dvf_opendata/mutations/?code_insee=${code_insee}&ordering=-date_mutation&page_size=100`);
+    // Étape 2 : DVF production
+    const dvfRes = await fetch(`https://apidf.cerema.fr/dvf_opendata/mutations/?code_insee=${code_insee}&ordering=-date_mutation&page_size=100`);
     const dvfData = await dvfRes.json();
     const allTransactions = dvfData.results || [];
 
