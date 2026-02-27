@@ -71,30 +71,38 @@ export default async function handler(req, res) {
       types_biens: s.types.join(", ")
     }));
     
-    // Étape 5 : écrire dans Airtable Sections
-    const sectionsPayload = sections.map(s => ({
-      fields: {
-        code_postal: s.code_postal,
-        nom_commune: s.commune,
-        section: s.section,
-        nom_section: s.nom_section,
-        nb_transactions: s.nb_transactions,
-        prix_median_m2: s.prix_median_m2,
-        types_biens: s.types_biens
-      }
-    }));
+// Étape 5 : écrire dans Airtable Sections
+const sectionsPayload = sections.map(s => ({
+  fields: {
+    code_postal: s.code_postal,
+    nom_commune: s.commune,
+    section: s.section,
+    nom_section: s.nom_section,
+    nb_transactions: s.nb_transactions,
+    prix_median_m2: s.prix_median_m2,
+    types_biens: s.types_biens
+  }
+}));
 
-    for (let i = 0; i < sectionsPayload.length; i += 10) {
-      const batch = sectionsPayload.slice(i, i + 10);
-      await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Sections`, {
-        method: "POST",
-        headers: {
-          "Authorization": `Bearer ${AIRTABLE_TOKEN}`,
-          "Content-Type": "application/json"
-        },
-        body: JSON.stringify({ records: batch })
-      });
-    }
+const airtableRes = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Sections`, {
+  method: "POST",
+  headers: {
+    "Authorization": `Bearer ${AIRTABLE_TOKEN}`,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({ records: sectionsPayload.slice(0, 10) })
+});
+
+const airtableData = await airtableRes.json();
+
+return res.status(200).json({
+  success: true,
+  nom_commune,
+  nb_sections: sections.length,
+  nb_transactions: enriched.length,
+  airtable_status: airtableRes.status,
+  airtable_response: airtableData
+});
 
     // Étape 6 : écrire dans Airtable Transactions
     const transactionsPayload = enriched.map(t => ({
