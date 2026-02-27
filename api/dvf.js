@@ -1,6 +1,9 @@
 export default async function handler(req, res) {
   const { code_postal } = req.query;
   
+  const AIRTABLE_TOKEN = process.env.AIRTABLE_TOKEN;
+  const AIRTABLE_BASE_ID = process.env.AIRTABLE_BASE_ID;
+  
   if (!code_postal) {
     return res.status(400).json({ error: "code_postal manquant" });
   }
@@ -9,20 +12,15 @@ export default async function handler(req, res) {
     // Étape 1 : code INSEE
     const geoRes = await fetch(`https://geo.api.gouv.fr/communes?codePostal=${code_postal}&fields=code,nom&format=json`);
     const communes = await geoRes.json();
-    
-    if (!communes || communes.length === 0) {
-      return res.status(404).json({ error: "Code postal non trouvé" });
-    }
-    
     const code_insee = communes[0].code;
     const nom_commune = communes[0].nom;
     
-    // Étape 2 : DVF
-    const dvfRes = await fetch(`https://apidf-preprod.cerema.fr/dvf_opendata/mutations/?code_insee=${code_insee}&ordering=-date_mutation&page_size=100`);
+    // Étape 2 : DVF - 100 dernières transactions depuis 2022
+    const dvfRes = await fetch(`https://apidf-preprod.cerema.fr/dvf_opendata/mutations/?code_insee=${code_insee}&ordering=-date_mutation&page_size=100&date_mutation_min=2022-01-01`);
     const dvfData = await dvfRes.json();
     const transactions = dvfData.results || [];
     
-    // Étape 3 : extraire section depuis l_idpar
+    // Étape 3 : extraire section
     const enriched = transactions.map(t => {
       const idpar = t.l_idpar?.[0] || "";
       const section = idpar.slice(8, 10) || "??";
@@ -35,7 +33,8 @@ export default async function handler(req, res) {
         surface: t.sbati || 0,
         prix_vente: t.valeurfonc || 0,
         prix_m2,
-        annee: t.anneemut || "",
+        annee: String(t.anneemut || ""),
+        date_mutation: t.date_mutation || ""
       };
     });
     
@@ -72,12 +71,63 @@ export default async function handler(req, res) {
       types_biens: s.types.join(", ")
     }));
     
+    // Étape 5 : écrire dans Airtable Sections
+    const sectionsPayload = sections.map(s => ({
+      fields: {
+        code_postal: s.code_postal,
+        nom_commune: s.commune,
+        section: s.section,
+        nom_section: s.nom_section,
+        nb_transactions: s.nb_transactions,
+        prix_median_m2: s.prix_median_m2,
+        types_biens: s.types_biens
+      }
+    }));
+
+    for (let i = 0; i < sectionsPayload.length; i += 10) {
+      const batch = sectionsPayload.slice(i, i + 10);
+      await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Sections`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${AIRTABLE_TOKEN}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ records: batch })
+      });
+    }
+
+    // Étape 6 : écrire dans Airtable Transactions
+    const transactionsPayload = enriched.map(t => ({
+      fields: {
+        code_postal: t.code_postal,
+        nom_commune: t.nom_commune,
+        section: t.section,
+        type_bien: t.type_bien,
+        surface: t.surface,
+        prix_vente: t.prix_vente,
+        prix_m2: t.prix_m2,
+        annee: t.annee,
+        date_mutation: t.date_mutation
+      }
+    }));
+
+    for (let i = 0; i < transactionsPayload.length; i += 10) {
+      const batch = transactionsPayload.slice(i, i + 10);
+      await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Transactions`, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${AIRTABLE_TOKEN}`,
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({ records: batch })
+      });
+    }
+    
     return res.status(200).json({
+      success: true,
       nom_commune,
-      code_postal,
-      nb_total: enriched.length,
-      sections,
-      transactions: enriched
+      nb_sections: sections.length,
+      nb_transactions: enriched.length
     });
     
   } catch (error) {
