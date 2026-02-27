@@ -156,14 +156,23 @@ export default async function handler(req, res) {
       });
     }
     
-    return res.status(200).json({
-      success: true,
-      nom_commune,
-      nb_sections: sections.length,
-      nb_transactions: enriched.length
-    });
-    
-  } catch (error) {
-    return res.status(500).json({ error: error.message });
-  }
-}
+// Test premier batch transactions
+const testBatch = transactionsPayload.slice(0, 10);
+const testRes = await fetch(`https://api.airtable.com/v0/${AIRTABLE_BASE_ID}/Transactions`, {
+  method: "POST",
+  headers: {
+    "Authorization": `Bearer ${AIRTABLE_TOKEN}`,
+    "Content-Type": "application/json"
+  },
+  body: JSON.stringify({ records: testBatch })
+});
+const testData = await testRes.json();
+
+return res.status(200).json({
+  success: true,
+  nom_commune,
+  nb_sections: sections.length,
+  nb_transactions: enriched.length,
+  transactions_status: testRes.status,
+  transactions_response: testData
+});
