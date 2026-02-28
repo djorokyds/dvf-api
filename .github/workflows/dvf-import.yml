@@ -1,0 +1,25 @@
+name: Import DVF
+on:
+  schedule:
+    - cron: '0 2 1 * *' # tous les 1er du mois à 2h
+  workflow_dispatch: # permet de lancer manuellement
+
+jobs:
+  import:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v3
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+          
+      - name: Install dependencies
+        run: npm install node-fetch papaparse
+        
+      - name: Run DVF import
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_KEY: ${{ secrets.SUPABASE_KEY }}
+        run: node scripts/import-dvf.js
