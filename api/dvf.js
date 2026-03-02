@@ -247,7 +247,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     </div>
   `}
 
-  <div class="footer">Source : Demandes de Valeurs Foncières (DVF) • Données officielles 2024</div>
+  <div class="footer">Source : Demandes de Valeurs Foncières (DVF) • Données officielles</div>
 
   <script>
     const map = L.map('map').setView([${userLat}, ${userLon}], 16);
