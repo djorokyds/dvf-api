@@ -356,11 +356,23 @@ export default async function handler(req, res) {
       .map(t => {
         const distanceKm = haversine(lat, lon, parseFloat(t.latitude), parseFloat(t.longitude));
         return { ...t, distance_km: distanceKm, distance_m: Math.round(distanceKm * 1000), score: scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche) };
+      });
+
+    let last1000 = withScore
+      .filter(t => t.date_mutation)
+      .map(t => {
+        const [day, month, year] = t.date_mutation.split('/');
+        return {
+          ...t,
+          date_obj: new Date(`${year}-${month}-${day}`)
+        };
       })
-      .filter(t => t.distance_m <= 1000)
+      .sort((a, b) => b.date_obj - a.date_obj)
+      .filter(t => t.distance_m <= 1000);
+
+    withScore = last1000
       .sort((a, b) => b.score - a.score)
       .slice(0, 20);
-
     
     let within1km = withScore;
     within1km = within1km.sort((a, b) => a.distance_m - b.distance_m)
