@@ -11,17 +11,27 @@ function haversine(lat1, lon1, lat2, lon2) {
 
 function scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche) {
   const distanceM = distanceKm * 1000;
-  const scoreDistance = Math.max(0, 40 * (1 - Math.pow(distanceM / 1000, 1.5))); // plus progressif
+ // 1. Score distance : max 20 pts jusqu'à 500m, décroît à 0 à 1000m
+  let scoreDistance = 0;
+  if (distanceM <= 500) {
+    scoreDistance = 20;
+  } else if (distanceM <= 1000) {
+    scoreDistance = Math.max(0, 20 - ((distanceM - 500) / 500) * 20);
+  } // au delà de 1000m → 0 pts
   let scoreSurface = 35;
+  // 2. Score surface : max 50 pts, pénalise fortement si écart important
+  let scoreSurface = 50;
   if (surfaceRecherche && t.surface) {
     const ecart = Math.abs(t.surface - surfaceRecherche) / surfaceRecherche;
-    scoreSurface = Math.max(0, 35 - ecart * 50); // moins agressif
+    scoreSurface = Math.max(0, 50 - ecart * 50); // écart 50% → 0 pts
   }
-  let scorePieces = 25;
+// 3. Score pièces : max 30 pts, pénalise chaque pièce manquante ou en trop
+  let scorePieces = 30;
   if (nbPiecesRecherche && t.nb_pieces) {
     const ecart = Math.abs(t.nb_pieces - nbPiecesRecherche);
-    scorePieces = Math.max(0, 25 - ecart * 10);
+    scorePieces = Math.max(0, 30 - ecart * 10); // 3 pièces d'écart → 0 pts
   }
+
   return Math.round(scoreDistance + scoreSurface + scorePieces);
 }
 
