@@ -201,7 +201,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     <div class="card">
       <div class="label">Transactions</div>
       <div class="value">${nb}</div>
-      <div class="unit">≤ 500m</div>
+      <div class="unit">≤ 700m</div>
     </div>
     <div class="card">
       <div class="label">Ville</div>
