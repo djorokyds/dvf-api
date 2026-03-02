@@ -2,20 +2,20 @@ function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = 
-    Math.sin(dLat/2) * Math.sin(dLat/2) +
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
     Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-    Math.sin(dLon/2) * Math.sin(dLon/2);
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 function scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche) {
   const distanceM = distanceKm * 1000;
-  const scoreDistance = Math.max(0, 40 * (1 - Math.pow(distanceM / 500, 1.5)));
+  const scoreDistance = Math.max(0, 40 * (1 - Math.pow(distanceM / 500, 1.5))); // plus progressif
   let scoreSurface = 35;
   if (surfaceRecherche && t.surface) {
     const ecart = Math.abs(t.surface - surfaceRecherche) / surfaceRecherche;
-    scoreSurface = Math.max(0, 35 - ecart * 50);
+    scoreSurface = Math.max(0, 35 - ecart * 50); // moins agressif
   }
   let scorePieces = 25;
   if (nbPiecesRecherche && t.nb_pieces) {
@@ -31,18 +31,14 @@ function arrondiMillier(n) {
 
 function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherche, prixBien, nbTransactionsSection) {
   const { adresse_normalisee, ville, code_postal, section_cadastrale, prix_median_m2, transactions } = data;
-  
+
   const nb = transactions.length;
 
   // Fiabilité
   let fiabilite, fiabiliteEmoji;
-  if (nb >= 15) {
-    fiabilite = 'Forte fiabilité'; fiabiliteEmoji = '🟢';
-  } else if (nb >= 5) {
-    fiabilite = 'Fiabilité moyenne'; fiabiliteEmoji = '🟡';
-  } else {
-    fiabilite = 'Fiabilité faible'; fiabiliteEmoji = '🔴';
-  }
+  if (nb >= 15) { fiabilite = 'Forte fiabilité'; fiabiliteEmoji = '🟢'; }
+  else if (nb >= 5) { fiabilite = 'Fiabilité moyenne'; fiabiliteEmoji = '🟡'; }
+  else { fiabilite = 'Fiabilité faible'; fiabiliteEmoji = '🔴'; }
 
   // Tension marché
   let tension, tensionColor, tensionEmoji, tensionDesc;
@@ -57,15 +53,15 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     tensionDesc = 'Peu de transactions — marché peu actif';
   }
 
-  // Prix recommandé et fourchette
+  // Prix recommandé et écart
   let prixRecommandeHTML = '';
   let ecartHTML = '';
-  
+
   if (surfaceRecherche && prix_median_m2 > 0) {
     const prixRecommande = arrondiMillier(prix_median_m2 * surfaceRecherche);
     const fourchetteBas = arrondiMillier(prixRecommande * 0.9);
     const fourchetteHaut = arrondiMillier(prixRecommande * 1.1);
-    
+
     prixRecommandeHTML = `
       <div class="recommande-box">
         <div class="recommande-label">💡 Prix median (+/- 10%)</div>
@@ -74,13 +70,13 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
       </div>
     `;
 
-    if (prixBien && prix_median_m2 > 0 && surfaceRecherche > 0) {
+    if (prixBien && surfaceRecherche > 0) {
       const prixM2Bien = prixBien / surfaceRecherche;
       const ecartPct = ((prixM2Bien - prix_median_m2) / prix_median_m2) * 100;
       const ecartColor = ecartPct < 0 ? '#27ae60' : '#e74c3c';
       const ecartEmoji = ecartPct < 0 ? '🟢' : '🔴';
       const sousOuDessus = ecartPct < 0 ? 'sous le marché' : 'au-dessus du marché';
-      
+
       ecartHTML = `
         <div class="ecart-box" style="border-left: 4px solid ${ecartColor}">
           <div class="ecart-label">Écart vs marché</div>
@@ -109,29 +105,6 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     </tr>
   `).join('');
 
-  const markersJS = transactions.map((t, i) => `
-    L.circleMarker([
-    ${t.latitude} + (Math.random() - 0.5) * 0.00005,
-    ${t.longitude} + (Math.random() - 0.5) * 0.00005
-  ], {
-      radius: 8 + (${t.score} / 20),
-      fillColor: '${t.type_bien === 'Maison' ? '#2ecc71' : '#3498db'}',
-      color: 'white',
-      weight: 2,
-      opacity: 1,
-      fillOpacity: 0.9
-    }).addTo(map).bindPopup(\`
-      <div style="font-family:sans-serif;min-width:160px">
-        <strong>#${i+1} ${t.type_bien}</strong> • Score: ${t.score}/100<br>
-        🏠 ${t.surface} m² • ${t.nb_pieces || '?'} pièces<br>
-        💰 ${Math.round(t.valeur_fonciere).toLocaleString('fr-FR')} €<br>
-        📊 ${t.prix_m2} €/m²<br>
-        📅 ${t.date_mutation}<br>
-        📍 ${t.distance_m} m
-      </div>
-    \`);
-  `).join('');
-
   const criteresHTML = surfaceRecherche || nbPiecesRecherche ? `
     <div class="criteres">
       <span class="critere-label">Recherche :</span>
@@ -149,8 +122,12 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>DVF - ${ville}</title>
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
   <style>
+    /* styles inchangés (copie les styles initiaux) */
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7fa; color: #333; }
     .header { background: linear-gradient(135deg, #2c3e50, #3498db); color: white; padding: 20px 16px; }
@@ -285,9 +262,8 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
 
   <script>
     const map = L.map('map').setView([${userLat}, ${userLon}], 15);
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
-    }).addTo(map);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
+
     L.circle([${userLat}, ${userLon}], {
       radius: 500,
       color: '#e74c3c',
@@ -296,6 +272,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
       weight: 1,
       dashArray: '5,5'
     }).addTo(map);
+
     L.marker([${userLat}, ${userLon}], {
       icon: L.divIcon({
         html: '<div style="background:#e74c3c;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>',
@@ -303,7 +280,31 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
         iconAnchor: [8, 8]
       })
     }).addTo(map).bindPopup('<strong>📍 Votre adresse</strong><br>${adresse_normalisee}').openPopup();
-    ${markersJS}
+
+    // MarkerCluster
+    const markers = L.markerClusterGroup();
+    ${transactions.map((t, i) => `
+      const marker${i} = L.circleMarker([${t.latitude}, ${t.longitude}], {
+        radius: 8 + (${t.score} / 20),
+        fillColor: '${t.type_bien === 'Maison' ? '#2ecc71' : '#3498db'}',
+        color: 'white',
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.9
+      });
+      marker${i}.bindPopup(\`
+        <div style="font-family:sans-serif;min-width:160px">
+          <strong>#${i+1} ${t.type_bien}</strong> • Score: ${t.score}/100<br>
+          🏠 ${t.surface} m² • ${t.nb_pieces || '?'} pièces<br>
+          💰 ${Math.round(t.valeur_fonciere).toLocaleString('fr-FR')} €<br>
+          📊 ${t.prix_m2} €/m²<br>
+          📅 ${t.date_mutation}<br>
+          📍 ${t.distance_m} m
+        </div>
+      \`);
+      markers.addLayer(marker${i});
+    `).join('')}
+    map.addLayer(markers);
   </script>
 </body>
 </html>`;
@@ -311,30 +312,18 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
 
 export default async function handler(req, res) {
   const { adresse, type_bien, surface, nb_pieces, prix_bien, format } = req.query;
-  
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SUPABASE_KEY = process.env.SUPABASE_KEY;
-  
-  if (!adresse) {
-    return res.status(400).json({ error: "adresse manquante" });
-  }
+
+  if (!adresse) return res.status(400).json({ error: "adresse manquante" });
 
   try {
-    const geoRes = await fetch(
-      `https://data.geopf.fr/geocodage/search?q=${encodeURIComponent(adresse)}&limit=1`
-    );
+    const geoRes = await fetch(`https://data.geopf.fr/geocodage/search?q=${encodeURIComponent(adresse)}&limit=1`);
     const geoData = await geoRes.json();
-    
-    if (!geoData.features || geoData.features.length === 0) {
-      return res.status(404).json({ error: "Adresse non trouvée" });
-    }
+    if (!geoData.features || geoData.features.length === 0) return res.status(404).json({ error: "Adresse non trouvée" });
 
     const feature = geoData.features[0];
-    const score = feature.properties.score;
-    
-    if (score < 0.5) {
-      return res.status(400).json({ error: "Adresse non reconnue", score });
-    }
+    if (feature.properties.score < 0.5) return res.status(400).json({ error: "Adresse non reconnue", score: feature.properties.score });
 
     const lon = feature.geometry.coordinates[0];
     const lat = feature.geometry.coordinates[1];
@@ -347,59 +336,28 @@ export default async function handler(req, res) {
     const prixBienNum = prix_bien ? parseFloat(prix_bien.replace(/\s/g, '').replace(',', '.')) : null;
 
     let url = `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=date_mutation,adresse,type_bien,surface,valeur_fonciere,prix_m2,nb_pieces,prix_median_section,section_cadastrale,cle_section,cle_section_type,latitude,longitude&limit=1000`;
-    
-    if (type_bien) {
-      url += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
-    }
+    if (type_bien) url += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
 
-    const supaRes = await fetch(url, {
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Accept': 'application/json'
-      }
-    });
-
+    const supaRes = await fetch(url, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Accept': 'application/json' } });
     const transactions = await supaRes.json();
-
-    if (!transactions || transactions.length === 0) {
-      return res.status(404).json({ error: "Aucune transaction trouvée pour ce code postal" });
-    }
+    if (!transactions || transactions.length === 0) return res.status(404).json({ error: "Aucune transaction trouvée pour ce code postal" });
 
     const withScore = transactions
       .filter(t => t.latitude != null && t.longitude != null)
       .map(t => {
         const distanceKm = haversine(lat, lon, parseFloat(t.latitude), parseFloat(t.longitude));
-        const distanceM = Math.round(distanceKm * 1000);
-        return {
-          ...t,
-          distance_km: distanceKm,
-          distance_m: distanceM,
-          score: scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche)
-        };
+        return { ...t, distance_km: distanceKm, distance_m: Math.round(distanceKm * 1000), score: scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche) };
       })
       .filter(t => t.distance_m <= 500)
       .sort((a, b) => b.score - a.score)
       .slice(0, 10);
 
     const sectionPrincipale = withScore.length > 0 ? withScore[0].cle_section : null;
-    const nbTransactionsSection = sectionPrincipale
-      ? transactions.filter(t => t.cle_section === sectionPrincipale).length
-      : transactions.length;
-
+    const nbTransactionsSection = sectionPrincipale ? transactions.filter(t => t.cle_section === sectionPrincipale).length : transactions.length;
     const prix_median = withScore.length > 0 ? withScore[0].prix_median_section || 0 : 0;
     const section_cadastrale = withScore.length > 0 ? withScore[0].section_cadastrale : null;
 
-    const responseData = {
-      success: true,
-      adresse_normalisee,
-      ville,
-      code_postal,
-      section_cadastrale,
-      prix_median_m2: prix_median,
-      nb_transactions: withScore.length,
-      transactions: withScore
-    };
+    const responseData = { success: true, adresse_normalisee, ville, code_postal, section_cadastrale, prix_median_m2: prix_median, nb_transactions: withScore.length, transactions: withScore };
 
     if (format === 'html') {
       const html = generateHTML(responseData, lat, lon, surfaceRecherche, nbPiecesRecherche, prixBienNum, nbTransactionsSection);
@@ -408,7 +366,6 @@ export default async function handler(req, res) {
     }
 
     return res.status(200).json(responseData);
-
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
