@@ -11,7 +11,7 @@ function haversine(lat1, lon1, lat2, lon2) {
 
 function scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche) {
   const distanceM = distanceKm * 1000;
-  const scoreDistance = Math.max(0, 40 * (1 - Math.pow(distanceM / 500, 1.5))); // plus progressif
+  const scoreDistance = Math.max(0, 40 * (1 - Math.pow(distanceM / 1000, 1.5))); // plus progressif
   let scoreSurface = 35;
   if (surfaceRecherche && t.surface) {
     const ecart = Math.abs(t.surface - surfaceRecherche) / surfaceRecherche;
@@ -348,7 +348,7 @@ export default async function handler(req, res) {
         const distanceKm = haversine(lat, lon, parseFloat(t.latitude), parseFloat(t.longitude));
         return { ...t, distance_km: distanceKm, distance_m: Math.round(distanceKm * 1000), score: scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche) };
       })
-      .filter(t => t.distance_m <= 500)
+      .filter(t => t.distance_m <= 1000)
       .sort((a, b) => b.score - a.score)
       .slice(0, 10);
 
