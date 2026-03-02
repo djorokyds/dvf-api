@@ -351,26 +351,27 @@ export default async function handler(req, res) {
     const transactions = await supaRes.json();
     if (!transactions || transactions.length === 0) return res.status(404).json({ error: "Aucune transaction trouvée pour ce code postal" });
 
-    const withScore = transactions
-      .filter(t => t.latitude != null && t.longitude != null)
-      .map(t => {
-        const distanceKm = haversine(lat, lon, parseFloat(t.latitude), parseFloat(t.longitude));
-        return { ...t, distance_km: distanceKm, distance_m: Math.round(distanceKm * 1000), score: scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche) };
-      });
 
-    let last1000 = withScore
+    // Prendre les 5000 transactions les plus récentes
+    const last1000 = transactions
       .filter(t => t.date_mutation)
       .map(t => {
         const [day, month, year] = t.date_mutation.split('/');
         return {
           ...t,
-          date_obj: new Date(`${year}-${month}-${day}`)
+          date_obj: new Date(Number(year), Number(month) - 1, Number(day))
         };
       })
       .sort((a, b) => b.date_obj - a.date_obj)
-      .filter(t => t.distance_m <= 1000);
-
-    withScore = last1000
+      .slice(0, 2000);
+    // Calcul distance + score uniquement sur ces 1000
+    const withScore = last1000
+      .filter(t => t.latitude != null && t.longitude != null)
+      .map(t => {
+        const distanceKm = haversine(lat, lon, parseFloat(t.latitude), parseFloat(t.longitude));
+        return { ...t, distance_km: distanceKm, distance_m: Math.round(distanceKm * 1000), score: scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche) };
+      })
+      .filter(t => t.distance_m <= 1000)
       .sort((a, b) => b.score - a.score)
       .slice(0, 20);
     
