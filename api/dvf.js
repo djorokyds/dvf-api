@@ -58,15 +58,43 @@ export default async function handler(req, res) {
       }
     });
 
-    const supaText = await supaRes.text();
-    
-    // Debug Supabase
+    const transactions = await supaRes.json();
+
+    if (!transactions || transactions.length === 0) {
+      return res.status(404).json({ error: "Aucune transaction trouvée pour ce code postal" });
+    }
+
+    // Étape 3 : Calcul distance Haversine
+    const withDistance = transactions
+      .filter(t => t.latitude && t.longitude)
+      .map(t => ({
+        ...t,
+        distance_km: haversine(lat, lon, t.latitude, t.longitude)
+      }))
+      .sort((a, b) => a.distance_km - b.distance_km)
+      .slice(0, 10);
+
+    // Étape 4 : Prix médian section la plus proche
+    const prix_median = withDistance.length > 0 ? withDistance[0].prix_median_section || 0 : 0;
+    const section_cadastrale = withDistance.length > 0 ? withDistance[0].section_cadastrale : null;
+    const cle_section_type = withDistance.length > 0 ? withDistance[0].cle_section_type : null;
+
+    // Étape 5 : Résumé transactions
+    const transactions_resume = withDistance.map(t => 
+      `• ${t.type_bien} ${t.surface}m² - ${Math.round(t.valeur_fonciere).toLocaleString('fr-FR')}€ - ${t.prix_m2}€/m² - ${t.distance_km < 1 ? Math.round(t.distance_km * 1000) + 'm' : t.distance_km.toFixed(1) + 'km'} (${t.date_mutation})`
+    ).join('\n');
+
     return res.status(200).json({
-      debug: true,
+      success: true,
+      adresse_normalisee,
+      ville,
       code_postal,
-      supabase_status: supaRes.status,
-      supabase_url: url,
-      supabase_response: supaText.slice(0, 500)
+      section_cadastrale,
+      cle_section_type,
+      prix_median_m2: prix_median,
+      nb_transactions: withDistance.length,
+      transactions_resume,
+      transactions: withDistance
     });
 
   } catch (error) {
