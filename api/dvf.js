@@ -11,7 +11,7 @@ function haversine(lat1, lon1, lat2, lon2) {
 
 function scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche) {
   const distanceM = distanceKm * 1000;
-  const scoreDistance = Math.max(0, 40 - (distanceM / 1000) * 40);
+  const scoreDistance = Math.max(0, 40 - (distanceM / 500) * 40);
   let scoreSurface = 35;
   if (surfaceRecherche && t.surface) {
     const ecart = Math.abs(t.surface - surfaceRecherche) / surfaceRecherche;
@@ -47,13 +47,13 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
   // Tension marché
   let tension, tensionColor, tensionEmoji, tensionDesc;
   if (nbTransactionsSection > 20) {
-    tension = 'Marché tendu'; tensionColor = '#e74c3c'; tensionEmoji = '🔴';
+    tension = 'Marché tendu'; tensionColor = '#27ae60'; tensionEmoji = '🟢';
     tensionDesc = 'Forte demande — les biens partent vite';
   } else if (nbTransactionsSection >= 10) {
     tension = 'Marché équilibré'; tensionColor = '#f39c12'; tensionEmoji = '🟡';
     tensionDesc = 'Offre et demande équilibrées';
   } else {
-    tension = 'Marché calme'; tensionColor = '#27ae60'; tensionEmoji = '🟢';
+    tension = 'Marché calme'; tensionColor = '#e74c3c'; tensionEmoji = '🔴';
     tensionDesc = 'Peu de transactions — marché peu actif';
   }
 
@@ -212,9 +212,9 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
 
   <div class="cards">
     <div class="card highlight">
-      <div class="label">Prix médian au m²</div>
+      <div class="label">Prix médian de la section cadastrale au m²</div>
       <div class="value">${prix_median_m2.toLocaleString('fr-FR')} €</div>
-      <div class="unit">Section ${section_cadastrale || code_postal} • Données DVF 2024</div>
+      <div class="unit">Section ${section_cadastrale || code_postal} • Données DVF</div>
       <div class="fiabilite">${fiabiliteEmoji} ${fiabilite} • ${nb} transaction${nb > 1 ? 's' : ''} dans la zone</div>
     </div>
     <div class="card">
@@ -254,7 +254,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
 
   ${transactions.length === 0 ? `
     <div class="no-results">
-      Aucune transaction trouvée dans un rayon de 1km.<br>
+      Aucune transaction trouvée dans un rayon de 500m.<br>
       Essayez une adresse différente.
     </div>
   ` : `
@@ -278,7 +278,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     </div>
   `}
 
-  <div class="footer">Source : Demandes de Valeurs Foncières (DVF) • Données officielles 2024-2025</div>
+  <div class="footer">Source : Demandes de Valeurs Foncières (DVF) • Données officielles</div>
 
   <script>
     const map = L.map('map').setView([${userLat}, ${userLon}], 15);
@@ -329,7 +329,7 @@ export default async function handler(req, res) {
     const feature = geoData.features[0];
     const score = feature.properties.score;
     
-    if (score < 0.7) {
+    if (score < 0.5) {
       return res.status(400).json({ error: "Adresse non reconnue", score });
     }
 
@@ -375,7 +375,7 @@ export default async function handler(req, res) {
           score: scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche)
         };
       })
-      .filter(t => t.distance_m <= 1000)
+      .filter(t => t.distance_m <= 500)
       .sort((a, b) => b.score - a.score)
       .slice(0, 10);
 
