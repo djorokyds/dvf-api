@@ -1,4 +1,3 @@
-// Calcul distance Haversine en km
 function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
@@ -21,7 +20,7 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Étape 1 : Géocoder l'adresse utilisateur
+    // Étape 1 : Géocoder l'adresse
     const geoRes = await fetch(
       `https://data.geopf.fr/geocodage/search?q=${encodeURIComponent(adresse)}&limit=1`
     );
@@ -35,10 +34,7 @@ export default async function handler(req, res) {
     const score = feature.properties.score;
     
     if (score < 0.7) {
-      return res.status(400).json({ 
-        error: "Adresse non reconnue, veuillez vérifier",
-        score 
-      });
+      return res.status(400).json({ error: "Adresse non reconnue", score });
     }
 
     const lon = feature.geometry.coordinates[0];
@@ -47,16 +43,30 @@ export default async function handler(req, res) {
     const ville = feature.properties.city;
     const adresse_normalisee = feature.properties.label;
 
-    // Debug temporaire
+    // Étape 2 : Récupérer transactions Supabase
+    let url = `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=date_mutation,adresse,type_bien,surface,valeur_fonciere,prix_m2,nb_pieces,prix_median_section,section_cadastrale,cle_section,cle_section_type,latitude,longitude&limit=1000`;
+    
+    if (type_bien) {
+      url += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
+    }
+
+    const supaRes = await fetch(url, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Accept': 'application/json'
+      }
+    });
+
+    const supaText = await supaRes.text();
+    
+    // Debug Supabase
     return res.status(200).json({
       debug: true,
-      adresse_normalisee,
       code_postal,
-      code_postal_length: code_postal.length,
-      code_postal_chars: [...code_postal].map(c => c.charCodeAt(0)),
-      lat,
-      lon,
-      score
+      supabase_status: supaRes.status,
+      supabase_url: url,
+      supabase_response: supaText.slice(0, 500)
     });
 
   } catch (error) {
