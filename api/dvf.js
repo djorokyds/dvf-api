@@ -361,10 +361,13 @@ export default async function handler(req, res) {
       .sort((a, b) => b.score - a.score)
       .slice(0, 20);
 
-    const sectionPrincipale = withScore.length > 0 ? withScore[0].cle_section : null;
     const nbTransactionsSection = sectionPrincipale ? transactions.filter(t => t.cle_section === sectionPrincipale).length : transactions.length;
-    const prix_median = withScore.length > 0 ? withScore[0].prix_median_section || 0 : 0;
-    const section_cadastrale = withScore.length > 0 ? withScore[0].section_cadastrale : null;
+    
+    const within1km = withScore.sort((a, b) => a.distance_m - b.distance_m);
+    const closestTransaction = within1km[0];
+    const prix_median = closestTransaction ? closestTransaction.prix_median_section || 0 : 0;
+    const section_cadastrale = closestTransaction ? closestTransaction.section_cadastrale : null;
+    const sectionPrincipale = closestTransaction. ? closestTransaction.cle_section : null;
 
     const responseData = { success: true, adresse_normalisee, ville, code_postal, section_cadastrale, prix_median_m2: prix_median, nb_transactions: withScore.length, transactions: withScore };
 
