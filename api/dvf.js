@@ -407,9 +407,17 @@ export default async function handler(req, res) {
       return res.status(200).send(html);
     }
 
-    return res.status(200).json(responseData);
-
-  } catch (error) {
-    return res.status(500).json({ error: error.message });
-  }
-}
+return res.status(200).json({
+  debug: true,
+  user_lat: lat,
+  user_lon: lon,
+  total_transactions: transactions.length,
+  avec_coords: transactions.filter(t => t.latitude != null && t.longitude != null).length,
+  sample: transactions.slice(0, 3).map(t => ({
+    adresse: t.adresse,
+    latitude: t.latitude,
+    longitude: t.longitude,
+    type_lat: typeof t.latitude,
+    distance_m: Math.round(haversine(lat, lon, parseFloat(t.latitude), parseFloat(t.longitude)) * 1000)
+  }))
+});   
