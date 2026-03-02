@@ -11,7 +11,7 @@ function haversine(lat1, lon1, lat2, lon2) {
 
 function scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche) {
   const distanceM = distanceKm * 1000;
-  const scoreDistance = Math.max(0, 40 - (distanceM / 500) * 40);
+  const scoreDistance = Math.max(0, 40 - (distanceM / 700) * 40);
   let scoreSurface = 35;
   if (surfaceRecherche && t.surface) {
     const ecart = Math.abs(t.surface - surfaceRecherche) / surfaceRecherche;
@@ -123,7 +123,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
       ${surfaceRecherche ? `<span class="critere">${surfaceRecherche} m²</span>` : ''}
       ${nbPiecesRecherche ? `<span class="critere">${nbPiecesRecherche} pièces</span>` : ''}
       ${prixBien ? `<span class="critere">${Math.round(prixBien).toLocaleString('fr-FR')} €</span>` : ''}
-      <span class="critere">≤ 500m</span>
+      <span class="critere">≤ 700m</span>
     </div>
   ` : '';
 
@@ -255,7 +255,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
       attribution: '© OpenStreetMap'
     }).addTo(map);
     L.circle([${userLat}, ${userLon}], {
-      radius: 500,
+      radius: 700,
       color: '#e74c3c',
       fillColor: '#e74c3c',
       fillOpacity: 0.05,
@@ -344,7 +344,7 @@ export default async function handler(req, res) {
           score: scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche)
         };
       })
-      .filter(t => t.distance_m <= 500)
+      .filter(t => t.distance_m <= 700)
       .sort((a, b) => b.score - a.score)
       .slice(0, 10);
 
