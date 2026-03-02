@@ -11,7 +11,7 @@ function haversine(lat1, lon1, lat2, lon2) {
 
 function scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche) {
   const distanceM = distanceKm * 1000;
-  const scoreDistance = Math.max(0, 40 - (distanceM / 700) * 40);
+  const scoreDistance = Math.max(0, 40 - (distanceM / 500) * 40);
   let scoreSurface = 35;
   if (surfaceRecherche && t.surface) {
     const ecart = Math.abs(t.surface - surfaceRecherche) / surfaceRecherche;
@@ -29,11 +29,11 @@ function arrondiMillier(n) {
   return Math.round(n / 1000) * 1000;
 }
 
-function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherche, prixBien) {
+function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherche, prixBien, nbTransactionsSection) {
   const { adresse_normalisee, ville, code_postal, section_cadastrale, prix_median_m2, transactions } = data;
   
   const nb = transactions.length;
-  
+
   // Fiabilité
   let fiabilite, fiabiliteColor, fiabiliteEmoji;
   if (nb >= 15) {
@@ -42,6 +42,19 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     fiabilite = 'Fiabilité moyenne'; fiabiliteColor = '#f39c12'; fiabiliteEmoji = '🟡';
   } else {
     fiabilite = 'Fiabilité faible'; fiabiliteColor = '#e74c3c'; fiabiliteEmoji = '🔴';
+  }
+
+  // Tension marché
+  let tension, tensionColor, tensionEmoji, tensionDesc;
+  if (nbTransactionsSection > 20) {
+    tension = 'Marché tendu'; tensionColor = '#e74c3c'; tensionEmoji = '🔴';
+    tensionDesc = 'Forte demande — les biens partent vite';
+  } else if (nbTransactionsSection >= 10) {
+    tension = 'Marché équilibré'; tensionColor = '#f39c12'; tensionEmoji = '🟡';
+    tensionDesc = 'Offre et demande équilibrées';
+  } else {
+    tension = 'Marché calme'; tensionColor = '#27ae60'; tensionEmoji = '🟢';
+    tensionDesc = 'Peu de transactions — marché peu actif';
   }
 
   // Prix recommandé et fourchette
@@ -64,10 +77,9 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     if (prixBien && prix_median_m2 > 0 && surfaceRecherche > 0) {
       const prixM2Bien = prixBien / surfaceRecherche;
       const ecartPct = ((prixM2Bien - prix_median_m2) / prix_median_m2) * 100;
-      const ecartAbs = Math.abs(ecartPct).toFixed(1);
-      const sousOuDessus = ecartPct < 0 ? 'sous le marché' : 'au-dessus du marché';
-      const ecartEmoji = ecartPct < 0 ? '🟢' : '🔴';
       const ecartColor = ecartPct < 0 ? '#27ae60' : '#e74c3c';
+      const ecartEmoji = ecartPct < 0 ? '🟢' : '🔴';
+      const sousOuDessus = ecartPct < 0 ? 'sous le marché' : 'au-dessus du marché';
       
       ecartHTML = `
         <div class="ecart-box" style="border-left: 4px solid ${ecartColor}">
@@ -123,7 +135,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
       ${surfaceRecherche ? `<span class="critere">${surfaceRecherche} m²</span>` : ''}
       ${nbPiecesRecherche ? `<span class="critere">${nbPiecesRecherche} pièces</span>` : ''}
       ${prixBien ? `<span class="critere">${Math.round(prixBien).toLocaleString('fr-FR')} €</span>` : ''}
-      <span class="critere">≤ 700m</span>
+      <span class="critere">≤ 500m</span>
     </div>
   ` : '';
 
@@ -154,11 +166,19 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     .card.highlight .value { color: white; font-size: 30px; }
     .card.highlight .unit { color: rgba(255,255,255,0.7); font-size: 11px; }
     .fiabilite { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.2); }
-    .recommande-box { margin: 0 14px 14px; background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #3498db; }
+    .tension-box { margin: 0 14px 10px; background: white; border-radius: 12px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 12px; }
+    .tension-left { flex: 1; }
+    .tension-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .tension-value { font-size: 16px; font-weight: 700; }
+    .tension-desc { font-size: 11px; color: #888; margin-top: 2px; }
+    .tension-nb { text-align: right; }
+    .tension-nb .nb { font-size: 28px; font-weight: 700; color: #2c3e50; }
+    .tension-nb .nb-label { font-size: 10px; color: #888; }
+    .recommande-box { margin: 0 14px 10px; background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #3498db; }
     .recommande-label { font-size: 11px; color: #888; margin-bottom: 4px; }
     .recommande-value { font-size: 26px; font-weight: 700; color: #2c3e50; margin-bottom: 4px; }
     .recommande-fourchette { font-size: 12px; color: #666; }
-    .ecart-box { margin: 0 14px 14px; background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .ecart-box { margin: 0 14px 10px; background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
     .ecart-label { font-size: 11px; color: #888; margin-bottom: 4px; }
     .ecart-value { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
     .ecart-detail { font-size: 11px; color: #888; }
@@ -195,18 +215,30 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     <div class="card highlight">
       <div class="label">Prix médian au m²</div>
       <div class="value">${prix_median_m2.toLocaleString('fr-FR')} €</div>
-      <div class="unit">Biens similaires • Données DVF</div>
-      <div class="fiabilite">${fiabiliteEmoji} ${fiabilite} • ${nb} transaction${nb > 1 ? 's' : ''}</div>
+      <div class="unit">Section ${section_cadastrale || code_postal} • Données DVF 2024</div>
+      <div class="fiabilite">${fiabiliteEmoji} ${fiabilite} • ${nb} transaction${nb > 1 ? 's' : ''} dans la zone</div>
     </div>
     <div class="card">
       <div class="label">Transactions</div>
       <div class="value">${nb}</div>
-      <div class="unit">≤ 700m</div>
+      <div class="unit">≤ 500m</div>
     </div>
     <div class="card">
       <div class="label">Ville</div>
       <div class="value" style="font-size:15px">${ville}</div>
       <div class="unit">${code_postal}</div>
+    </div>
+  </div>
+
+  <div class="tension-box">
+    <div class="tension-left">
+      <div class="tension-label">Tension du marché</div>
+      <div class="tension-value" style="color:${tensionColor}">${tensionEmoji} ${tension}</div>
+      <div class="tension-desc">${tensionDesc}</div>
+    </div>
+    <div class="tension-nb">
+      <div class="nb" style="color:${tensionColor}">${nbTransactionsSection}</div>
+      <div class="nb-label">ventes / section / an</div>
     </div>
   </div>
 
@@ -247,15 +279,15 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     </div>
   `}
 
-  <div class="footer">Source : Demandes de Valeurs Foncières (DVF) • Données officielles</div>
+  <div class="footer">Source : Demandes de Valeurs Foncières (DVF) • Données officielles 2024-2025</div>
 
   <script>
-    const map = L.map('map').setView([${userLat}, ${userLon}], 16);
+    const map = L.map('map').setView([${userLat}, ${userLon}], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap'
     }).addTo(map);
     L.circle([${userLat}, ${userLon}], {
-      radius: 700,
+      radius: 500,
       color: '#e74c3c',
       fillColor: '#e74c3c',
       fillOpacity: 0.05,
@@ -308,9 +340,9 @@ export default async function handler(req, res) {
     const ville = feature.properties.city;
     const adresse_normalisee = feature.properties.label;
 
-    const surfaceRecherche = surface ? parseFloat(surface) : null;
+    const surfaceRecherche = surface ? parseFloat(surface.replace(/\s/g, '')) : null;
     const nbPiecesRecherche = nb_pieces ? parseInt(nb_pieces) : null;
-    const prixBienNum = prix_bien ? parseFloat(prix_bien) : null;
+    const prixBienNum = prix_bien ? parseFloat(prix_bien.replace(/\s/g, '').replace(',', '.')) : null;
 
     let url = `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=date_mutation,adresse,type_bien,surface,valeur_fonciere,prix_m2,nb_pieces,prix_median_section,section_cadastrale,cle_section,cle_section_type,latitude,longitude&limit=1000`;
     
@@ -332,6 +364,7 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: "Aucune transaction trouvée pour ce code postal" });
     }
 
+    // Calcul distance + score
     const withScore = transactions
       .filter(t => t.latitude && t.longitude)
       .map(t => {
@@ -344,9 +377,15 @@ export default async function handler(req, res) {
           score: scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche)
         };
       })
-      .filter(t => t.distance_m <= 700)
+      .filter(t => t.distance_m <= 500)
       .sort((a, b) => b.score - a.score)
       .slice(0, 10);
+
+    // Tension marché : nb transactions dans la section principale
+    const sectionPrincipale = withScore.length > 0 ? withScore[0].cle_section : null;
+    const nbTransactionsSection = sectionPrincipale
+      ? transactions.filter(t => t.cle_section === sectionPrincipale).length
+      : transactions.length;
 
     const prix_median = withScore.length > 0 ? withScore[0].prix_median_section || 0 : 0;
     const section_cadastrale = withScore.length > 0 ? withScore[0].section_cadastrale : null;
@@ -363,7 +402,7 @@ export default async function handler(req, res) {
     };
 
     if (format === 'html') {
-      const html = generateHTML(responseData, lat, lon, surfaceRecherche, nbPiecesRecherche, prixBienNum);
+      const html = generateHTML(responseData, lat, lon, surfaceRecherche, nbPiecesRecherche, prixBienNum, nbTransactionsSection);
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       return res.status(200).send(html);
     }
