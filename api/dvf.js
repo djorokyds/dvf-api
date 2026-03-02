@@ -366,9 +366,9 @@ export default async function handler(req, res) {
 
     // Calcul distance + score
     const withScore = transactions
-      .filter(t => t.latitude && t.longitude)
+      .filter(t => t.latitude != null && t.longitude != null)
       .map(t => {
-        const distanceKm = haversine(lat, lon, t.latitude, t.longitude);
+        const distanceKm = haversine(lat, lon, parseFloat(t.latitude), parseFloat(t.longitude));
         const distanceM = Math.round(distanceKm * 1000);
         return {
           ...t,
