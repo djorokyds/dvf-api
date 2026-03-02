@@ -63,12 +63,12 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
   
   if (surfaceRecherche && prix_median_m2 > 0) {
     const prixRecommande = arrondiMillier(prix_median_m2 * surfaceRecherche);
-    const fourchetteBas = arrondiMillier(prixRecommande * 0.95);
-    const fourchetteHaut = arrondiMillier(prixRecommande * 1.05);
+    const fourchetteBas = arrondiMillier(prixRecommande * 0.9);
+    const fourchetteHaut = arrondiMillier(prixRecommande * 1.1);
     
     prixRecommandeHTML = `
       <div class="recommande-box">
-        <div class="recommande-label">💡 Prix recommandé</div>
+        <div class="recommande-label">💡 Prix median (+/- 10%)</div>
         <div class="recommande-value">${prixRecommande.toLocaleString('fr-FR')} €</div>
         <div class="recommande-fourchette">Fourchette réaliste : ${fourchetteBas.toLocaleString('fr-FR')} € – ${fourchetteHaut.toLocaleString('fr-FR')} €</div>
       </div>
@@ -135,7 +135,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
       ${surfaceRecherche ? `<span class="critere">${surfaceRecherche} m²</span>` : ''}
       ${nbPiecesRecherche ? `<span class="critere">${nbPiecesRecherche} pièces</span>` : ''}
       ${prixBien ? `<span class="critere">${Math.round(prixBien).toLocaleString('fr-FR')} €</span>` : ''}
-      <span class="critere">≤ 1km</span>
+      <span class="critere">≤ 500m</span>
     </div>
   ` : '';
 
