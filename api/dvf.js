@@ -350,7 +350,7 @@ export default async function handler(req, res) {
       })
       .filter(t => t.distance_m <= 1000)
       .sort((a, b) => b.score - a.score)
-      .slice(0, 10);
+      .slice(0, 20);
 
     const sectionPrincipale = withScore.length > 0 ? withScore[0].cle_section : null;
     const nbTransactionsSection = sectionPrincipale ? transactions.filter(t => t.cle_section === sectionPrincipale).length : transactions.length;
