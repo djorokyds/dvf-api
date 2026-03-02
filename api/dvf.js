@@ -91,23 +91,44 @@ export default async function handler(req, res) {
 
   try {
     if (!adresse) throw new Error("Adresse manquante");
-    if (!SUPABASE_URL || !SUPABASE_KEY) throw new Error("Variables de configuration manquantes sur Vercel");
+    
+    // Diagnostic des clés
+    if (!SUPABASE_URL || !SUPABASE_KEY) {
+      return res.status(500).json({ 
+        error: "Variables Vercel manquantes", 
+        url_presente: !!SUPABASE_URL, 
+        key_presente: !!SUPABASE_KEY 
+      });
+    }
 
     const geo = await fetch(`https://data.geopf.fr/geocodage/search?q=${encodeURIComponent(adresse)}&limit=1`).then(r => r.json());
-    if (!geo.features?.length) throw new Error("Adresse introuvable");
     const [lon, lat] = geo.features[0].geometry.coordinates;
     const cp = geo.features[0].properties.postcode;
 
+    // Construction de l'URL
     let url = `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${cp}&select=*`;
-    if (type_bien) url += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
+    
+    // Appel à Supabase
+    const response = await fetch(url, { 
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } 
+    });
+    
+    const dataSupa = await response.json();
 
-    const dataSupa = await fetch(url, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}` } }).then(r => r.json());
+    // LE DIAGNOSTIC CRUCIAL :
+    if (!Array.isArray(dataSupa)) {
+      return res.status(500).json({ 
+        error: "Supabase n'a pas renvoyé de tableau",
+        status_code: response.status,
+        reponse_brute: dataSupa, // C'est ici qu'on verra l'erreur réelle
+        url_appelée: url
+      });
+    }
 
-    if (!Array.isArray(dataSupa)) throw new Error("Erreur de connexion base de données");
-
+    // ... (la suite du code reste identique pour le filtrage et l'affichage)
+    // Mais assurez-vous de bien garder la suite du calcul pour que le format=html fonctionne
     const surfR = parseFloat(surface);
     const prixR = parseFloat(prix);
-
     const filtered = dataSupa
       .map(t => ({ ...t, distance_m: Math.round(haversine(lat, lon, t.latitude, t.longitude) * 1000) }))
       .filter(t => t.distance_m <= 500)
@@ -123,7 +144,8 @@ export default async function handler(req, res) {
     if (format === 'html') return res.setHeader('Content-Type', 'text/html; charset=utf-8').status(200).send(generateHTML({ adresse_normalisee: geo.features[0].properties.label, stats, fiabilite, estimation, analysePerso, transactions: filtered }, lat, lon, surfR, prixR));
     
     return res.status(200).json({ stats, fiabilite, transactions: filtered });
+
   } catch (err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(500).json({ error: "Crash Critique", message: err.message });
   }
 }
