@@ -10,30 +10,75 @@ function haversine(lat1, lon1, lat2, lon2) {
 }
 
 function scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche) {
-  // Score distance (0-40 points) — max 500m
   const distanceM = distanceKm * 1000;
   const scoreDistance = Math.max(0, 40 - (distanceM / 500) * 40);
-
-  // Score surface (0-35 points) — écart relatif
   let scoreSurface = 35;
   if (surfaceRecherche && t.surface) {
-    const ecartSurface = Math.abs(t.surface - surfaceRecherche) / surfaceRecherche;
-    scoreSurface = Math.max(0, 35 - ecartSurface * 70);
+    const ecart = Math.abs(t.surface - surfaceRecherche) / surfaceRecherche;
+    scoreSurface = Math.max(0, 35 - ecart * 70);
   }
-
-  // Score pièces (0-25 points) — écart absolu
   let scorePieces = 25;
   if (nbPiecesRecherche && t.nb_pieces) {
-    const ecartPieces = Math.abs(t.nb_pieces - nbPiecesRecherche);
-    scorePieces = Math.max(0, 25 - ecartPieces * 10);
+    const ecart = Math.abs(t.nb_pieces - nbPiecesRecherche);
+    scorePieces = Math.max(0, 25 - ecart * 10);
   }
-
   return Math.round(scoreDistance + scoreSurface + scorePieces);
 }
 
-function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherche) {
+function arrondiMillier(n) {
+  return Math.round(n / 1000) * 1000;
+}
+
+function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherche, prixBien) {
   const { adresse_normalisee, ville, code_postal, section_cadastrale, prix_median_m2, transactions } = data;
   
+  const nb = transactions.length;
+  
+  // Fiabilité
+  let fiabilite, fiabiliteColor, fiabiliteEmoji;
+  if (nb >= 15) {
+    fiabilite = 'Forte fiabilité'; fiabiliteColor = '#27ae60'; fiabiliteEmoji = '🟢';
+  } else if (nb >= 5) {
+    fiabilite = 'Fiabilité moyenne'; fiabiliteColor = '#f39c12'; fiabiliteEmoji = '🟡';
+  } else {
+    fiabilite = 'Fiabilité faible'; fiabiliteColor = '#e74c3c'; fiabiliteEmoji = '🔴';
+  }
+
+  // Prix recommandé et fourchette
+  let prixRecommandeHTML = '';
+  let ecartHTML = '';
+  
+  if (surfaceRecherche && prix_median_m2 > 0) {
+    const prixRecommande = arrondiMillier(prix_median_m2 * surfaceRecherche);
+    const fourchetteBas = arrondiMillier(prixRecommande * 0.95);
+    const fourchetteHaut = arrondiMillier(prixRecommande * 1.05);
+    
+    prixRecommandeHTML = `
+      <div class="recommande-box">
+        <div class="recommande-label">💡 Prix recommandé</div>
+        <div class="recommande-value">${prixRecommande.toLocaleString('fr-FR')} €</div>
+        <div class="recommande-fourchette">Fourchette réaliste : ${fourchetteBas.toLocaleString('fr-FR')} € – ${fourchetteHaut.toLocaleString('fr-FR')} €</div>
+      </div>
+    `;
+
+    if (prixBien && prix_median_m2 > 0 && surfaceRecherche > 0) {
+      const prixM2Bien = prixBien / surfaceRecherche;
+      const ecartPct = ((prixM2Bien - prix_median_m2) / prix_median_m2) * 100;
+      const ecartAbs = Math.abs(ecartPct).toFixed(1);
+      const sousOuDessus = ecartPct < 0 ? 'sous le marché' : 'au-dessus du marché';
+      const ecartEmoji = ecartPct < 0 ? '🟢' : '🔴';
+      const ecartColor = ecartPct < 0 ? '#27ae60' : '#e74c3c';
+      
+      ecartHTML = `
+        <div class="ecart-box" style="border-left: 4px solid ${ecartColor}">
+          <div class="ecart-label">Écart vs marché</div>
+          <div class="ecart-value" style="color:${ecartColor}">${ecartEmoji} ${ecartPct > 0 ? '+' : ''}${ecartPct.toFixed(1)}% ${sousOuDessus}</div>
+          <div class="ecart-detail">Votre bien : ${Math.round(prixM2Bien).toLocaleString('fr-FR')} €/m² vs marché : ${prix_median_m2.toLocaleString('fr-FR')} €/m²</div>
+        </div>
+      `;
+    }
+  }
+
   const rows = transactions.map((t, i) => `
     <tr>
       <td><span class="badge ${t.type_bien === 'Maison' ? 'maison' : 'appart'}">${t.type_bien}</span></td>
@@ -77,6 +122,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
       <span class="critere-label">Recherche :</span>
       ${surfaceRecherche ? `<span class="critere">${surfaceRecherche} m²</span>` : ''}
       ${nbPiecesRecherche ? `<span class="critere">${nbPiecesRecherche} pièces</span>` : ''}
+      ${prixBien ? `<span class="critere">${Math.round(prixBien).toLocaleString('fr-FR')} €</span>` : ''}
       <span class="critere">≤ 500m</span>
     </div>
   ` : '';
@@ -95,7 +141,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     .header { background: linear-gradient(135deg, #2c3e50, #3498db); color: white; padding: 20px 16px; }
     .header h1 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
     .header p { font-size: 12px; opacity: 0.8; }
-    .criteres { display: flex; gap: 8px; align-items: center; padding: 10px 14px; flex-wrap: wrap; }
+    .criteres { display: flex; gap: 8px; align-items: center; padding: 10px 14px; flex-wrap: wrap; background: white; border-bottom: 1px solid #eee; }
     .critere-label { font-size: 11px; color: #888; }
     .critere { background: #e8f0fe; color: #1a73e8; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
     .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px; }
@@ -107,7 +153,16 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     .card.highlight .label { color: rgba(255,255,255,0.7); }
     .card.highlight .value { color: white; font-size: 30px; }
     .card.highlight .unit { color: rgba(255,255,255,0.7); font-size: 11px; }
-    #map { height: 300px; margin: 0 14px 14px; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .fiabilite { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.2); }
+    .recommande-box { margin: 0 14px 14px; background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #3498db; }
+    .recommande-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+    .recommande-value { font-size: 26px; font-weight: 700; color: #2c3e50; margin-bottom: 4px; }
+    .recommande-fourchette { font-size: 12px; color: #666; }
+    .ecart-box { margin: 0 14px 14px; background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .ecart-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+    .ecart-value { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .ecart-detail { font-size: 11px; color: #888; }
+    #map { height: 280px; margin: 0 14px 14px; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
     .section-title { padding: 0 14px 8px; font-size: 13px; font-weight: 600; color: #555; }
     .legend { display: flex; gap: 12px; padding: 0 14px 10px; font-size: 11px; color: #666; flex-wrap: wrap; }
     .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; }
@@ -121,7 +176,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     .badge.maison { background: #e8f5e9; color: #2e7d32; }
     .badge.appart { background: #e3f2fd; color: #1565c0; }
     .score-bar { position: relative; background: #f0f0f0; border-radius: 20px; height: 16px; width: 80px; overflow: hidden; }
-    .score-fill { height: 100%; border-radius: 20px; background: linear-gradient(90deg, #f39c12, #2ecc71); transition: width 0.3s; }
+    .score-fill { height: 100%; border-radius: 20px; background: linear-gradient(90deg, #f39c12, #2ecc71); }
     .score-label { position: absolute; top: 0; left: 0; right: 0; text-align: center; font-size: 9px; line-height: 16px; font-weight: 600; color: #333; }
     .no-results { text-align: center; padding: 30px; color: #888; font-size: 13px; }
     .footer { text-align: center; padding: 14px; font-size: 10px; color: #aaa; }
@@ -141,10 +196,11 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
       <div class="label">Prix médian au m²</div>
       <div class="value">${prix_median_m2.toLocaleString('fr-FR')} €</div>
       <div class="unit">Biens similaires • Données DVF 2024</div>
+      <div class="fiabilite">${fiabiliteEmoji} ${fiabilite} • ${nb} transaction${nb > 1 ? 's' : ''}</div>
     </div>
     <div class="card">
       <div class="label">Transactions</div>
-      <div class="value">${transactions.length}</div>
+      <div class="value">${nb}</div>
       <div class="unit">≤ 500m</div>
     </div>
     <div class="card">
@@ -154,12 +210,14 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     </div>
   </div>
 
+  ${prixRecommandeHTML}
+  ${ecartHTML}
+
   <div class="section-title">🗺️ Carte des transactions</div>
   <div class="legend">
     <span><span class="legend-dot" style="background:#e74c3c;"></span> Votre adresse</span>
     <span><span class="legend-dot" style="background:#2ecc71;"></span> Maison</span>
     <span><span class="legend-dot" style="background:#3498db;"></span> Appartement</span>
-    <span style="color:#aaa">• Taille = score de similarité</span>
   </div>
   <div id="map"></div>
 
@@ -193,12 +251,9 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
 
   <script>
     const map = L.map('map').setView([${userLat}, ${userLon}], 16);
-    
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
       attribution: '© OpenStreetMap'
     }).addTo(map);
-
-    // Cercle 500m
     L.circle([${userLat}, ${userLon}], {
       radius: 500,
       color: '#e74c3c',
@@ -207,8 +262,6 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
       weight: 1,
       dashArray: '5,5'
     }).addTo(map);
-
-    // Marqueur utilisateur
     L.marker([${userLat}, ${userLon}], {
       icon: L.divIcon({
         html: '<div style="background:#e74c3c;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>',
@@ -216,7 +269,6 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
         iconAnchor: [8, 8]
       })
     }).addTo(map).bindPopup('<strong>📍 Votre adresse</strong><br>${adresse_normalisee}').openPopup();
-
     ${markersJS}
   </script>
 </body>
@@ -224,7 +276,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
 }
 
 export default async function handler(req, res) {
-  const { adresse, type_bien, surface, nb_pieces, format } = req.query;
+  const { adresse, type_bien, surface, nb_pieces, prix_bien, format } = req.query;
   
   const SUPABASE_URL = process.env.SUPABASE_URL;
   const SUPABASE_KEY = process.env.SUPABASE_KEY;
@@ -258,6 +310,7 @@ export default async function handler(req, res) {
 
     const surfaceRecherche = surface ? parseFloat(surface) : null;
     const nbPiecesRecherche = nb_pieces ? parseInt(nb_pieces) : null;
+    const prixBienNum = prix_bien ? parseFloat(prix_bien) : null;
 
     let url = `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=date_mutation,adresse,type_bien,surface,valeur_fonciere,prix_m2,nb_pieces,prix_median_section,section_cadastrale,cle_section,cle_section_type,latitude,longitude&limit=1000`;
     
@@ -279,7 +332,6 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: "Aucune transaction trouvée pour ce code postal" });
     }
 
-    // Filtrer à 500m + scorer
     const withScore = transactions
       .filter(t => t.latitude && t.longitude)
       .map(t => {
@@ -311,7 +363,7 @@ export default async function handler(req, res) {
     };
 
     if (format === 'html') {
-      const html = generateHTML(responseData, lat, lon, surfaceRecherche, nbPiecesRecherche);
+      const html = generateHTML(responseData, lat, lon, surfaceRecherche, nbPiecesRecherche, prixBienNum);
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       return res.status(200).send(html);
     }
