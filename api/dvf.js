@@ -2,19 +2,20 @@ function haversine(lat1, lon1, lat2, lon2) {
   const R = 6371;
   const dLat = (lat2 - lat1) * Math.PI / 180;
   const dLon = (lon2 - lon1) * Math.PI / 180;
-  const a = Math.sin(dLat/2) ** 2 +
-            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-            Math.sin(dLon/2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+  const a =
+    Math.sin(dLat / 2) * Math.sin(dLat / 2) +
+    Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+    Math.sin(dLon / 2) * Math.sin(dLon / 2);
+  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 function scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche) {
   const distanceM = distanceKm * 1000;
-  const scoreDistance = Math.max(0, 40 - (distanceM / 500) * 40);
+  const scoreDistance = Math.max(0, 40 * (1 - Math.pow(distanceM / 500, 1.5))); // plus progressif
   let scoreSurface = 35;
   if (surfaceRecherche && t.surface) {
     const ecart = Math.abs(t.surface - surfaceRecherche) / surfaceRecherche;
-    scoreSurface = Math.max(0, 35 - ecart * 70);
+    scoreSurface = Math.max(0, 35 - ecart * 50); // moins agressif
   }
   let scorePieces = 25;
   if (nbPiecesRecherche && t.nb_pieces) {
@@ -28,8 +29,9 @@ function arrondiMillier(n) {
   return Math.round(n / 1000) * 1000;
 }
 
-function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherche, prixBien, transactions, nbTransactionsSection) {
-  const { adresse_normalisee, ville, code_postal, section_cadastrale, prix_median_m2 } = data;
+function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherche, prixBien, nbTransactionsSection) {
+  const { adresse_normalisee, ville, code_postal, section_cadastrale, prix_median_m2, transactions } = data;
+
   const nb = transactions.length;
 
   // Fiabilité
@@ -51,14 +53,15 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     tensionDesc = 'Peu de transactions — marché peu actif';
   }
 
-  // Prix recommandé et fourchette
+  // Prix recommandé et écart
   let prixRecommandeHTML = '';
   let ecartHTML = '';
+
   if (surfaceRecherche && prix_median_m2 > 0) {
     const prixRecommande = arrondiMillier(prix_median_m2 * surfaceRecherche);
     const fourchetteBas = arrondiMillier(prixRecommande * 0.9);
     const fourchetteHaut = arrondiMillier(prixRecommande * 1.1);
-    
+
     prixRecommandeHTML = `
       <div class="recommande-box">
         <div class="recommande-label">💡 Prix median (+/- 10%)</div>
@@ -67,13 +70,13 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
       </div>
     `;
 
-    if (prixBien && prix_median_m2 > 0 && surfaceRecherche > 0) {
+    if (prixBien && surfaceRecherche > 0) {
       const prixM2Bien = prixBien / surfaceRecherche;
       const ecartPct = ((prixM2Bien - prix_median_m2) / prix_median_m2) * 100;
       const ecartColor = ecartPct < 0 ? '#27ae60' : '#e74c3c';
       const ecartEmoji = ecartPct < 0 ? '🟢' : '🔴';
       const sousOuDessus = ecartPct < 0 ? 'sous le marché' : 'au-dessus du marché';
-      
+
       ecartHTML = `
         <div class="ecart-box" style="border-left: 4px solid ${ecartColor}">
           <div class="ecart-label">Écart vs marché</div>
@@ -102,54 +105,82 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     </tr>
   `).join('');
 
-  const markersJS = transactions.map((t, i) => `
-    const offsetLat = ${t.latitude} + (Math.random() - 0.5) * 0.00005;
-    const offsetLon = ${t.longitude} + (Math.random() - 0.5) * 0.00005;
-
-    L.circleMarker([offsetLat, offsetLon], {
-      radius: 8 + (${t.score} / 20),
-      fillColor: '${t.type_bien === 'Maison' ? '#2ecc71' : '#3498db'}',
-      color: 'white',
-      weight: 2,
-      opacity: 1,
-      fillOpacity: 0.9
-    }).addTo(map).bindPopup(\`
-      <div style="font-family:sans-serif;min-width:160px">
-        <strong>#${i+1} ${t.type_bien}</strong> • Score: ${t.score}/100<br>
-        🏠 ${t.surface} m² • ${t.nb_pieces || '?'} pièces<br>
-        💰 ${Math.round(t.valeur_fonciere).toLocaleString('fr-FR')} €<br>
-        📊 ${t.prix_m2} €/m²<br>
-        📅 ${t.date_mutation}<br>
-        📍 ${t.distance_m} m
-      </div>
-    \`);
-  `).join('');
-
   const criteresHTML = surfaceRecherche || nbPiecesRecherche ? `
     <div class="criteres">
       <span class="critere-label">Recherche :</span>
       ${surfaceRecherche ? `<span class="critere">${surfaceRecherche} m²</span>` : ''}
       ${nbPiecesRecherche ? `<span class="critere">${nbPiecesRecherche} pièces</span>` : ''}
       ${prixBien ? `<span class="critere">${Math.round(prixBien).toLocaleString('fr-FR')} €</span>` : ''}
-      <span class="critere">≤ 1000m</span>
+      <span class="critere">≤ 500m</span>
     </div>
   ` : '';
 
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>DVF - ${ville}</title>
-<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
-<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-<style>
-/* Conserver exactement les styles précédents ici */
-* { box-sizing: border-box; margin: 0; padding: 0; }
-body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7fa; color: #333; }
-/* ... (tout le CSS de la version précédente) ... */
-#map { height: 280px; margin: 0 14px 14px; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>DVF - ${ville}</title>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet.markercluster/dist/MarkerCluster.Default.css" />
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+  <script src="https://unpkg.com/leaflet.markercluster/dist/leaflet.markercluster.js"></script>
+  <style>
+    /* styles inchangés (copie les styles initiaux) */
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7fa; color: #333; }
+    .header { background: linear-gradient(135deg, #2c3e50, #3498db); color: white; padding: 20px 16px; }
+    .header h1 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
+    .header p { font-size: 12px; opacity: 0.8; }
+    .criteres { display: flex; gap: 8px; align-items: center; padding: 10px 14px; flex-wrap: wrap; background: white; border-bottom: 1px solid #eee; }
+    .critere-label { font-size: 11px; color: #888; }
+    .critere { background: #e8f0fe; color: #1a73e8; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+    .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px; }
+    .card { background: white; border-radius: 12px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .card .label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .card .value { font-size: 20px; font-weight: 700; color: #2c3e50; }
+    .card .unit { font-size: 11px; color: #888; margin-top: 2px; }
+    .card.highlight { background: linear-gradient(135deg, #3498db, #2980b9); color: white; grid-column: 1 / -1; }
+    .card.highlight .label { color: rgba(255,255,255,0.7); }
+    .card.highlight .value { color: white; font-size: 30px; }
+    .card.highlight .unit { color: rgba(255,255,255,0.7); font-size: 11px; }
+    .fiabilite { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.2); }
+    .tension-box { margin: 0 14px 10px; background: white; border-radius: 12px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 12px; }
+    .tension-left { flex: 1; }
+    .tension-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
+    .tension-value { font-size: 16px; font-weight: 700; }
+    .tension-desc { font-size: 11px; color: #888; margin-top: 2px; }
+    .tension-nb { text-align: right; }
+    .tension-nb .nb { font-size: 28px; font-weight: 700; color: #2c3e50; }
+    .tension-nb .nb-label { font-size: 10px; color: #888; }
+    .recommande-box { margin: 0 14px 10px; background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #3498db; }
+    .recommande-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+    .recommande-value { font-size: 26px; font-weight: 700; color: #2c3e50; margin-bottom: 4px; }
+    .recommande-fourchette { font-size: 12px; color: #666; }
+    .ecart-box { margin: 0 14px 10px; background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .ecart-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+    .ecart-value { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
+    .ecart-detail { font-size: 11px; color: #888; }
+    #map { height: 280px; margin: 0 14px 14px; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
+    .section-title { padding: 0 14px 8px; font-size: 13px; font-weight: 600; color: #555; }
+    .legend { display: flex; gap: 12px; padding: 0 14px 10px; font-size: 11px; color: #666; flex-wrap: wrap; }
+    .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; }
+    .table-wrap { padding: 0 14px 14px; overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); font-size: 12px; }
+    th { background: #f8f9fa; padding: 9px 10px; text-align: left; font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #eee; }
+    td { padding: 9px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    tr:last-child td { border-bottom: none; }
+    tr:hover td { background: #f8f9ff; }
+    .badge { display: inline-block; padding: 2px 7px; border-radius: 20px; font-size: 10px; font-weight: 500; }
+    .badge.maison { background: #e8f5e9; color: #2e7d32; }
+    .badge.appart { background: #e3f2fd; color: #1565c0; }
+    .score-bar { position: relative; background: #f0f0f0; border-radius: 20px; height: 16px; width: 80px; overflow: hidden; }
+    .score-fill { height: 100%; border-radius: 20px; background: linear-gradient(90deg, #f39c12, #2ecc71); }
+    .score-label { position: absolute; top: 0; left: 0; right: 0; text-align: center; font-size: 9px; line-height: 16px; font-weight: 600; color: #333; }
+    .no-results { text-align: center; padding: 30px; color: #888; font-size: 13px; }
+    .footer { text-align: center; padding: 14px; font-size: 10px; color: #aaa; }
+  </style>
 </head>
 <body>
   <div class="header">
@@ -165,6 +196,16 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
       <div class="value">${prix_median_m2.toLocaleString('fr-FR')} €</div>
       <div class="unit">Section ${section_cadastrale || code_postal} • Données DVF</div>
       <div class="fiabilite">${fiabiliteEmoji} ${fiabilite} • ${nb} transaction${nb > 1 ? 's' : ''} dans la zone</div>
+    </div>
+    <div class="card">
+      <div class="label">Transactions</div>
+      <div class="value">${nb}</div>
+      <div class="unit">≤ 500m</div>
+    </div>
+    <div class="card">
+      <div class="label">Ville</div>
+      <div class="value" style="font-size:15px">${ville}</div>
+      <div class="unit">${code_postal}</div>
     </div>
   </div>
 
@@ -191,30 +232,84 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; b
   </div>
   <div id="map"></div>
 
-  <div class="section-title">🏠 Transactions similaires</div>
-  <div class="table-wrap">
-    <table>
-      <thead>
-        <tr>
-          <th>Type</th><th>Surface</th><th>Prix</th><th>€/m²</th><th>Pièces</th><th>Distance</th><th>Score</th><th>Date</th>
-        </tr>
-      </thead>
-      <tbody>${rows}</tbody>
-    </table>
-  </div>
+  ${transactions.length === 0 ? `
+    <div class="no-results">
+      Aucune transaction trouvée dans un rayon de 500m.<br>
+      Essayez une adresse différente.
+    </div>
+  ` : `
+    <div class="section-title">🏠 Transactions similaires</div>
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>Type</th>
+            <th>Surface</th>
+            <th>Prix</th>
+            <th>€/m²</th>
+            <th>Pièces</th>
+            <th>Distance</th>
+            <th>Score</th>
+            <th>Date</th>
+          </tr>
+        </thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `}
+
+  <div class="footer">Source : Demandes de Valeurs Foncières (DVF) • Données officielles</div>
 
   <script>
     const map = L.map('map').setView([${userLat}, ${userLon}], 15);
     L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
-    L.circle([${userLat}, ${userLon}], { radius: 1000, color: '#e74c3c', fillColor: '#e74c3c', fillOpacity: 0.05, weight: 1, dashArray: '5,5' }).addTo(map);
-    L.marker([${userLat}, ${userLon}], { icon: L.divIcon({ html: '<div style="background:#e74c3c;width:16px;height:16px;border-radius:50%;border:3px solid white;"></div>', iconSize:[16,16], iconAnchor:[8,8] }) }).addTo(map).bindPopup('<strong>📍 Votre adresse</strong><br>${adresse_normalisee}').openPopup();
-    ${markersJS}
+
+    L.circle([${userLat}, ${userLon}], {
+      radius: 500,
+      color: '#e74c3c',
+      fillColor: '#e74c3c',
+      fillOpacity: 0.05,
+      weight: 1,
+      dashArray: '5,5'
+    }).addTo(map);
+
+    L.marker([${userLat}, ${userLon}], {
+      icon: L.divIcon({
+        html: '<div style="background:#e74c3c;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8]
+      })
+    }).addTo(map).bindPopup('<strong>📍 Votre adresse</strong><br>${adresse_normalisee}').openPopup();
+
+    // MarkerCluster
+    const markers = L.markerClusterGroup();
+    ${transactions.map((t, i) => `
+      const marker${i} = L.circleMarker([${t.latitude}, ${t.longitude}], {
+        radius: 8 + (${t.score} / 20),
+        fillColor: '${t.type_bien === 'Maison' ? '#2ecc71' : '#3498db'}',
+        color: 'white',
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.9
+      });
+      marker${i}.bindPopup(\`
+        <div style="font-family:sans-serif;min-width:160px">
+          <strong>#${i+1} ${t.type_bien}</strong> • Score: ${t.score}/100<br>
+          🏠 ${t.surface} m² • ${t.nb_pieces || '?'} pièces<br>
+          💰 ${Math.round(t.valeur_fonciere).toLocaleString('fr-FR')} €<br>
+          📊 ${t.prix_m2} €/m²<br>
+          📅 ${t.date_mutation}<br>
+          📍 ${t.distance_m} m
+        </div>
+      \`);
+      markers.addLayer(marker${i});
+    `).join('')}
+    map.addLayer(markers);
   </script>
 </body>
 </html>`;
 }
 
-// Ensuite dans ton handler Next.js, filtre jusqu’à 1000m et top 20 :
 export default async function handler(req, res) {
   const { adresse, type_bien, surface, nb_pieces, prix_bien, format } = req.query;
   const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -244,36 +339,34 @@ export default async function handler(req, res) {
     if (type_bien) url += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
 
     const supaRes = await fetch(url, { headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Accept': 'application/json' } });
-    const transactionsRaw = await supaRes.json();
-    if (!transactionsRaw || transactionsRaw.length === 0) return res.status(404).json({ error: "Aucune transaction trouvée pour ce code postal" });
+    const transactions = await supaRes.json();
+    if (!transactions || transactions.length === 0) return res.status(404).json({ error: "Aucune transaction trouvée pour ce code postal" });
 
-    const withScore = transactionsRaw
+    const withScore = transactions
       .filter(t => t.latitude != null && t.longitude != null)
       .map(t => {
         const distanceKm = haversine(lat, lon, parseFloat(t.latitude), parseFloat(t.longitude));
-        return { ...t, distance_km: distanceKm, distance_m: Math.round(distanceKm*1000), score: scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche) };
+        return { ...t, distance_km: distanceKm, distance_m: Math.round(distanceKm * 1000), score: scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche) };
       })
-      .filter(t => t.distance_m <= 1000)
-      .sort((a,b)=>b.score-a.score)
-      .slice(0,20);
+      .filter(t => t.distance_m <= 500)
+      .sort((a, b) => b.score - a.score)
+      .slice(0, 10);
 
-    const sectionPrincipale = withScore.length>0 ? withScore[0].cle_section : null;
-    const nbTransactionsSection = sectionPrincipale ? transactionsRaw.filter(t=>t.cle_section===sectionPrincipale).length : transactionsRaw.length;
+    const sectionPrincipale = withScore.length > 0 ? withScore[0].cle_section : null;
+    const nbTransactionsSection = sectionPrincipale ? transactions.filter(t => t.cle_section === sectionPrincipale).length : transactions.length;
+    const prix_median = withScore.length > 0 ? withScore[0].prix_median_section || 0 : 0;
+    const section_cadastrale = withScore.length > 0 ? withScore[0].section_cadastrale : null;
 
-    const prix_median = withScore.length>0 ? withScore[0].prix_median_section||0 : 0;
-    const section_cadastrale = withScore.length>0 ? withScore[0].section_cadastrale : null;
+    const responseData = { success: true, adresse_normalisee, ville, code_postal, section_cadastrale, prix_median_m2: prix_median, nb_transactions: withScore.length, transactions: withScore };
 
-    const responseData = { success:true, adresse_normalisee, ville, code_postal, section_cadastrale, prix_median_m2: prix_median };
-
-    if (format==='html') {
-      const html = generateHTML(responseData, lat, lon, surfaceRecherche, nbPiecesRecherche, prixBienNum, withScore, nbTransactionsSection);
-      res.setHeader('Content-Type','text/html; charset=utf-8');
+    if (format === 'html') {
+      const html = generateHTML(responseData, lat, lon, surfaceRecherche, nbPiecesRecherche, prixBienNum, nbTransactionsSection);
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
       return res.status(200).send(html);
     }
 
-    return res.status(200).json({ ...responseData, transactions: withScore });
-
-  } catch(err) {
-    return res.status(500).json({ error: err.message });
+    return res.status(200).json(responseData);
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
   }
 }
