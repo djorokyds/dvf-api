@@ -11,11 +11,11 @@ function haversine(lat1, lon1, lat2, lon2) {
 
 function scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche) {
   const distanceM = distanceKm * 1000;
-  const scoreDistance = Math.max(0, 40 - (distanceM / 500) * 40);
+  const scoreDistance = Math.max(0, 40 * (1 - Math.pow(distanceM / 500, 1.5)));
   let scoreSurface = 35;
   if (surfaceRecherche && t.surface) {
     const ecart = Math.abs(t.surface - surfaceRecherche) / surfaceRecherche;
-    scoreSurface = Math.max(0, 35 - ecart * 70);
+    scoreSurface = Math.max(0, 35 - ecart * 50);
   }
   let scorePieces = 25;
   if (nbPiecesRecherche && t.nb_pieces) {
@@ -110,7 +110,10 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
   `).join('');
 
   const markersJS = transactions.map((t, i) => `
-    L.circleMarker([${t.latitude}, ${t.longitude}], {
+    const offsetLat = ${t.latitude} + (Math.random() - 0.5) * 0.00005;
+    const offsetLon = ${t.longitude} + (Math.random() - 0.5) * 0.00005;
+
+    L.circleMarker([offsetLat, offsetLon], {
       radius: 8 + (${t.score} / 20),
       fillColor: '${t.type_bien === 'Maison' ? '#2ecc71' : '#3498db'}',
       color: 'white',
@@ -220,7 +223,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     <div class="card">
       <div class="label">Transactions</div>
       <div class="value">${nb}</div>
-      <div class="unit">≤ 1km</div>
+      <div class="unit">≤ 500m</div>
     </div>
     <div class="card">
       <div class="label">Ville</div>
@@ -286,7 +289,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
       attribution: '© OpenStreetMap'
     }).addTo(map);
     L.circle([${userLat}, ${userLon}], {
-      radius: 1000,
+      radius: 500,
       color: '#e74c3c',
       fillColor: '#e74c3c',
       fillOpacity: 0.05,
