@@ -110,10 +110,10 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
   `).join('');
 
   const markersJS = transactions.map((t, i) => `
-    const offsetLat = ${t.latitude} + (Math.random() - 0.5) * 0.00005;
-    const offsetLon = ${t.longitude} + (Math.random() - 0.5) * 0.00005;
-
-    L.circleMarker([offsetLat, offsetLon], {
+    L.circleMarker([
+    ${t.latitude} + (Math.random() - 0.5) * 0.00005,
+    ${t.longitude} + (Math.random() - 0.5) * 0.00005
+  ], {
       radius: 8 + (${t.score} / 20),
       fillColor: '${t.type_bien === 'Maison' ? '#2ecc71' : '#3498db'}',
       color: 'white',
