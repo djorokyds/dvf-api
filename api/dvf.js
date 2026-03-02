@@ -18,7 +18,6 @@ function scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche) {
   } else if (distanceM <= 1000) {
     scoreDistance = Math.max(0, 20 - ((distanceM - 500) / 500) * 20);
   } // au delà de 1000m → 0 pts
-  let scoreSurface = 35;
   // 2. Score surface : max 50 pts, pénalise fortement si écart important
   let scoreSurface = 50;
   if (surfaceRecherche && t.surface) {
