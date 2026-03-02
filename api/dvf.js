@@ -47,13 +47,13 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
   // Tension marché
   let tension, tensionColor, tensionEmoji, tensionDesc;
   if (nbTransactionsSection > 20) {
-    tension = 'Marché tendu'; tensionColor = '#e74c3c'; tensionEmoji = '🔴';
+    tension = 'Marché tendu'; tensionColor = '#27ae60'; tensionEmoji = '🟢';
     tensionDesc = 'Forte demande — les biens partent vite';
   } else if (nbTransactionsSection >= 10) {
     tension = 'Marché équilibré'; tensionColor = '#f39c12'; tensionEmoji = '🟡';
     tensionDesc = 'Offre et demande équilibrées';
   } else {
-    tension = 'Marché calme'; tensionColor = '#27ae60'; tensionEmoji = '🟢';
+    tension = 'Marché Peu liquide'; tensionColor = '#e74c3c'; tensionEmoji = '🔴';
     tensionDesc = 'Peu de transactions — marché peu actif';
   }
 
@@ -213,7 +213,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
 
   <div class="cards">
     <div class="card highlight">
-      <div class="label">Prix médian au m²</div>
+      <div class="label">Prix médian de la section cadastrale au m²</div>
       <div class="value">${prix_median_m2.toLocaleString('fr-FR')} €</div>
       <div class="unit">Section ${section_cadastrale || code_postal} • Données DVF 2024</div>
       <div class="fiabilite">${fiabiliteEmoji} ${fiabilite} • ${nb} transaction${nb > 1 ? 's' : ''} dans la zone</div>
