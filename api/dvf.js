@@ -195,7 +195,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     <div class="card highlight">
       <div class="label">Prix médian au m²</div>
       <div class="value">${prix_median_m2.toLocaleString('fr-FR')} €</div>
-      <div class="unit">Biens similaires • Données DVF 2024</div>
+      <div class="unit">Biens similaires • Données DVF</div>
       <div class="fiabilite">${fiabiliteEmoji} ${fiabilite} • ${nb} transaction${nb > 1 ? 's' : ''}</div>
     </div>
     <div class="card">
