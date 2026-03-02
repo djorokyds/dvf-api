@@ -377,7 +377,7 @@ export default async function handler(req, res) {
           score: scoreTransaction(t, distanceKm, surfaceRecherche, nbPiecesRecherche)
         };
       })
-      .filter(t => t.distance_m <= 500)
+      .filter(t => t.distance_m <= 5000)
       .sort((a, b) => b.score - a.score)
       .slice(0, 10);
 
