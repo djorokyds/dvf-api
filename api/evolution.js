@@ -170,7 +170,7 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
     </div>
   </div>
 
-  <p class="note">* Années avec ≥ 5 transactions affichées • Valeurs aberrantes exclues (méthode IQR)</p>
+  <p class="note">* Années avec ≥ 5 transactions affichées • Sections aberrantes exclues (> 3x moyenne ville)</p>
 
   <div class="section-title">📊 Détail par année</div>
   <div class="table-wrap">
@@ -288,7 +288,7 @@ module.exports = async function handler(req, res) {
       return res.status(404).json({ error: "Section cadastrale introuvable" });
     }
 
-    // Étape 3 : Transactions de la section avec prix_median_section et date
+    // Étape 3 : Transactions de la section
     let sectionUrl = `${SUPABASE_URL}/rest/v1/transactions?cle_section=eq.${sectionPrincipale}&select=date_mutation,prix_median_section&limit=5000`;
     if (type_bien) sectionUrl += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
 
@@ -305,7 +305,7 @@ module.exports = async function handler(req, res) {
       return res.status(500).json({ error: "Erreur Supabase section", detail: sectionTransactions });
     }
 
-    // Étape 4 : Transactions de la ville avec prix_median_section, cle_section et date
+    // Étape 4 : Transactions de la ville
     let villeUrl = `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=date_mutation,cle_section,prix_median_section&limit=5000`;
     if (type_bien) villeUrl += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
 
@@ -322,7 +322,7 @@ module.exports = async function handler(req, res) {
       return res.status(500).json({ error: "Erreur Supabase ville", detail: villeTransactions });
     }
 
-    // Étape 5 : Grouper section par année — prix_median_section est unique par section/année
+    // Étape 5 : Section — prix_median_section unique par année, min 5 transactions
     const groupSectionByYear = (transactions) => {
       const parAnnee = {};
       transactions.forEach(t => {
@@ -343,31 +343,43 @@ module.exports = async function handler(req, res) {
         }));
     };
 
-    // Étape 6 : Grouper ville par année — moyenne des prix_median_section distincts par section
+    // Étape 6 : Ville — moyenne des prix_median_section par section/année
+    // avec filtre : exclure sections dont prix > 3x la moyenne brute
     const groupVilleByYear = (transactions) => {
-      // Pour chaque année, on collecte les prix_median_section uniques par cle_section
+      // Collecter prix_median_section unique par cle_section et par année
       const parAnnee = {};
       transactions.forEach(t => {
         const date = t.date_mutation || '';
         const annee = date.length >= 4 ? parseInt(date.substring(0, 4)) : null;
         if (!annee || isNaN(annee) || !t.prix_median_section || !t.cle_section) return;
         if (!parAnnee[annee]) parAnnee[annee] = {};
-        // Une seule valeur par section (déduplique)
         parAnnee[annee][t.cle_section] = t.prix_median_section;
       });
+
       return Object.keys(parAnnee)
         .map(a => parseInt(a))
         .sort()
         .map(annee => {
           const vals = Object.values(parAnnee[annee]);
-          const moyenne = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+
+          // Calcul moyenne brute
+          const moyenneBrute = vals.reduce((a, b) => a + b, 0) / vals.length;
+
+          // Filtre : exclure sections > 3x la moyenne brute
+          const valsFiltrees = vals.filter(v => v <= 3 * moyenneBrute);
+
+          // Recalcul moyenne sur valeurs filtrées
+          const moyenne = valsFiltrees.length > 0
+            ? Math.round(valsFiltrees.reduce((a, b) => a + b, 0) / valsFiltrees.length)
+            : null;
+
           return {
             annee,
             prix_median: moyenne,
-            nb_sections: vals.length
+            nb_sections: valsFiltrees.length
           };
         })
-        .filter(d => d.nb_sections >= 1);
+        .filter(d => d.prix_median !== null && d.nb_sections >= 1);
     };
 
     const chartDataSection = groupSectionByYear(sectionTransactions);
