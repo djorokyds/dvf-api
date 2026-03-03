@@ -275,9 +275,9 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
 
     L.circle([${userLat}, ${userLon}], {
       radius: 500,
-      color: '#C38F5A',
-      fillColor: '#C38F5A',
-      fillOpacity: 0.05,
+      color: '#e74c3c',
+      fillColor: '#e74c3c',
+      fillOpacity: 0.1,
       weight: 1,
       dashArray: '5,5'
     }).addTo(map);
