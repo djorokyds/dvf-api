@@ -344,7 +344,7 @@ module.exports = async function handler(req, res) {
     };
 
     // Étape 6 : Ville — moyenne des prix_median_section par section/année
-    // avec filtre : exclure sections dont prix > 3x la moyenne brute
+    // avec filtre : exclure sections dont prix > 1,25x la moyenne brute
     const groupVilleByYear = (transactions) => {
       // Collecter prix_median_section unique par cle_section et par année
       const parAnnee = {};
@@ -366,7 +366,7 @@ module.exports = async function handler(req, res) {
           const moyenneBrute = vals.reduce((a, b) => a + b, 0) / vals.length;
 
           // Filtre : exclure sections > 3x la moyenne brute
-          const valsFiltrees = vals.filter(v => v <= 3 * moyenneBrute);
+          const valsFiltrees = vals.filter(v => v <= 1,25 * moyenneBrute);
 
           // Recalcul moyenne sur valeurs filtrées
           const moyenne = valsFiltrees.length > 0
