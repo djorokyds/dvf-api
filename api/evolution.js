@@ -219,9 +219,9 @@ export default async function handler(req, res) {
     const ville = feature.properties.city;
     const adresse_normalisee = feature.properties.label;
 
-    // Étape 2 : Trouver la section la plus proche (100 transactions suffisent)
+    // Étape 2 : Trouver la section la plus proche
     const proxyRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=section_cadastrale,cle_section,latitude,longitude&limit=1000`,
+      `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=section_cadastrale,cle_section,latitude,longitude&latitude=not.is.null&longitude=not.is.null&order=date_mutation.desc&limit=200`,
       {
         headers: {
           'apikey': SUPABASE_KEY,
@@ -236,7 +236,6 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: "Aucune transaction trouvée" });
     }
 
-    // Section la plus proche
     const withDistance = proxyTransactions
       .filter(t => t.latitude != null && t.longitude != null)
       .map(t => ({
@@ -281,7 +280,6 @@ export default async function handler(req, res) {
       if (t.prix_m2 > 0) parAnnee[annee].push(t.prix_m2);
     });
 
-    // Médiane
     const median = arr => {
       if (arr.length === 0) return 0;
       const sorted = [...arr].sort((a, b) => a - b);
