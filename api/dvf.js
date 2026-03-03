@@ -40,8 +40,8 @@ function arrondiMillier(n) {
 
 function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherche, prixBien, nbTransactionsSection) {
   const { adresse_normalisee, ville, code_postal, section_cadastrale, prix_median_m2, transactions } = data;
-
-  const nb = transactions.length;
+  const safeTransactions = Array.isArray(transactions) ? transactions : [];
+  const nb = safeTransactions.length;
 
   // Fiabilité
   let fiabilite, fiabiliteEmoji;
@@ -96,7 +96,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     }
   }
 
-  const rows = transactions.map((t, i) => `
+  const rows = safeTransactions.map((t, i) => `
     <tr>
       <td><span class="badge ${t.type_bien === 'Maison' ? 'maison' : 'appart'}">${t.type_bien}</span></td>
       <td>${t.surface} m²</td>
@@ -240,19 +240,9 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     <span><span class="legend-dot" style="background:#3498db;"></span> Appartement</span>
   </div>
   <div id="map"></div>
-
-  const safeTransactions = Array.isArray(transactions) ? transactions : [];
-  const safeRows = rows || '';
   
-  return `
-  <!DOCTYPE html>
-  <html>
-  <head>
-    <meta charset="utf-8" />
-    <title>Analyse immobilière</title>
-  </head>
-  <body>
-  ${transactions.length === 0 ? `
+
+  ${safeTransactions.length === 0 ? `
     <div class="no-results">
       Aucune transaction trouvée dans un rayon de 500m.<br>
       Essayez une adresse différente.
@@ -291,7 +281,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
             <th>Date</th>
           </tr>
         </thead>
-        <tbody>${safeRows}</tbody>
+        <tbody>${rows}</tbody>
       </table>
     </div>
 
@@ -330,7 +320,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
 
     const markers = L.markerClusterGroup();
 
-    ${safeTransactions.map((t, i) => `
+    ${safeTransactions.map((t, i) => 
       const marker${i} = L.circleMarker(
         [${Number(t.latitude) || 0}, ${Number(t.longitude) || 0}],
         {
