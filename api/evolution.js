@@ -289,7 +289,7 @@ module.exports = async function handler(req, res) {
     }
 
     // Étape 3 : Transactions de la section avec prix_median_section et date
-    let sectionUrl = `${SUPABASE_URL}/rest/v1/transactions?cle_section=eq.${sectionPrincipale}&select=date_mutation,prix_median_section`;
+    let sectionUrl = `${SUPABASE_URL}/rest/v1/transactions?cle_section=eq.${sectionPrincipale}&select=date_mutation,prix_median_section&limit=5000`;
     if (type_bien) sectionUrl += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
 
     const sectionRes = await fetch(sectionUrl, {
@@ -306,7 +306,7 @@ module.exports = async function handler(req, res) {
     }
 
     // Étape 4 : Transactions de la ville avec prix_median_section, cle_section et date
-    let villeUrl = `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=date_mutation,cle_section,prix_median_section`;
+    let villeUrl = `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=date_mutation,cle_section,prix_median_section&limit=5000`;
     if (type_bien) villeUrl += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
 
     const villeRes = await fetch(villeUrl, {
