@@ -239,7 +239,7 @@ export default async function handler(req, res) {
 
     // Étape 2 : Trouver la section la plus proche
     const proxyRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=section_cadastrale,cle_section,latitude,longitude&latitude=not.is.null&longitude=not.is.null&order=date_mutation.desc.nullslast&limit=200`,
+      `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=section_cadastrale,cle_section,latitude,longitude&latitude=not.is.null&longitude=not.is.null&order=date_mutation.desc.nullslast&limit=1000`,
       {
         headers: {
           'apikey': SUPABASE_KEY,
