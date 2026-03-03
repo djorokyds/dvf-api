@@ -337,17 +337,20 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     `).join('')}
     map.addLayer(markers);
 
-    // ✅ Toggle tableau
-    const btn = document.getElementById("toggleTableBtn");
-    const container = document.getElementById("transactionsContainer");
-  
-    btn.addEventListener("click", function () {
-      if (container.style.display === "none") {
-        container.style.display = "block";
-        btn.textContent = "Masquer les transactions ▼";
-      } else {
-        container.style.display = "none";
-        btn.textContent = "Afficher les transactions ▲";
+    // ✅ Toggle tableau sécurisé
+    document.addEventListener("DOMContentLoaded", function () {
+      const btn = document.getElementById("toggleTableBtn");
+      const container = document.getElementById("transactionsContainer");
+    
+      if (btn && container) {
+        btn.addEventListener("click", function () {
+          const isHidden = container.style.display === "none";
+    
+          container.style.display = isHidden ? "block" : "none";
+          btn.textContent = isHidden
+            ? "Masquer les transactions ▼"
+            : "Afficher les transactions ▲";
+        });
       }
     });
   </script>
