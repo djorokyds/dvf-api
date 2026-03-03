@@ -146,7 +146,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     .critere-label { font-size: 11px; color: #888; }
     .critere { background: #e8f0fe; color: #1a73e8; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
     .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px; }
-    .card { background: #1f1f1f; border-radius: 12px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .card { background: #1f1f1f; border-radius: 12px; border: 1px solid #888; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
     .card .label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
     .card .value { font-size: 20px; font-weight: 700; color: white; }
     .card .unit { font-size: 11px; color: #888; margin-top: 2px; }
@@ -155,7 +155,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     .card.highlight .value { color: white; font-size: 30px; }
     .card.highlight .unit { color: rgba(255,255,255,0.7); font-size: 11px; }
     .fiabilite { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.2); }
-    .tension-box { margin: 0 14px 10px; background: #1f1f1f; border-radius: 12px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 12px; }
+    .tension-box { margin: 0 14px 10px; background: #1f1f1f; border-radius: 12px; border: 1px solid #888; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 12px; }
     .tension-left { flex: 1; }
     .tension-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
     .tension-value { font-size: 16px; font-weight: 700; }
@@ -167,7 +167,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     .recommande-label { font-size: 11px; color: #888; margin-bottom: 4px; }
     .recommande-value { font-size: 26px; font-weight: 700; color: white; margin-bottom: 4px; }
     .recommande-fourchette { font-size: 12px; color: #666; }
-    .ecart-box { margin: 0 14px 10px; background: #1f1f1f; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .ecart-box { margin: 0 14px 10px; background: #1f1f1f; border-radius: 12px; border: 1px solid #888; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
     .ecart-label { font-size: 11px; color: #888; margin-bottom: 4px; }
     .ecart-value { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
     .ecart-detail { font-size: 11px; color: #888; }
