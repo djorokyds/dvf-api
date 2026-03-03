@@ -241,6 +241,17 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
   </div>
   <div id="map"></div>
 
+  const safeTransactions = Array.isArray(transactions) ? transactions : [];
+  const safeRows = rows || '';
+  
+  return `
+  <!DOCTYPE html>
+  <html>
+  <head>
+    <meta charset="utf-8" />
+    <title>Analyse immobilière</title>
+  </head>
+  <body>
   ${transactions.length === 0 ? `
     <div class="no-results">
       Aucune transaction trouvée dans un rayon de 500m.<br>
