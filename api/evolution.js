@@ -119,7 +119,7 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
         </div>` : ''}
       ${showVille ? `
         <div class="legend-item">
-          <div class="legend-line" style="${showSection ? 'background:#3498db;' : 'background:#3498db;'}"></div>
+          <div class="legend-line" style="background:#3498db;"></div>
           ${ville}${modeVilleOnly ? ' (section insuffisante)' : ''}
         </div>` : ''}
     </div>
@@ -230,7 +230,7 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
 </html>`;
 }
 
-export default async function handler(req, res) {
+module.exports = async function handler(req, res) {
   const { adresse, type_bien, format } = req.query;
   
   const SUPABASE_URL = process.env.SUPABASE_URL;
@@ -276,7 +276,7 @@ export default async function handler(req, res) {
     );
     const proxyTransactions = await proxyRes.json();
 
-    if (!proxyTransactions || proxyTransactions.length === 0) {
+    if (!Array.isArray(proxyTransactions) || proxyTransactions.length === 0) {
       return res.status(404).json({ error: "Aucune transaction trouvée" });
     }
 
@@ -307,6 +307,7 @@ export default async function handler(req, res) {
       }
     });
     const sectionTransactions = await sectionRes.json();
+
     if (!Array.isArray(sectionTransactions)) {
       return res.status(500).json({ error: "Erreur Supabase section", detail: sectionTransactions });
     }
@@ -323,11 +324,12 @@ export default async function handler(req, res) {
       }
     });
     const villeTransactions = await villeRes.json();
+
     if (!Array.isArray(villeTransactions)) {
-    return res.status(500).json({ error: "Erreur Supabase ville", detail: villeTransactions });
+      return res.status(500).json({ error: "Erreur Supabase ville", detail: villeTransactions });
     }
 
-    // Étape 5 : Grouper par mois avec filtre IQR
+    // Étape 5 : Filtre IQR global + grouper par mois
     const median = arr => {
       if (arr.length === 0) return 0;
       const sorted = [...arr].sort((a, b) => a - b);
@@ -337,13 +339,16 @@ export default async function handler(req, res) {
         : sorted[mid];
     };
 
-    const filterIQR = (vals) => {
-      if (vals.length < 4) return vals;
-      const sorted = [...vals].sort((a, b) => a - b);
+    const filterIQRGlobal = (transactions) => {
+      const allPrix = transactions.map(t => t.prix_m2).filter(p => p > 0);
+      if (allPrix.length < 4) return transactions;
+      const sorted = [...allPrix].sort((a, b) => a - b);
       const q1 = sorted[Math.floor(sorted.length * 0.25)];
       const q3 = sorted[Math.floor(sorted.length * 0.75)];
       const iqr = q3 - q1;
-      return sorted.filter(v => v >= q1 - 1.5 * iqr && v <= q3 + 1.5 * iqr);
+      const min = q1 - 1.5 * iqr;
+      const max = q3 + 1.5 * iqr;
+      return transactions.filter(t => t.prix_m2 >= min && t.prix_m2 <= max);
     };
 
     const groupByMonth = (transactions) => {
@@ -357,20 +362,19 @@ export default async function handler(req, res) {
       });
       return Object.keys(parMois)
         .sort()
-        .map(mois => {
-          const filtered = filterIQR(parMois[mois]);
-          return { mois, vals: filtered };
-        })
-        .filter(d => d.vals.length >= 3)
-        .map(d => ({
-          mois: d.mois,
-          prix_median: median(d.vals),
-          nb_transactions: d.vals.length
+        .filter(mois => parMois[mois].length >= 3)
+        .map(mois => ({
+          mois,
+          prix_median: median(parMois[mois]),
+          nb_transactions: parMois[mois].length
         }));
     };
 
-    const chartDataSection = groupByMonth(sectionTransactions || []);
-    const chartDataVille = groupByMonth(villeTransactions || []);
+    const sectionFiltered = filterIQRGlobal(sectionTransactions);
+    const villeFiltered = filterIQRGlobal(villeTransactions);
+
+    const chartDataSection = groupByMonth(sectionFiltered);
+    const chartDataVille = groupByMonth(villeFiltered);
 
     if (format === 'html') {
       const html = generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_cadastrale, type_bien, chartDataSection, chartDataVille);
@@ -391,4 +395,4 @@ export default async function handler(req, res) {
   } catch (error) {
     return res.status(500).json({ error: error.message });
   }
-}
+};
