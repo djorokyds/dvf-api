@@ -208,7 +208,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     <div class="card">
       <div class="label">Transactions</div>
       <div class="value">${nb}</div>
-      <div class="unit">≤ 500m</div>
+      <div class="unit">dans un perimètre de 1000m</div>
     </div>
     <div class="card">
       <div class="label">Ville</div>
@@ -225,7 +225,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     </div>
     <div class="tension-nb">
       <div class="nb" style="color:${tensionColor}">${nbTransactionsSection}</div>
-      <div class="nb-label">ventes / section / an</div>
+      <div class="nb-label">ventes dans section cadastrale / 1000 dernières ventes dans la ville</div>
     </div>
   </div>
 
