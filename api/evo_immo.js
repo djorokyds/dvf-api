@@ -235,5 +235,184 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
 }
 
 module.exports = async function handler(req, res) {
-  // ... le reste du code reste inchangé
+  const { adresse, type_bien, format } = req.query;
+  
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_KEY = process.env.SUPABASE_KEY;
+  
+  if (!adresse) {
+    return res.status(400).json({ error: "adresse manquante" });
+  }
+
+  try {
+    const geoRes = await fetch(
+      `https://data.geopf.fr/geocodage/search?q=${encodeURIComponent(adresse)}&limit=1`
+    );
+    const geoData = await geoRes.json();
+    
+    if (!geoData.features || geoData.features.length === 0) {
+      return res.status(404).json({ error: "Adresse non trouvée" });
+    }
+
+    const feature = geoData.features[0];
+    const score = feature.properties.score;
+    
+    if (score < 0.7) {
+      return res.status(400).json({ error: "Adresse non reconnue", score });
+    }
+
+    const lon = feature.geometry.coordinates[0];
+    const lat = feature.geometry.coordinates[1];
+    const code_postal = feature.properties.postcode?.trim() || '';
+    const ville = feature.properties.city;
+    const adresse_normalisee = feature.properties.label;
+
+    // Étape 2 : Trouver la section la plus proche
+    const proxyRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=section_cadastrale,cle_section,latitude,longitude&latitude=not.is.null&longitude=not.is.null&order=date_mutation.desc.nullslast&limit=1000`,
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Accept': 'application/json'
+        }
+      }
+    );
+    const proxyTransactions = await proxyRes.json();
+
+    if (!Array.isArray(proxyTransactions) || proxyTransactions.length === 0) {
+      return res.status(404).json({ error: "Aucune transaction trouvée" });
+    }
+
+    const withDistance = proxyTransactions
+      .filter(t => t.latitude != null && t.longitude != null)
+      .map(t => ({
+        ...t,
+        distance_m: Math.round(haversine(lat, lon, parseFloat(t.latitude), parseFloat(t.longitude)) * 1000)
+      }))
+      .sort((a, b) => a.distance_m - b.distance_m);
+
+    const sectionPrincipale = withDistance.length > 0 ? withDistance[0].cle_section : null;
+    const section_cadastrale = withDistance.length > 0 ? withDistance[0].section_cadastrale : null;
+
+    if (!sectionPrincipale) {
+      return res.status(404).json({ error: "Section cadastrale introuvable" });
+    }
+
+    // Étape 3 : Transactions de la section
+    let sectionUrl = `${SUPABASE_URL}/rest/v1/transactions?cle_section=eq.${sectionPrincipale}&select=date_mutation,prix_median_section&limit=5000`;
+    if (type_bien) sectionUrl += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
+
+    const sectionRes = await fetch(sectionUrl, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Accept': 'application/json'
+      }
+    });
+    const sectionTransactions = await sectionRes.json();
+
+    if (!Array.isArray(sectionTransactions)) {
+      return res.status(500).json({ error: "Erreur Supabase section", detail: sectionTransactions });
+    }
+
+    // Étape 4 : Transactions de la ville
+    let villeUrl = `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=date_mutation,cle_section,prix_median_section&limit=5000`;
+    if (type_bien) villeUrl += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
+
+    const villeRes = await fetch(villeUrl, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Accept': 'application/json'
+      }
+    });
+    const villeTransactions = await villeRes.json();
+
+    if (!Array.isArray(villeTransactions)) {
+      return res.status(500).json({ error: "Erreur Supabase ville", detail: villeTransactions });
+    }
+
+    // Étape 5 : Section — prix_median_section unique par année, min 5 transactions
+    const groupSectionByYear = (transactions) => {
+      const parAnnee = {};
+      transactions.forEach(t => {
+        const date = t.date_mutation || '';
+        const annee = date.length >= 4 ? parseInt(date.substring(0, 4)) : null;
+        if (!annee || isNaN(annee) || !t.prix_median_section) return;
+        if (!parAnnee[annee]) parAnnee[annee] = { prix: t.prix_median_section, count: 0 };
+        parAnnee[annee].count++;
+      });
+      return Object.keys(parAnnee)
+        .map(a => parseInt(a))
+        .sort()
+        .filter(annee => parAnnee[annee].count >= 5)
+        .map(annee => ({
+          annee,
+          prix_median: parAnnee[annee].prix,
+          nb_transactions: parAnnee[annee].count
+        }));
+    };
+
+    // Étape 6 : Ville — moyenne des prix_median_section par section/année
+    // avec filtre : exclure sections dont prix > 1,25x la moyenne brute
+    const groupVilleByYear = (transactions) => {
+      // Collecter prix_median_section unique par cle_section et par année
+      const parAnnee = {};
+      transactions.forEach(t => {
+        const date = t.date_mutation || '';
+        const annee = date.length >= 4 ? parseInt(date.substring(0, 4)) : null;
+        if (!annee || isNaN(annee) || !t.prix_median_section || !t.cle_section) return;
+        if (!parAnnee[annee]) parAnnee[annee] = {};
+        parAnnee[annee][t.cle_section] = t.prix_median_section;
+      });
+
+      return Object.keys(parAnnee)
+        .map(a => parseInt(a))
+        .sort()
+        .map(annee => {
+          const vals = Object.values(parAnnee[annee]);
+
+          // Calcul moyenne brute
+          const moyenneBrute = vals.reduce((a, b) => a + b, 0) / vals.length;
+
+          // Filtre : exclure sections > 3x la moyenne brute
+          const valsFiltrees = vals.filter(v => v <= 2 * moyenneBrute);
+
+          // Recalcul moyenne sur valeurs filtrées
+          const moyenne = valsFiltrees.length > 0
+            ? Math.round(valsFiltrees.reduce((a, b) => a + b, 0) / valsFiltrees.length)
+            : null;
+
+          return {
+            annee,
+            prix_median: moyenne,
+            nb_sections: valsFiltrees.length
+          };
+        })
+        .filter(d => d.prix_median !== null && d.nb_sections >= 1);
+    };
+
+    const chartDataSection = groupSectionByYear(sectionTransactions);
+    const chartDataVille = groupVilleByYear(villeTransactions);
+
+    if (format === 'html') {
+      const html = generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_cadastrale, type_bien, chartDataSection, chartDataVille);
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.status(200).send(html);
+    }
+
+    return res.status(200).json({
+      success: true,
+      adresse_normalisee,
+      ville,
+      code_postal,
+      section_cadastrale,
+      chartDataSection,
+      chartDataVille
+    });
+
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
 };
