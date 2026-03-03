@@ -205,6 +205,18 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
       <div class="unit">Données DVF</div>
       <div class="fiabilite">${fiabiliteEmoji} ${fiabilite} • ${nb} transaction${nb > 1 ? 's' : ''} dans la zone</div>
     </div>
+    <div class="card">
+      <div class="label">Transactions</div>
+      <div class="value">${nb}</div>
+      <div class="unit">≤ 500m</div>
+    </div>
+    <div class="card">
+      <div class="label">Ville</div>
+      <div class="value" style="font-size:15px">${ville}</div>
+      <div class="unit">${code_postal}</div>
+    </div>
+  </div>
+
   <div class="tension-box">
     <div class="tension-left">
       <div class="tension-label">Tension du marché</div>
