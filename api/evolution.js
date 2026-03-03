@@ -307,6 +307,9 @@ export default async function handler(req, res) {
       }
     });
     const sectionTransactions = await sectionRes.json();
+    if (!Array.isArray(sectionTransactions)) {
+      return res.status(500).json({ error: "Erreur Supabase section", detail: sectionTransactions });
+    }
 
     // Étape 4 : Toutes les transactions de la ville
     let villeUrl = `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=date_mutation,prix_m2&order=date_mutation.desc.nullslast`;
@@ -320,6 +323,9 @@ export default async function handler(req, res) {
       }
     });
     const villeTransactions = await villeRes.json();
+    if (!Array.isArray(villeTransactions)) {
+    return res.status(500).json({ error: "Erreur Supabase ville", detail: villeTransactions });
+    }
 
     // Étape 5 : Grouper par mois avec filtre IQR
     const median = arr => {
