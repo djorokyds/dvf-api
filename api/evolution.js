@@ -145,7 +145,7 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
     .legend-line { width: 24px; height: 3px; border-radius: 2px; }
     .chart-wrap { position: relative; height: 240px; }
     .note { padding: 0 14px 8px; font-size: 10px; color: #aaa; }
-    .section-title { padding: 0 14px 8px; font-size: 13px; font-weight: 600; color: #555; }
+    .section-title { padding: 0 14px 8px; font-size: 13px; font-weight: 600; color: white; }
     .table-wrap { padding: 0 14px 14px; overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; background: #1f1f1f; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); font-size: 12px; }
     th { background: #1f1f1f; padding: 9px 10px; text-align: left; font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #888; }
