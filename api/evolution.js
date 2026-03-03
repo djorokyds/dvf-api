@@ -23,7 +23,7 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
   <title>Évolution DVF</title>
   <style>
     body { font-family: -apple-system, sans-serif; background: #1f1f1f; display: flex; align-items: center; justify-content: center; height: 100vh; }
-    .box { background: white; border-radius: 12px; padding: 30px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); max-width: 300px; }
+    .box { background: #1f1f1f; border-radius: 12px; padding: 30px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); max-width: 300px; }
     h2 { font-size: 16px; margin-bottom: 8px; color: #2c3e50; }
     p { font-size: 13px; color: #888; line-height: 1.6; }
     .year { font-size: 28px; font-weight: 700; color: #8e44ad; margin: 12px 0; }
@@ -137,9 +137,9 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
     .header { background: linear-gradient(135deg, #1f1f1f, #1f1f1f); color: white; padding: 20px 16px; }
     .header h1 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
     .header p { font-size: 12px; opacity: 0.8; margin-top: 2px; }
-    .badge-section { display: inline-block; margin-top: 8px; background: rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 20px; font-size: 11px; }
+    .badge-section { display: inline-block; margin-top: 8px; background: #1f1f1f; padding: 3px 10px; border-radius: 20px; font-size: 11px; }
     .chart-box { margin: 14px; background: #1f1f1f; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-    .chart-title { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 8px; }
+    .chart-title { font-size: 13px; font-weight: 600; color: white; margin-bottom: 8px; }
     .legend { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
     .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #555; }
     .legend-line { width: 24px; height: 3px; border-radius: 2px; }
@@ -148,7 +148,7 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
     .section-title { padding: 0 14px 8px; font-size: 13px; font-weight: 600; color: #555; }
     .table-wrap { padding: 0 14px 14px; overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; background: #1f1f1f; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); font-size: 12px; }
-    th { background: #f8f9fa; padding: 9px 10px; text-align: left; font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #eee; }
+    th { background: #1f1f1f; padding: 9px 10px; text-align: left; font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #eee; }
     td { padding: 9px 10px; border-bottom: 1px solid #f0f0f0; }
     tr:last-child td { border-bottom: none; }
     .footer { text-align: center; padding: 14px; font-size: 10px; color: #aaa; }
@@ -212,7 +212,7 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
         scales: {
           y: {
             ticks: { callback: (v) => v.toLocaleString('fr-FR') + ' €' },
-            grid: { color: '#f0f0f0' }
+            grid: { color: '#888' }
           },
           x: { grid: { display: false } }
         }
