@@ -141,7 +141,7 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
     .chart-box { margin: 14px; background: #1f1f1f; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
     .chart-title { font-size: 13px; font-weight: 600; color: white; margin-bottom: 8px; }
     .legend { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
-    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #555; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #C38F5A; }
     .legend-line { width: 24px; height: 3px; border-radius: 2px; }
     .chart-wrap { position: relative; height: 240px; }
     .note { padding: 0 14px 8px; font-size: 10px; color: #aaa; }
@@ -157,7 +157,7 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
 <body>
   <div class="header">
     <h1>📈 Évolution des prix</h1>
-    <p>${adresse_normalisee}</p>
+    <p>(${ville})</p>
   </div>
 
   <div class="chart-box">
