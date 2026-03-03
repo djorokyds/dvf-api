@@ -10,7 +10,12 @@ function haversine(lat1, lon1, lat2, lon2) {
 }
 
 function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_cadastrale, type_bien, chartDataSection, chartDataVille) {
-  if (chartDataSection.length < 2) {
+  
+  // Décider quelle donnée afficher
+  const hasSection = chartDataSection.length >= 2;
+  const hasVille = chartDataVille.length >= 2;
+
+  if (!hasSection && !hasVille) {
     return `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -28,22 +33,30 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
 <body>
   <div class="box">
     <h2>📊 Données insuffisantes</h2>
-    <p>Pas assez de données pour cette section.</p>
-    <div class="year">${chartDataSection[0]?.prix_median?.toLocaleString('fr-FR')} €/m²</div>
+    <p>Pas assez de données pour afficher l'évolution.</p>
+    <div class="year">${chartDataSection[0]?.prix_median?.toLocaleString('fr-FR') || chartDataVille[0]?.prix_median?.toLocaleString('fr-FR') || '-'} €/m²</div>
     <p>Importez les données 2020-2023 pour voir l'évolution.</p>
   </div>
 </body>
 </html>`;
   }
 
-  // Fusionner tous les mois des deux séries
+  // Si section insuffisante → ville uniquement
+  // Si section suffisante → section + ville si dispo
+  const showSection = hasSection;
+  const showVille = hasVille;
+  const modeVilleOnly = !hasSection && hasVille;
+
+  const activeSection = showSection ? chartDataSection : [];
+  const activeVille = showVille ? chartDataVille : [];
+
   const tousLesMois = [...new Set([
-    ...chartDataSection.map(d => d.mois),
-    ...chartDataVille.map(d => d.mois)
+    ...activeSection.map(d => d.mois),
+    ...activeVille.map(d => d.mois)
   ])].sort();
 
-  const sectionMap = Object.fromEntries(chartDataSection.map(d => [d.mois, d]));
-  const villeMap = Object.fromEntries(chartDataVille.map(d => [d.mois, d]));
+  const sectionMap = Object.fromEntries(activeSection.map(d => [d.mois, d]));
+  const villeMap = Object.fromEntries(activeVille.map(d => [d.mois, d]));
 
   const labels = tousLesMois.map(m => {
     const [annee, mois] = m.split('-');
@@ -52,6 +65,41 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
   const valuesSection = tousLesMois.map(m => sectionMap[m]?.prix_median || null);
   const valuesVille = tousLesMois.map(m => villeMap[m]?.prix_median || null);
 
+  const datasets = [];
+  if (showSection) {
+    datasets.push({
+      label: `Section ${section_cadastrale || 'N/A'}`,
+      data: valuesSection,
+      borderColor: '#8e44ad',
+      backgroundColor: 'rgba(142,68,173,0.08)',
+      borderWidth: 2.5,
+      pointBackgroundColor: '#8e44ad',
+      pointBorderColor: 'white',
+      pointBorderWidth: 2,
+      pointRadius: 4,
+      fill: true,
+      tension: 0.3,
+      spanGaps: true
+    });
+  }
+  if (showVille) {
+    datasets.push({
+      label: ville,
+      data: valuesVille,
+      borderColor: '#3498db',
+      backgroundColor: showSection ? 'transparent' : 'rgba(52,152,219,0.08)',
+      borderWidth: 2,
+      borderDash: showSection ? [6, 4] : [],
+      pointBackgroundColor: '#3498db',
+      pointBorderColor: 'white',
+      pointBorderWidth: 2,
+      pointRadius: 3,
+      fill: !showSection,
+      tension: 0.3,
+      spanGaps: true
+    });
+  }
+
   const tableRows = tousLesMois.map(m => {
     const s = sectionMap[m];
     const v = villeMap[m];
@@ -59,13 +107,29 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
     return `
       <tr>
         <td><strong>${mois}/${annee}</strong></td>
-        <td>${s ? s.prix_median.toLocaleString('fr-FR') + ' €/m²' : '-'}</td>
-        <td>${s ? s.nb_transactions + ' ventes' : '-'}</td>
-        <td>${v ? v.prix_median.toLocaleString('fr-FR') + ' €/m²' : '-'}</td>
-        <td>${v ? v.nb_transactions + ' ventes' : '-'}</td>
+        ${showSection ? `<td>${s ? s.prix_median.toLocaleString('fr-FR') + ' €/m²' : '-'}</td><td>${s ? s.nb_transactions + ' ventes' : '-'}</td>` : ''}
+        ${showVille ? `<td>${v ? v.prix_median.toLocaleString('fr-FR') + ' €/m²' : '-'}</td><td>${v ? v.nb_transactions + ' ventes' : '-'}</td>` : ''}
       </tr>
     `;
   }).reverse().join('');
+
+  const legendHTML = `
+    <div class="legend">
+      ${showSection ? `
+        <div class="legend-item">
+          <div class="legend-line" style="background:#8e44ad;"></div>
+          Section ${section_cadastrale || 'N/A'}
+        </div>` : ''}
+      ${showVille ? `
+        <div class="legend-item">
+          <div class="legend-line" style="${showSection ? 'background:#3498db;border-top:2px dashed #3498db;' : 'background:#3498db;'}"></div>
+          ${ville}${modeVilleOnly ? ' (section insuffisante)' : ''}
+        </div>` : ''}
+    </div>
+  `;
+
+  const thSection = showSection ? `<th>Section ${section_cadastrale || 'N/A'} — Prix</th><th>Vol.</th>` : '';
+  const thVille = showVille ? `<th>${ville} — Prix</th><th>Vol.</th>` : '';
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -107,16 +171,7 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
 
   <div class="chart-box">
     <div class="chart-title">Prix médian au m² par mois</div>
-    <div class="legend">
-      <div class="legend-item">
-        <div class="legend-line" style="background:#8e44ad;"></div>
-        Section ${section_cadastrale || 'N/A'}
-      </div>
-      <div class="legend-item">
-        <div class="legend-line" style="background:#3498db; border-top: 2px dashed #3498db;"></div>
-        ${ville}
-      </div>
-    </div>
+    ${legendHTML}
     <div class="chart-wrap">
       <canvas id="chart"></canvas>
     </div>
@@ -130,10 +185,8 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
       <thead>
         <tr>
           <th>Mois</th>
-          <th>Section — Prix</th>
-          <th>Section — Vol.</th>
-          <th>${ville} — Prix</th>
-          <th>${ville} — Vol.</th>
+          ${thSection}
+          ${thVille}
         </tr>
       </thead>
       <tbody>${tableRows}</tbody>
@@ -144,42 +197,11 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
 
   <script>
     const ctx = document.getElementById('chart').getContext('2d');
-
     new Chart(ctx, {
       type: 'line',
       data: {
         labels: ${JSON.stringify(labels)},
-        datasets: [
-          {
-            label: 'Section ${section_cadastrale || 'N/A'}',
-            data: ${JSON.stringify(valuesSection)},
-            borderColor: '#8e44ad',
-            backgroundColor: 'rgba(142,68,173,0.08)',
-            borderWidth: 2.5,
-            pointBackgroundColor: '#8e44ad',
-            pointBorderColor: 'white',
-            pointBorderWidth: 2,
-            pointRadius: 4,
-            fill: true,
-            tension: 0.3,
-            spanGaps: true
-          },
-          {
-            label: '${ville}',
-            data: ${JSON.stringify(valuesVille)},
-            borderColor: '#3498db',
-            backgroundColor: 'transparent',
-            borderWidth: 2,
-            borderDash: [6, 4],
-            pointBackgroundColor: '#3498db',
-            pointBorderColor: 'white',
-            pointBorderWidth: 2,
-            pointRadius: 3,
-            fill: false,
-            tension: 0.3,
-            spanGaps: true
-          }
-        ]
+        datasets: ${JSON.stringify(datasets)}
       },
       options: {
         responsive: true,
@@ -200,10 +222,7 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
             grid: { color: '#f0f0f0' }
           },
           x: {
-            ticks: {
-              maxTicksLimit: 12,
-              maxRotation: 45
-            },
+            ticks: { maxTicksLimit: 12, maxRotation: 45 },
             grid: { display: false }
           }
         }
@@ -225,7 +244,6 @@ export default async function handler(req, res) {
   }
 
   try {
-    // Étape 1 : Géocoder l'adresse
     const geoRes = await fetch(
       `https://data.geopf.fr/geocodage/search?q=${encodeURIComponent(adresse)}&limit=1`
     );
@@ -293,10 +311,6 @@ export default async function handler(req, res) {
     });
     const sectionTransactions = await sectionRes.json();
 
-    if (!sectionTransactions || sectionTransactions.length === 0) {
-      return res.status(404).json({ error: "Aucune transaction dans cette section" });
-    }
-
     // Étape 4 : Toutes les transactions de la ville
     let villeUrl = `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=date_mutation,prix_m2&order=date_mutation.desc.nullslast`;
     if (type_bien) villeUrl += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
@@ -324,7 +338,6 @@ export default async function handler(req, res) {
       const parMois = {};
       transactions.forEach(t => {
         const date = t.date_mutation || '';
-        // Format AAAA-MM-DD → clé AAAA-MM
         if (date.length < 7) return;
         const mois = date.substring(0, 7);
         if (!parMois[mois]) parMois[mois] = [];
@@ -340,7 +353,7 @@ export default async function handler(req, res) {
         }));
     };
 
-    const chartDataSection = groupByMonth(sectionTransactions);
+    const chartDataSection = groupByMonth(sectionTransactions || []);
     const chartDataVille = groupByMonth(villeTransactions || []);
 
     if (format === 'html') {
