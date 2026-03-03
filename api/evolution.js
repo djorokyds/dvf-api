@@ -28,42 +28,44 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
 <body>
   <div class="box">
     <h2>📊 Données insuffisantes</h2>
-    <p>Une seule année disponible pour cette section.</p>
+    <p>Pas assez de données pour cette section.</p>
     <div class="year">${chartDataSection[0]?.prix_median?.toLocaleString('fr-FR')} €/m²</div>
-    <p>Prix médian ${chartDataSection[0]?.annee} • ${chartDataSection[0]?.nb_transactions} transactions<br>Importez les données 2020-2023 pour voir l'évolution.</p>
+    <p>Importez les données 2020-2023 pour voir l'évolution.</p>
   </div>
 </body>
 </html>`;
   }
 
-  const toutesAnnees = [...new Set([
-    ...chartDataSection.map(d => d.annee),
-    ...chartDataVille.map(d => d.annee)
+  // Fusionner tous les mois des deux séries
+  const tousLesMois = [...new Set([
+    ...chartDataSection.map(d => d.mois),
+    ...chartDataVille.map(d => d.mois)
   ])].sort();
 
-  const sectionMap = Object.fromEntries(chartDataSection.map(d => [d.annee, d.prix_median]));
-  const villeMap = Object.fromEntries(chartDataVille.map(d => [d.annee, d.prix_median]));
+  const sectionMap = Object.fromEntries(chartDataSection.map(d => [d.mois, d]));
+  const villeMap = Object.fromEntries(chartDataVille.map(d => [d.mois, d]));
 
-  const labels = toutesAnnees.map(a => a.toString());
-  const valuesSection = toutesAnnees.map(a => sectionMap[a] || null);
-  const valuesVille = toutesAnnees.map(a => villeMap[a] || null);
+  const labels = tousLesMois.map(m => {
+    const [annee, mois] = m.split('-');
+    return `${mois}/${annee}`;
+  });
+  const valuesSection = tousLesMois.map(m => sectionMap[m]?.prix_median || null);
+  const valuesVille = tousLesMois.map(m => villeMap[m]?.prix_median || null);
 
-  const anneeRows = toutesAnnees.map((annee, i) => {
-    const prixSection = sectionMap[annee] || null;
-    const prixVille = villeMap[annee] || null;
-    const prevSection = i > 0 ? sectionMap[toutesAnnees[i-1]] : null;
-    const evoSection = prevSection && prixSection ? ((prixSection - prevSection) / prevSection) * 100 : null;
+  const tableRows = tousLesMois.map(m => {
+    const s = sectionMap[m];
+    const v = villeMap[m];
+    const [annee, mois] = m.split('-');
     return `
       <tr>
-        <td><strong>${annee}</strong></td>
-        <td>${prixSection ? prixSection.toLocaleString('fr-FR') + ' €/m²' : '-'}</td>
-        <td>${prixVille ? prixVille.toLocaleString('fr-FR') + ' €/m²' : '-'}</td>
-        <td style="color:${evoSection > 0 ? '#27ae60' : evoSection < 0 ? '#e74c3c' : '#888'}">
-          ${evoSection !== null ? (evoSection > 0 ? '+' : '') + evoSection.toFixed(1) + '%' : '-'}
-        </td>
+        <td><strong>${mois}/${annee}</strong></td>
+        <td>${s ? s.prix_median.toLocaleString('fr-FR') + ' €/m²' : '-'}</td>
+        <td>${s ? s.nb_transactions + ' ventes' : '-'}</td>
+        <td>${v ? v.prix_median.toLocaleString('fr-FR') + ' €/m²' : '-'}</td>
+        <td>${v ? v.nb_transactions + ' ventes' : '-'}</td>
       </tr>
     `;
-  }).join('');
+  }).reverse().join('');
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -84,7 +86,8 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
     .legend { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
     .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #555; }
     .legend-line { width: 24px; height: 3px; border-radius: 2px; }
-    .chart-wrap { position: relative; height: 220px; }
+    .chart-wrap { position: relative; height: 240px; }
+    .note { padding: 0 14px 8px; font-size: 10px; color: #aaa; }
     .section-title { padding: 0 14px 8px; font-size: 13px; font-weight: 600; color: #555; }
     .table-wrap { padding: 0 14px 14px; overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); font-size: 12px; }
@@ -103,14 +106,14 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
   </div>
 
   <div class="chart-box">
-    <div class="chart-title">Prix médian au m² par année</div>
+    <div class="chart-title">Prix médian au m² par mois</div>
     <div class="legend">
       <div class="legend-item">
         <div class="legend-line" style="background:#8e44ad;"></div>
         Section ${section_cadastrale || 'N/A'}
       </div>
       <div class="legend-item">
-        <div class="legend-line" style="background:#3498db;"></div>
+        <div class="legend-line" style="background:#3498db; border-top: 2px dashed #3498db;"></div>
         ${ville}
       </div>
     </div>
@@ -119,18 +122,21 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
     </div>
   </div>
 
-  <div class="section-title">📊 Détail par année</div>
+  <p class="note">* Seuls les mois avec ≥ 3 transactions sont affichés</p>
+
+  <div class="section-title">📊 Détail par mois</div>
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
-          <th>Année</th>
-          <th>Section ${section_cadastrale || 'N/A'}</th>
-          <th>${ville}</th>
-          <th>Évolution section</th>
+          <th>Mois</th>
+          <th>Section — Prix</th>
+          <th>Section — Vol.</th>
+          <th>${ville} — Prix</th>
+          <th>${ville} — Vol.</th>
         </tr>
       </thead>
-      <tbody>${anneeRows}</tbody>
+      <tbody>${tableRows}</tbody>
     </table>
   </div>
 
@@ -153,7 +159,7 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
             pointBackgroundColor: '#8e44ad',
             pointBorderColor: 'white',
             pointBorderWidth: 2,
-            pointRadius: 6,
+            pointRadius: 4,
             fill: true,
             tension: 0.3,
             spanGaps: true
@@ -168,7 +174,7 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
             pointBackgroundColor: '#3498db',
             pointBorderColor: 'white',
             pointBorderWidth: 2,
-            pointRadius: 5,
+            pointRadius: 3,
             fill: false,
             tension: 0.3,
             spanGaps: true
@@ -193,7 +199,13 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
             ticks: { callback: (v) => v.toLocaleString('fr-FR') + ' €' },
             grid: { color: '#f0f0f0' }
           },
-          x: { grid: { display: false } }
+          x: {
+            ticks: {
+              maxTicksLimit: 12,
+              maxRotation: 45
+            },
+            grid: { display: false }
+          }
         }
       }
     });
@@ -298,7 +310,7 @@ export default async function handler(req, res) {
     });
     const villeTransactions = await villeRes.json();
 
-    // Étape 5 : Grouper par année
+    // Étape 5 : Grouper par mois AAAA-MM (min 3 transactions)
     const median = arr => {
       if (arr.length === 0) return 0;
       const sorted = [...arr].sort((a, b) => a - b);
@@ -308,28 +320,28 @@ export default async function handler(req, res) {
         : sorted[mid];
     };
 
-    const groupByYear = (transactions) => {
-      const parAnnee = {};
+    const groupByMonth = (transactions) => {
+      const parMois = {};
       transactions.forEach(t => {
         const date = t.date_mutation || '';
-        const annee = date.length >= 4 ? parseInt(date.substring(0, 4)) : null;
-        if (!annee || isNaN(annee)) return;
-        if (!parAnnee[annee]) parAnnee[annee] = [];
-        if (t.prix_m2 > 0) parAnnee[annee].push(t.prix_m2);
+        // Format AAAA-MM-DD → clé AAAA-MM
+        if (date.length < 7) return;
+        const mois = date.substring(0, 7);
+        if (!parMois[mois]) parMois[mois] = [];
+        if (t.prix_m2 > 0) parMois[mois].push(t.prix_m2);
       });
-      return Object.keys(parAnnee)
-        .map(a => parseInt(a))
+      return Object.keys(parMois)
         .sort()
-        .map((annee, i, arr) => {
-          const prix = median(parAnnee[annee]);
-          const prixPrecedent = i > 0 ? median(parAnnee[arr[i-1]]) : null;
-          const evolution = prixPrecedent ? ((prix - prixPrecedent) / prixPrecedent) * 100 : null;
-          return { annee, prix_median: prix, nb_transactions: parAnnee[annee].length, evolution };
-        });
+        .filter(mois => parMois[mois].length >= 3)
+        .map(mois => ({
+          mois,
+          prix_median: median(parMois[mois]),
+          nb_transactions: parMois[mois].length
+        }));
     };
 
-    const chartDataSection = groupByYear(sectionTransactions);
-    const chartDataVille = groupByYear(villeTransactions || []);
+    const chartDataSection = groupByMonth(sectionTransactions);
+    const chartDataVille = groupByMonth(villeTransactions || []);
 
     if (format === 'html') {
       const html = generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_cadastrale, type_bien, chartDataSection, chartDataVille);
