@@ -247,8 +247,26 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
       Essayez une adresse différente.
     </div>
   ` : `
-    <div class="section-title">🏠 Transactions similaires</div>
-    <div class="table-wrap">
+  <div class="section-title">🏠 Transactions similaires</div>
+  
+  <div class="table-wrap">
+  
+    <div style="margin:10px 0;">
+      <button id="toggleTableBtn"
+        style="
+          background:#2c3e50;
+          color:white;
+          border:none;
+          padding:8px 14px;
+          border-radius:6px;
+          cursor:pointer;
+          font-weight:600;
+        ">
+        Masquer les transactions ▼
+      </button>
+    </div>
+  
+    <div id="transactionsContainer">
       <table>
         <thead>
           <tr>
@@ -265,9 +283,13 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
         <tbody>${rows}</tbody>
       </table>
     </div>
-  `}
+  
+  </div>
+ 
 
-  <div class="footer">Source : Demandes de Valeurs Foncières (DVF) • Données officielles</div>
+  <div class="footer">
+  Source : Demandes de Valeurs Foncières (DVF) • Données officielles
+  </div>
 
   <script>
     const map = L.map('map').setView([${userLat}, ${userLon}], 15);
@@ -314,6 +336,20 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
       markers.addLayer(marker${i});
     `).join('')}
     map.addLayer(markers);
+
+    // ✅ Toggle tableau
+    const btn = document.getElementById("toggleTableBtn");
+    const container = document.getElementById("transactionsContainer");
+  
+    btn.addEventListener("click", function () {
+      if (container.style.display === "none") {
+        container.style.display = "block";
+        btn.textContent = "Masquer les transactions ▼";
+      } else {
+        container.style.display = "none";
+        btn.textContent = "Afficher les transactions ▲";
+      }
+    });
   </script>
 </body>
 </html>`;
