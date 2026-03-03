@@ -138,8 +138,8 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
   <style>
     /* styles inchangés (copie les styles initiaux) */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #171717; color: #eaeaea; }
-    .header { background: linear-gradient(135deg, #1f1f1f, #171717); color: white; padding: 20px 16px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1f1f1f; color: #eaeaea; }
+    .header { background: linear-gradient(135deg, #1f1f1f, #1f1f1f); color: white; padding: 20px 16px; }
     .header h1 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
     .header p { font-size: 12px; opacity: 0.8; }
     .criteres { display: flex; gap: 8px; align-items: center; padding: 10px 14px; flex-wrap: wrap; background: white; border-bottom: 1px solid #eee; }
