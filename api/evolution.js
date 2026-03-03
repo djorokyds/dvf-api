@@ -10,11 +10,35 @@ function haversine(lat1, lon1, lat2, lon2) {
 }
 
 function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_cadastrale, type_bien, chartData, tendance) {
-  const labels = chartData.map(d => d.annee);
-  const values = chartData.map(d => d.prix_median);
-  const volumes = chartData.map(d => d.nb_transactions);
+  if (chartData.length < 2) {
+    return `<!DOCTYPE html>
+<html lang="fr">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Évolution DVF</title>
+  <style>
+    body { font-family: -apple-system, sans-serif; background: #f5f7fa; display: flex; align-items: center; justify-content: center; height: 100vh; }
+    .box { background: white; border-radius: 12px; padding: 30px; text-align: center; box-shadow: 0 2px 8px rgba(0,0,0,0.06); max-width: 300px; }
+    h2 { font-size: 16px; margin-bottom: 8px; color: #2c3e50; }
+    p { font-size: 13px; color: #888; line-height: 1.6; }
+    .year { font-size: 28px; font-weight: 700; color: #8e44ad; margin: 12px 0; }
+  </style>
+</head>
+<body>
+  <div class="box">
+    <h2>📊 Données insuffisantes</h2>
+    <p>Une seule année disponible pour cette section.</p>
+    <div class="year">${chartData[0]?.prix_median?.toLocaleString('fr-FR')} €/m²</div>
+    <p>Prix médian ${chartData[0]?.annee} • ${chartData[0]?.nb_transactions} transactions<br>Importez les données 2020-2023 pour voir l'évolution.</p>
+  </div>
+</body>
+</html>`;
+  }
 
-  // Projection 2025-2026
+  const labels = chartData.map(d => d.annee.toString());
+  const values = chartData.map(d => d.prix_median);
+
   const projectionHTML = tendance ? `
     <div class="projection-box">
       <div class="proj-label">📈 Tendance annuelle</div>
@@ -22,8 +46,8 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
         ${tendance.pct > 0 ? '+' : ''}${tendance.pct.toFixed(1)}% / an
       </div>
       <div class="proj-detail">
-        Projection 2025 : <strong>${tendance.proj2025.toLocaleString('fr-FR')} €/m²</strong><br>
-        Projection 2026 : <strong>${tendance.proj2026.toLocaleString('fr-FR')} €/m²</strong>
+        Projection ${parseInt(labels[labels.length-1])+1} : <strong>${tendance.proj1.toLocaleString('fr-FR')} €/m²</strong><br>
+        Projection ${parseInt(labels[labels.length-1])+2} : <strong>${tendance.proj2.toLocaleString('fr-FR')} €/m²</strong>
       </div>
     </div>
   ` : '';
@@ -38,6 +62,10 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
       </td>
     </tr>
   `).join('');
+
+  const lastAnnee = parseInt(labels[labels.length-1]);
+  const projLabels = [...labels, `${lastAnnee+1}*`, `${lastAnnee+2}*`];
+  const projValues = [...values, tendance ? tendance.proj1 : null, tendance ? tendance.proj2 : null];
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -66,7 +94,6 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
     th { background: #f8f9fa; padding: 9px 10px; text-align: left; font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #eee; }
     td { padding: 9px 10px; border-bottom: 1px solid #f0f0f0; }
     tr:last-child td { border-bottom: none; }
-    .no-data { text-align: center; padding: 30px; color: #888; font-size: 13px; }
     .footer { text-align: center; padding: 14px; font-size: 10px; color: #aaa; }
   </style>
 </head>
@@ -106,37 +133,30 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
 
   <script>
     const ctx = document.getElementById('chart').getContext('2d');
-    
-    const labels = ${JSON.stringify(labels)};
-    const values = ${JSON.stringify(values)};
-    const volumes = ${JSON.stringify(volumes)};
-
-    // Points de projection
-    const projLabels = [...labels, '2025*', '2026*'];
-    const projValues = [...values, ${tendance ? tendance.proj2025 : 'null'}, ${tendance ? tendance.proj2026 : 'null'}];
+    const projLabels = ${JSON.stringify(projLabels)};
+    const projValues = ${JSON.stringify(projValues)};
+    const nbReal = ${labels.length};
 
     new Chart(ctx, {
       type: 'line',
       data: {
         labels: projLabels,
-        datasets: [
-          {
-            label: 'Prix médian €/m²',
-            data: projValues,
-            borderColor: '#8e44ad',
-            backgroundColor: 'rgba(142,68,173,0.1)',
-            borderWidth: 2.5,
-            pointBackgroundColor: projLabels.map((l, i) => l.includes('*') ? 'rgba(142,68,173,0.4)' : '#8e44ad'),
-            pointBorderColor: 'white',
-            pointBorderWidth: 2,
-            pointRadius: 6,
-            fill: true,
-            tension: 0.3,
-            segment: {
-              borderDash: (ctx) => ctx.p1DataIndex >= values.length ? [6, 4] : []
-            }
+        datasets: [{
+          label: 'Prix médian €/m²',
+          data: projValues,
+          borderColor: '#8e44ad',
+          backgroundColor: 'rgba(142,68,173,0.08)',
+          borderWidth: 2.5,
+          pointBackgroundColor: projLabels.map((l, i) => l.includes('*') ? 'rgba(142,68,173,0.4)' : '#8e44ad'),
+          pointBorderColor: 'white',
+          pointBorderWidth: 2,
+          pointRadius: 6,
+          fill: true,
+          tension: 0.3,
+          segment: {
+            borderDash: (ctx) => ctx.p1DataIndex >= nbReal ? [6, 4] : []
           }
-        ]
+        }]
       },
       options: {
         responsive: true,
@@ -145,20 +165,18 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label: (ctx) => ctx.parsed.y ? ctx.parsed.y.toLocaleString('fr-FR') + ' €/m²' + (ctx.label.includes('*') ? ' (projection)' : '') : 'N/A'
+              label: (ctx) => ctx.parsed.y 
+                ? ctx.parsed.y.toLocaleString('fr-FR') + ' €/m²' + (ctx.label.includes('*') ? ' (projection)' : '') 
+                : 'N/A'
             }
           }
         },
         scales: {
           y: {
-            ticks: {
-              callback: (v) => v.toLocaleString('fr-FR') + ' €'
-            },
+            ticks: { callback: (v) => v.toLocaleString('fr-FR') + ' €' },
             grid: { color: '#f0f0f0' }
           },
-          x: {
-            grid: { display: false }
-          }
+          x: { grid: { display: false } }
         }
       }
     });
@@ -201,29 +219,25 @@ export default async function handler(req, res) {
     const ville = feature.properties.city;
     const adresse_normalisee = feature.properties.label;
 
-    // Étape 2 : Récupérer toutes les transactions du code postal
-    let url = `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=date_mutation,type_bien,prix_m2,section_cadastrale,cle_section,latitude,longitude&limit=1000`;
-    
-    if (type_bien) {
-      url += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
-    }
-
-    const supaRes = await fetch(url, {
-      headers: {
-        'apikey': SUPABASE_KEY,
-        'Authorization': `Bearer ${SUPABASE_KEY}`,
-        'Accept': 'application/json'
+    // Étape 2 : Trouver la section la plus proche (100 transactions suffisent)
+    const proxyRes = await fetch(
+      `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=section_cadastrale,cle_section,latitude,longitude&limit=1000`,
+      {
+        headers: {
+          'apikey': SUPABASE_KEY,
+          'Authorization': `Bearer ${SUPABASE_KEY}`,
+          'Accept': 'application/json'
+        }
       }
-    });
+    );
+    const proxyTransactions = await proxyRes.json();
 
-    const transactions = await supaRes.json();
-
-    if (!transactions || transactions.length === 0) {
+    if (!proxyTransactions || proxyTransactions.length === 0) {
       return res.status(404).json({ error: "Aucune transaction trouvée" });
     }
 
-    // Étape 3 : Trouver la section la plus proche
-    const withDistance = transactions
+    // Section la plus proche
+    const withDistance = proxyTransactions
       .filter(t => t.latitude != null && t.longitude != null)
       .map(t => ({
         ...t,
@@ -234,25 +248,45 @@ export default async function handler(req, res) {
     const sectionPrincipale = withDistance.length > 0 ? withDistance[0].cle_section : null;
     const section_cadastrale = withDistance.length > 0 ? withDistance[0].section_cadastrale : null;
 
-    // Étape 4 : Filtrer sur la section principale et grouper par année
-    const sectionTransactions = transactions.filter(t => t.cle_section === sectionPrincipale);
+    if (!sectionPrincipale) {
+      return res.status(404).json({ error: "Section cadastrale introuvable" });
+    }
 
-    // Parser l'année depuis date_mutation format JJ/MM/AAAA
+    // Étape 3 : Toutes les transactions de la section sans limite
+    let sectionUrl = `${SUPABASE_URL}/rest/v1/transactions?cle_section=eq.${sectionPrincipale}&select=date_mutation,type_bien,prix_m2`;
+    if (type_bien) {
+      sectionUrl += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
+    }
+
+    const sectionRes = await fetch(sectionUrl, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Accept': 'application/json'
+      }
+    });
+    const sectionTransactions = await sectionRes.json();
+
+    if (!sectionTransactions || sectionTransactions.length === 0) {
+      return res.status(404).json({ error: "Aucune transaction dans cette section" });
+    }
+
+    // Étape 4 : Grouper par année — format AAAA-MM-DD
     const parAnnee = {};
     sectionTransactions.forEach(t => {
-      const parts = (t.date_mutation || '').split('/');
-      const annee = parts.length === 3 ? parseInt(parts[2]) : null;
-      if (!annee) return;
+      const date = t.date_mutation || '';
+      const annee = date.length >= 4 ? parseInt(date.substring(0, 4)) : null;
+      if (!annee || isNaN(annee)) return;
       if (!parAnnee[annee]) parAnnee[annee] = [];
       if (t.prix_m2 > 0) parAnnee[annee].push(t.prix_m2);
     });
 
-    // Calculer médiane par année
+    // Médiane
     const median = arr => {
       if (arr.length === 0) return 0;
       const sorted = [...arr].sort((a, b) => a - b);
       const mid = Math.floor(sorted.length / 2);
-      return sorted.length % 2 === 0 
+      return sorted.length % 2 === 0
         ? Math.round((sorted[mid-1] + sorted[mid]) / 2)
         : sorted[mid];
     };
@@ -272,7 +306,7 @@ export default async function handler(req, res) {
         };
       });
 
-    // Étape 5 : Calculer tendance et projection
+    // Étape 5 : Tendance et projection
     let tendance = null;
     if (chartData.length >= 2) {
       const first = chartData[0];
@@ -280,9 +314,9 @@ export default async function handler(req, res) {
       const nbAnnees = last.annee - first.annee;
       const pctTotal = ((last.prix_median - first.prix_median) / first.prix_median) * 100;
       const pctAnnuel = pctTotal / nbAnnees;
-      const proj2025 = Math.round(last.prix_median * (1 + pctAnnuel / 100));
-      const proj2026 = Math.round(proj2025 * (1 + pctAnnuel / 100));
-      tendance = { pct: pctAnnuel, proj2025, proj2026 };
+      const proj1 = Math.round(last.prix_median * (1 + pctAnnuel / 100));
+      const proj2 = Math.round(proj1 * (1 + pctAnnuel / 100));
+      tendance = { pct: pctAnnuel, proj1, proj2 };
     }
 
     if (format === 'html') {
@@ -297,6 +331,7 @@ export default async function handler(req, res) {
       ville,
       code_postal,
       section_cadastrale,
+      nb_transactions_section: sectionTransactions.length,
       chartData,
       tendance
     });
