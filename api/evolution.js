@@ -221,7 +221,7 @@ export default async function handler(req, res) {
 
     // Étape 2 : Trouver la section la plus proche
     const proxyRes = await fetch(
-      `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=section_cadastrale,cle_section,latitude,longitude&latitude=not.is.null&longitude=not.is.null&order=date_mutation.desc&limit=200`,
+      `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=section_cadastrale,cle_section,latitude,longitude&latitude=not.is.null&longitude=not.is.null&order=date_mutation.desc.nullslast&limit=1000`,
       {
         headers: {
           'apikey': SUPABASE_KEY,
@@ -252,7 +252,7 @@ export default async function handler(req, res) {
     }
 
     // Étape 3 : Toutes les transactions de la section sans limite
-    let sectionUrl = `${SUPABASE_URL}/rest/v1/transactions?cle_section=eq.${sectionPrincipale}&select=date_mutation,type_bien,prix_m2`;
+    let sectionUrl = `${SUPABASE_URL}/rest/v1/transactions?cle_section=eq.${sectionPrincipale}&select=date_mutation,type_bien,prix_m2&order=date_mutation.desc.nullslast`;
     if (type_bien) {
       sectionUrl += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
     }
