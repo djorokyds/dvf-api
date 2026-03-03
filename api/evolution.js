@@ -141,7 +141,7 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
     .chart-box { margin: 14px; background: #1f1f1f; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
     .chart-title { font-size: 13px; font-weight: 600; color: white; margin-bottom: 8px; }
     .legend { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
-    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #555; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: white; }
     .legend-line { width: 24px; height: 3px; border-radius: 2px; }
     .chart-wrap { position: relative; height: 240px; }
     .note { padding: 0 14px 8px; font-size: 10px; color: #aaa; }
@@ -167,8 +167,6 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
       <canvas id="chart"></canvas>
     </div>
   </div>
-
-  <p class="note">* Années avec ≥ 5 transactions affichées • Sections aberrantes exclues (> 3x moyenne ville)</p>
 
   <div class="section-title">📊 Détail par année</div>
   <div class="table-wrap">
