@@ -138,19 +138,19 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
   <style>
     /* styles inchangés (copie les styles initiaux) */
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7fa; color: #333; }
-    .header { background: linear-gradient(135deg, #2c3e50, #3498db); color: white; padding: 20px 16px; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #171717; color: #eaeaea; }
+    .header { background: linear-gradient(135deg, #1f1f1f, #171717); color: white; padding: 20px 16px; }
     .header h1 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
     .header p { font-size: 12px; opacity: 0.8; }
     .criteres { display: flex; gap: 8px; align-items: center; padding: 10px 14px; flex-wrap: wrap; background: white; border-bottom: 1px solid #eee; }
     .critere-label { font-size: 11px; color: #888; }
     .critere { background: #e8f0fe; color: #1a73e8; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
     .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px; }
-    .card { background: white; border-radius: 12px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    .card { background: #1f1f1f; border-radius: 12px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
     .card .label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
     .card .value { font-size: 20px; font-weight: 700; color: #2c3e50; }
     .card .unit { font-size: 11px; color: #888; margin-top: 2px; }
-    .card.highlight { background: linear-gradient(135deg, #3498db, #2980b9); color: white; grid-column: 1 / -1; }
+    .card.highlight { background: linear-gradient(135deg, #C38F5A, #a9743f); color: white; grid-column: 1 / -1; }
     .card.highlight .label { color: rgba(255,255,255,0.7); }
     .card.highlight .value { color: white; font-size: 30px; }
     .card.highlight .unit { color: rgba(255,255,255,0.7); font-size: 11px; }
@@ -163,7 +163,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     .tension-nb { text-align: right; }
     .tension-nb .nb { font-size: 28px; font-weight: 700; color: #2c3e50; }
     .tension-nb .nb-label { font-size: 10px; color: #888; }
-    .recommande-box { margin: 0 14px 10px; background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #3498db; }
+    .recommande-box { margin: 0 14px 10px; background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #C38F5A; }
     .recommande-label { font-size: 11px; color: #888; margin-bottom: 4px; }
     .recommande-value { font-size: 26px; font-weight: 700; color: #2c3e50; margin-bottom: 4px; }
     .recommande-fourchette { font-size: 12px; color: #666; }
@@ -172,20 +172,20 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     .ecart-value { font-size: 20px; font-weight: 700; margin-bottom: 4px; }
     .ecart-detail { font-size: 11px; color: #888; }
     #map { height: 280px; margin: 0 14px 14px; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.1); }
-    .section-title { padding: 0 14px 8px; font-size: 13px; font-weight: 600; color: #555; }
+    .section-title { padding: 0 14px 8px; font-size: 13px; font-weight: 600; color: white; }
     .legend { display: flex; gap: 12px; padding: 0 14px 10px; font-size: 11px; color: #666; flex-wrap: wrap; }
     .legend-dot { width: 10px; height: 10px; border-radius: 50%; display: inline-block; margin-right: 4px; }
     .table-wrap { padding: 0 14px 14px; overflow-x: auto; }
-    table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); font-size: 12px; }
-    th { background: #f8f9fa; padding: 9px 10px; text-align: left; font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #eee; }
-    td { padding: 9px 10px; border-bottom: 1px solid #f0f0f0; vertical-align: middle; }
+    table { width: 100%; border-collapse: collapse; background: #1f1f1f; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); font-size: 12px; }
+    th { background: #222; padding: 9px 10px; text-align: left; font-size: 10px; color: #aaa; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #eee; }
+    td { padding: 9px 10px; border-bottom: 1px solid #2a2a2a; vertical-align: middle; }
     tr:last-child td { border-bottom: none; }
-    tr:hover td { background: #f8f9ff; }
+    tr:hover td { background: #252525; }
     .badge { display: inline-block; padding: 2px 7px; border-radius: 20px; font-size: 10px; font-weight: 500; }
     .badge.maison { background: #e8f5e9; color: #2e7d32; }
     .badge.appart { background: #e3f2fd; color: #1565c0; }
     .score-bar { position: relative; background: #f0f0f0; border-radius: 20px; height: 16px; width: 80px; overflow: hidden; }
-    .score-fill { height: 100%; border-radius: 20px; background: linear-gradient(90deg, #f39c12, #2ecc71); }
+    .score-fill { height: 100%; border-radius: 20px; background: linear-gradient(90deg, #C38F5A, #e0b27c); }
     .score-label { position: absolute; top: 0; left: 0; right: 0; text-align: center; font-size: 9px; line-height: 16px; font-weight: 600; color: #333; }
     .no-results { text-align: center; padding: 30px; color: #888; font-size: 13px; }
     .footer { text-align: center; padding: 14px; font-size: 10px; color: #aaa; }
@@ -275,8 +275,8 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
 
     L.circle([${userLat}, ${userLon}], {
       radius: 500,
-      color: '#e74c3c',
-      fillColor: '#e74c3c',
+      color: '#C38F5A',
+      fillColor: '#C38F5A',
       fillOpacity: 0.05,
       weight: 1,
       dashArray: '5,5'
@@ -284,7 +284,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
 
     L.marker([${userLat}, ${userLon}], {
       icon: L.divIcon({
-        html: '<div style="background:#e74c3c;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>',
+        html: '<div style="background:#C38F5A;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>',
         iconSize: [16, 16],
         iconAnchor: [8, 8]
       })
