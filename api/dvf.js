@@ -163,7 +163,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     .tension-nb { text-align: right; }
     .tension-nb .nb { font-size: 28px; font-weight: 700; color: #2c3e50; }
     .tension-nb .nb-label { font-size: 10px; color: #888; }
-    .recommande-box { margin: 0 14px 10px; background: #1f1f1f; border-radius: 12px; border: 1px solid #888; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #C38F5A; }
+    .recommande-box { margin: 0 14px 10px; background: #1f1f1f; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #C38F5A; }
     .recommande-label { font-size: 11px; color: #888; margin-bottom: 4px; }
     .recommande-value { font-size: 26px; font-weight: 700; color: white; margin-bottom: 4px; }
     .recommande-fourchette { font-size: 12px; color: #666; }
