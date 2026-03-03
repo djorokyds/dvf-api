@@ -144,7 +144,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     .header p { font-size: 12px; opacity: 0.8; }
     .criteres { display: flex; gap: 8px; align-items: center; padding: 10px 14px; flex-wrap: wrap; background: #1f1f1f; border-bottom: 1px solid #eee; }
     .critere-label { font-size: 11px; color: #888; }
-    .critere { background: #e8f0fe; color: #1a73e8; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
+    .critere { background: rgba(255,255,255,0.2); color: #888; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 500; }
     .cards { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; padding: 14px; }
     .card { background: #1f1f1f; border-radius: 12px; border: 1px solid #888; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
     .card .label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
@@ -284,7 +284,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
 
     L.marker([${userLat}, ${userLon}], {
       icon: L.divIcon({
-        html: '<div style="background:#C38F5A;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>',
+        html: '<div style="background:#e74c3c;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>',
         iconSize: [16, 16],
         iconAnchor: [8, 8]
       })
