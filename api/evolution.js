@@ -133,7 +133,7 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7fa; color: #333; }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1f1f1f; color: #eaeaea; }
     .header { background: linear-gradient(135deg, #1f1f1f, #1f1f1f); color: white; padding: 20px 16px; }
     .header h1 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
     .header p { font-size: 12px; opacity: 0.8; margin-top: 2px; }
@@ -148,8 +148,8 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
     .section-title { padding: 0 14px 8px; font-size: 13px; font-weight: 600; color: #555; }
     .table-wrap { padding: 0 14px 14px; overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; background: #1f1f1f; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); font-size: 12px; }
-    th { background: #1f1f1f; padding: 9px 10px; text-align: left; font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #eee; }
-    td { padding: 9px 10px; border-bottom: 1px solid #f0f0f0; }
+    th { background: #1f1f1f; padding: 9px 10px; text-align: left; font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid #888; }
+    td { padding: 9px 10px; border-bottom: 1px solid #888; }
     tr:last-child td { border-bottom: none; }
     .footer { text-align: center; padding: 14px; font-size: 10px; color: #aaa; }
   </style>
@@ -158,8 +158,6 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
   <div class="header">
     <h1>📈 Évolution des prix</h1>
     <p>${adresse_normalisee}</p>
-    <p>${ville} • ${code_postal}</p>
-    <span class="badge-section">Section ${section_cadastrale || 'N/A'} • ${type_bien || 'Tous types'}</span>
   </div>
 
   <div class="chart-box">
@@ -212,7 +210,7 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
         scales: {
           y: {
             ticks: { callback: (v) => v.toLocaleString('fr-FR') + ' €' },
-            grid: { color: '#888' }
+            grid: { color: '#3B3B3B' }
           },
           x: { grid: { display: false } }
         }
