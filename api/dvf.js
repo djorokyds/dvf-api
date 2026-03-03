@@ -332,7 +332,7 @@ export default async function handler(req, res) {
     if (!geoData.features || geoData.features.length === 0) return res.status(404).json({ error: "Adresse non trouvée" });
 
     const feature = geoData.features[0];
-    if (feature.properties.score < 0.5) return res.status(400).json({ error: "Adresse non reconnue", score: feature.properties.score });
+    if (feature.properties.score < 0.7) return res.status(400).json({ error: "Adresse non reconnue", score: feature.properties.score });
 
     const lon = feature.geometry.coordinates[0];
     const lat = feature.geometry.coordinates[1];
