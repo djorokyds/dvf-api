@@ -366,7 +366,7 @@ module.exports = async function handler(req, res) {
           const moyenneBrute = vals.reduce((a, b) => a + b, 0) / vals.length;
 
           // Filtre : exclure sections > 3x la moyenne brute
-          const valsFiltrees = vals.filter(v => v <= 1,25 * moyenneBrute);
+          const valsFiltrees = vals.filter(v => v <= 2 * moyenneBrute);
 
           // Recalcul moyenne sur valeurs filtrées
           const moyenne = valsFiltrees.length > 0
