@@ -116,7 +116,7 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
       ${showVille ? `
         <div class="legend-item">
           <div class="legend-line" style="background:#3498db;"></div>
-          ${ville}${modeVilleOnly ? ' (pas assez de données pour afficher la section)' : ''}
+          ${ville}${modeVilleOnly ? ' (pas assez de données pour afficher la section cadastrale)' : ''}
         </div>` : ''}
     </div>
   `;
