@@ -150,7 +150,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     .card .label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
     .card .value { font-size: 20px; font-weight: 700; color: white; }
     .card .unit { font-size: 11px; color: #888; margin-top: 2px; }
-    .card.highlight { background: linear-gradient(135deg, #C38F5A, #a9743f); color: white; grid-column: 1 / -1; }
+    .card.highlight { background: linear-gradient(135deg, #1f1f1f, #a9743f); color: white; grid-column: 1 / -1; }
     .card.highlight .label { color: rgba(255,255,255,0.7); }
     .card.highlight .value { color: white; font-size: 30px; }
     .card.highlight .unit { color: rgba(255,255,255,0.7); font-size: 11px; }
@@ -163,7 +163,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     .tension-nb { text-align: right; }
     .tension-nb .nb { font-size: 28px; font-weight: 700; color: #2c3e50; }
     .tension-nb .nb-label { font-size: 10px; color: #888; }
-    .recommande-box { margin: 0 14px 10px; background: #1f1f1f; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #C38F5A; }
+    .recommande-box { margin: 0 14px 10px; background: #1f1f1f; border-radius: 12px; border: 1px solid #888; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #C38F5A; }
     .recommande-label { font-size: 11px; color: #888; margin-bottom: 4px; }
     .recommande-value { font-size: 26px; font-weight: 700; color: white; margin-bottom: 4px; }
     .recommande-fourchette { font-size: 12px; color: #666; }
@@ -194,7 +194,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
 <body>
   <div class="header">
     <h1>📍 ${adresse_normalisee}</h1>
-    <p>${ville} • ${code_postal} • Section ${section_cadastrale || 'N/A'}</p>
+    <p> Section ${section_cadastrale || 'N/A'}</p>
   </div>
 
   ${criteresHTML}
@@ -203,7 +203,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     <div class="card highlight">
       <div class="label">Prix médian de la section cadastrale au m²</div>
       <div class="value">${prix_median_m2.toLocaleString('fr-FR')} €</div>
-      <div class="unit">Section ${section_cadastrale || code_postal} • Données DVF</div>
+      <div class="unit">Données DVF</div>
       <div class="fiabilite">${fiabiliteEmoji} ${fiabilite} • ${nb} transaction${nb > 1 ? 's' : ''} dans la zone</div>
     </div>
     <div class="card">
