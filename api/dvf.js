@@ -40,8 +40,8 @@ function arrondiMillier(n) {
 
 function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherche, prixBien, nbTransactionsSection) {
   const { adresse_normalisee, ville, code_postal, section_cadastrale, prix_median_m2, transactions } = data;
-  const safeTransactions = Array.isArray(transactions) ? transactions : [];
-  const nb = safeTransactions.length;
+
+  const nb = transactions.length;
 
   // Fiabilité
   let fiabilite, fiabiliteEmoji;
@@ -96,7 +96,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     }
   }
 
-  const rows = safeTransactions.map((t, i) => `
+  const rows = transactions.map((t, i) => `
     <tr>
       <td><span class="badge ${t.type_bien === 'Maison' ? 'maison' : 'appart'}">${t.type_bien}</span></td>
       <td>${t.surface} m²</td>
@@ -240,34 +240,15 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     <span><span class="legend-dot" style="background:#3498db;"></span> Appartement</span>
   </div>
   <div id="map"></div>
-  
 
-  ${safeTransactions.length === 0 ? `
+  ${transactions.length === 0 ? `
     <div class="no-results">
       Aucune transaction trouvée dans un rayon de 500m.<br>
       Essayez une adresse différente.
     </div>
   ` : `
-  <div class="section-title">🏠 Transactions similaires</div>
-
-  <div class="table-wrap">
-
-    <div style="margin:10px 0;">
-      <button id="toggleTableBtn"
-        style="
-          background:#2c3e50;
-          color:white;
-          border:none;
-          padding:8px 14px;
-          border-radius:6px;
-          cursor:pointer;
-          font-weight:600;
-        ">
-        Masquer les transactions ▼
-      </button>
-    </div>
-
-    <div id="transactionsContainer">
+    <div class="section-title">🏠 Transactions similaires</div>
+    <div class="table-wrap">
       <table>
         <thead>
           <tr>
@@ -284,22 +265,15 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
         <tbody>${rows}</tbody>
       </table>
     </div>
+  `}
 
-  </div>
-
-  <div class="footer">
-    Source : Demandes de Valeurs Foncières (DVF) • Données officielles
-  </div>
+  <div class="footer">Source : Demandes de Valeurs Foncières (DVF) • Données officielles</div>
 
   <script>
+    const map = L.map('map').setView([${userLat}, ${userLon}], 15);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { attribution: '© OpenStreetMap' }).addTo(map);
 
-    const map = L.map('map').setView([${userLat || 0}, ${userLon || 0}], 15);
-
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      attribution: '© OpenStreetMap'
-    }).addTo(map);
-
-    L.circle([${userLat || 0}, ${userLon || 0}], {
+    L.circle([${userLat}, ${userLon}], {
       radius: 500,
       color: '#e74c3c',
       fillColor: '#e74c3c',
@@ -308,70 +282,41 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
       dashArray: '5,5'
     }).addTo(map);
 
-    L.marker([${userLat || 0}, ${userLon || 0}], {
+    L.marker([${userLat}, ${userLon}], {
       icon: L.divIcon({
         html: '<div style="background:#e74c3c;width:16px;height:16px;border-radius:50%;border:3px solid white;box-shadow:0 2px 6px rgba(0,0,0,0.4)"></div>',
         iconSize: [16, 16],
         iconAnchor: [8, 8]
       })
-    }).addTo(map)
-      .bindPopup('<strong>📍 Votre adresse</strong><br>${adresse_normalisee || ''}')
-      .openPopup();
+    }).addTo(map).bindPopup('<strong>📍 Votre adresse</strong><br>${adresse_normalisee}').openPopup();
 
+    // MarkerCluster
     const markers = L.markerClusterGroup();
-
-    ${safeTransactions.map((t, i) => 
-      const marker${i} = L.circleMarker(
-        [${Number(t.latitude) || 0}, ${Number(t.longitude) || 0}],
-        {
-          radius: 8 + (${Number(t.score) || 0} / 20),
-          fillColor: '${t.type_bien === 'Maison' ? '#2ecc71' : '#3498db'}',
-          color: 'white',
-          weight: 2,
-          opacity: 1,
-          fillOpacity: 0.9
-        }
-      );
-
+    ${transactions.map((t, i) => `
+      const marker${i} = L.circleMarker([${t.latitude}, ${t.longitude}], {
+        radius: 8 + (${t.score} / 20),
+        fillColor: '${t.type_bien === 'Maison' ? '#2ecc71' : '#3498db'}',
+        color: 'white',
+        weight: 2,
+        opacity: 1,
+        fillOpacity: 0.9
+      });
       marker${i}.bindPopup(\`
         <div style="font-family:sans-serif;min-width:160px">
-          <strong>#${i + 1} ${t.type_bien || ''}</strong> • Score: ${t.score || 0}/100<br>
-          🏠 ${t.surface || '?'} m² • ${t.nb_pieces || '?'} pièces<br>
-          💰 ${Math.round(t.valeur_fonciere || 0).toLocaleString('fr-FR')} €<br>
-          📊 ${t.prix_m2 || 0} €/m²<br>
-          📅 ${t.date_mutation || ''}<br>
-          📍 ${t.distance_m || 0} m
+          <strong>#${i+1} ${t.type_bien}</strong> • Score: ${t.score}/100<br>
+          🏠 ${t.surface} m² • ${t.nb_pieces || '?'} pièces<br>
+          💰 ${Math.round(t.valeur_fonciere).toLocaleString('fr-FR')} €<br>
+          📊 ${t.prix_m2} €/m²<br>
+          📅 ${t.date_mutation}<br>
+          📍 ${t.distance_m} m
         </div>
       \`);
-
       markers.addLayer(marker${i});
     `).join('')}
-
     map.addLayer(markers);
-
-    // Toggle sécurisé
-    document.addEventListener("DOMContentLoaded", function () {
-      const btn = document.getElementById("toggleTableBtn");
-      const container = document.getElementById("transactionsContainer");
-
-      if (btn && container) {
-        btn.addEventListener("click", function () {
-          const isHidden = container.style.display === "none";
-          container.style.display = isHidden ? "block" : "none";
-          btn.textContent = isHidden
-            ? "Masquer les transactions ▼"
-            : "Afficher les transactions ▲";
-        });
-      }
-    });
-
   </script>
-
-`}
-
 </body>
-</html>
-`;
+</html>`;
 }
 
 export default async function handler(req, res) {
@@ -387,7 +332,7 @@ export default async function handler(req, res) {
     if (!geoData.features || geoData.features.length === 0) return res.status(404).json({ error: "Adresse non trouvée" });
 
     const feature = geoData.features[0];
-    if (feature.properties.score < 0.7) return res.status(400).json({ error: "Adresse non reconnue", score: feature.properties.score });
+    if (feature.properties.score < 0.5) return res.status(400).json({ error: "Adresse non reconnue", score: feature.properties.score });
 
     const lon = feature.geometry.coordinates[0];
     const lat = feature.geometry.coordinates[1];
