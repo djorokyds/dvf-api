@@ -47,20 +47,17 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
   const activeSection = showSection ? chartDataSection : [];
   const activeVille = showVille ? chartDataVille : [];
 
-  const tousLesMois = [...new Set([
-    ...activeSection.map(d => d.mois),
-    ...activeVille.map(d => d.mois)
+  const toutesAnnees = [...new Set([
+    ...activeSection.map(d => d.annee),
+    ...activeVille.map(d => d.annee)
   ])].sort();
 
-  const sectionMap = Object.fromEntries(activeSection.map(d => [d.mois, d]));
-  const villeMap = Object.fromEntries(activeVille.map(d => [d.mois, d]));
+  const sectionMap = Object.fromEntries(activeSection.map(d => [d.annee, d]));
+  const villeMap = Object.fromEntries(activeVille.map(d => [d.annee, d]));
 
-  const labels = tousLesMois.map(m => {
-    const [annee, mois] = m.split('-');
-    return `${mois}/${annee}`;
-  });
-  const valuesSection = tousLesMois.map(m => sectionMap[m]?.prix_median || null);
-  const valuesVille = tousLesMois.map(m => villeMap[m]?.prix_median || null);
+  const labels = toutesAnnees.map(a => a.toString());
+  const valuesSection = toutesAnnees.map(a => sectionMap[a]?.prix_median || null);
+  const valuesVille = toutesAnnees.map(a => villeMap[a]?.prix_median || null);
 
   const datasets = [];
   if (showSection) {
@@ -73,7 +70,7 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
       pointBackgroundColor: '#8e44ad',
       pointBorderColor: 'white',
       pointBorderWidth: 2,
-      pointRadius: 4,
+      pointRadius: 6,
       fill: true,
       tension: 0.3,
       spanGaps: true
@@ -90,22 +87,21 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
       pointBackgroundColor: '#3498db',
       pointBorderColor: 'white',
       pointBorderWidth: 2,
-      pointRadius: 3,
+      pointRadius: 5,
       fill: !showSection,
       tension: 0.3,
       spanGaps: true
     });
   }
 
-  const tableRows = tousLesMois.map(m => {
-    const s = sectionMap[m];
-    const v = villeMap[m];
-    const [annee, mois] = m.split('-');
+  const tableRows = toutesAnnees.map(annee => {
+    const s = sectionMap[annee];
+    const v = villeMap[annee];
     return `
       <tr>
-        <td><strong>${mois}/${annee}</strong></td>
+        <td><strong>${annee}</strong></td>
         ${showSection ? `<td>${s ? s.prix_median.toLocaleString('fr-FR') + ' €/m²' : '-'}</td><td>${s ? s.nb_transactions + ' ventes' : '-'}</td>` : ''}
-        ${showVille ? `<td>${v ? v.prix_median.toLocaleString('fr-FR') + ' €/m²' : '-'}</td><td>${v ? v.nb_transactions + ' ventes' : '-'}</td>` : ''}
+        ${showVille ? `<td>${v ? v.prix_median.toLocaleString('fr-FR') + ' €/m²' : '-'}</td><td>${v ? v.nb_sections + ' sections' : '-'}</td>` : ''}
       </tr>
     `;
   }).reverse().join('');
@@ -126,7 +122,7 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
   `;
 
   const thSection = showSection ? `<th>Section ${section_cadastrale || 'N/A'} — Prix</th><th>Vol.</th>` : '';
-  const thVille = showVille ? `<th>${ville} — Prix</th><th>Vol.</th>` : '';
+  const thVille = showVille ? `<th>${ville} — Prix moy.</th><th>Sections</th>` : '';
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -167,21 +163,21 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
   </div>
 
   <div class="chart-box">
-    <div class="chart-title">Prix médian au m² par mois</div>
+    <div class="chart-title">Prix médian au m² par année</div>
     ${legendHTML}
     <div class="chart-wrap">
       <canvas id="chart"></canvas>
     </div>
   </div>
 
-  <p class="note">* Seuls les mois avec ≥ 3 transactions sont affichés • Valeurs aberrantes exclues (méthode IQR)</p>
+  <p class="note">* Années avec ≥ 5 transactions affichées • Valeurs aberrantes exclues (méthode IQR)</p>
 
-  <div class="section-title">📊 Détail par mois</div>
+  <div class="section-title">📊 Détail par année</div>
   <div class="table-wrap">
     <table>
       <thead>
         <tr>
-          <th>Mois</th>
+          <th>Année</th>
           ${thSection}
           ${thVille}
         </tr>
@@ -218,10 +214,7 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
             ticks: { callback: (v) => v.toLocaleString('fr-FR') + ' €' },
             grid: { color: '#f0f0f0' }
           },
-          x: {
-            ticks: { maxTicksLimit: 12, maxRotation: 45 },
-            grid: { display: false }
-          }
+          x: { grid: { display: false } }
         }
       }
     });
@@ -295,8 +288,8 @@ module.exports = async function handler(req, res) {
       return res.status(404).json({ error: "Section cadastrale introuvable" });
     }
 
-    // Étape 3 : Toutes les transactions de la section
-    let sectionUrl = `${SUPABASE_URL}/rest/v1/transactions?cle_section=eq.${sectionPrincipale}&select=date_mutation,prix_m2&order=date_mutation.desc.nullslast`;
+    // Étape 3 : Transactions de la section avec prix_median_section et date
+    let sectionUrl = `${SUPABASE_URL}/rest/v1/transactions?cle_section=eq.${sectionPrincipale}&select=date_mutation,prix_median_section`;
     if (type_bien) sectionUrl += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
 
     const sectionRes = await fetch(sectionUrl, {
@@ -312,8 +305,8 @@ module.exports = async function handler(req, res) {
       return res.status(500).json({ error: "Erreur Supabase section", detail: sectionTransactions });
     }
 
-    // Étape 4 : Toutes les transactions de la ville
-    let villeUrl = `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=date_mutation,prix_m2&order=date_mutation.desc.nullslast`;
+    // Étape 4 : Transactions de la ville avec prix_median_section, cle_section et date
+    let villeUrl = `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=date_mutation,cle_section,prix_median_section`;
     if (type_bien) villeUrl += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
 
     const villeRes = await fetch(villeUrl, {
@@ -329,52 +322,56 @@ module.exports = async function handler(req, res) {
       return res.status(500).json({ error: "Erreur Supabase ville", detail: villeTransactions });
     }
 
-    // Étape 5 : Filtre IQR global + grouper par mois
-    const median = arr => {
-      if (arr.length === 0) return 0;
-      const sorted = [...arr].sort((a, b) => a - b);
-      const mid = Math.floor(sorted.length / 2);
-      return sorted.length % 2 === 0
-        ? Math.round((sorted[mid-1] + sorted[mid]) / 2)
-        : sorted[mid];
-    };
-
-    const filterIQRGlobal = (transactions) => {
-      const allPrix = transactions.map(t => t.prix_m2).filter(p => p > 0);
-      if (allPrix.length < 4) return transactions;
-      const sorted = [...allPrix].sort((a, b) => a - b);
-      const q1 = sorted[Math.floor(sorted.length * 0.25)];
-      const q3 = sorted[Math.floor(sorted.length * 0.75)];
-      const iqr = q3 - q1;
-      const min = q1 - 1.5 * iqr;
-      const max = q3 + 1.5 * iqr;
-      return transactions.filter(t => t.prix_m2 >= min && t.prix_m2 <= max);
-    };
-
-    const groupByMonth = (transactions) => {
-      const parMois = {};
+    // Étape 5 : Grouper section par année — prix_median_section est unique par section/année
+    const groupSectionByYear = (transactions) => {
+      const parAnnee = {};
       transactions.forEach(t => {
         const date = t.date_mutation || '';
-        if (date.length < 7) return;
-        const mois = date.substring(0, 7);
-        if (!parMois[mois]) parMois[mois] = [];
-        if (t.prix_m2 > 0) parMois[mois].push(t.prix_m2);
+        const annee = date.length >= 4 ? parseInt(date.substring(0, 4)) : null;
+        if (!annee || isNaN(annee) || !t.prix_median_section) return;
+        if (!parAnnee[annee]) parAnnee[annee] = { prix: t.prix_median_section, count: 0 };
+        parAnnee[annee].count++;
       });
-      return Object.keys(parMois)
+      return Object.keys(parAnnee)
+        .map(a => parseInt(a))
         .sort()
-        .filter(mois => parMois[mois].length >= 3)
-        .map(mois => ({
-          mois,
-          prix_median: median(parMois[mois]),
-          nb_transactions: parMois[mois].length
+        .filter(annee => parAnnee[annee].count >= 5)
+        .map(annee => ({
+          annee,
+          prix_median: parAnnee[annee].prix,
+          nb_transactions: parAnnee[annee].count
         }));
     };
 
-    const sectionFiltered = filterIQRGlobal(sectionTransactions);
-    const villeFiltered = filterIQRGlobal(villeTransactions);
+    // Étape 6 : Grouper ville par année — moyenne des prix_median_section distincts par section
+    const groupVilleByYear = (transactions) => {
+      // Pour chaque année, on collecte les prix_median_section uniques par cle_section
+      const parAnnee = {};
+      transactions.forEach(t => {
+        const date = t.date_mutation || '';
+        const annee = date.length >= 4 ? parseInt(date.substring(0, 4)) : null;
+        if (!annee || isNaN(annee) || !t.prix_median_section || !t.cle_section) return;
+        if (!parAnnee[annee]) parAnnee[annee] = {};
+        // Une seule valeur par section (déduplique)
+        parAnnee[annee][t.cle_section] = t.prix_median_section;
+      });
+      return Object.keys(parAnnee)
+        .map(a => parseInt(a))
+        .sort()
+        .map(annee => {
+          const vals = Object.values(parAnnee[annee]);
+          const moyenne = Math.round(vals.reduce((a, b) => a + b, 0) / vals.length);
+          return {
+            annee,
+            prix_median: moyenne,
+            nb_sections: vals.length
+          };
+        })
+        .filter(d => d.nb_sections >= 1);
+    };
 
-    const chartDataSection = groupByMonth(sectionFiltered);
-    const chartDataVille = groupByMonth(villeFiltered);
+    const chartDataSection = groupSectionByYear(sectionTransactions);
+    const chartDataVille = groupVilleByYear(villeTransactions);
 
     if (format === 'html') {
       const html = generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_cadastrale, type_bien, chartDataSection, chartDataVille);
