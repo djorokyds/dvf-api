@@ -120,7 +120,6 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
       ${surfaceRecherche ? `<span class="critere">${surfaceRecherche} m²</span>` : ''}
       ${nbPiecesRecherche ? `<span class="critere">${nbPiecesRecherche} pièces</span>` : ''}
       ${prixBien ? `<span class="critere">${Math.round(prixBien).toLocaleString('fr-FR')} €</span>` : ''}
-      <span class="critere">≤ 500m</span>
     </div>
   ` : '';
 
@@ -154,7 +153,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     .card.highlight .label { color: rgba(255,255,255,0.7); }
     .card.highlight .value { color: white; font-size: 30px; }
     .card.highlight .unit { color: rgba(255,255,255,0.7); font-size: 11px; }
-    .fiabilite { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; background: rgba(255,255,255,0.2); }
+    .fiabilite { display: inline-block; margin-top: 6px; padding: 3px 10px; border-radius: 20px; font-size: 10px; font-weight: 600; background: rgba(255,255,255,0.2); }
     .tension-box { margin: 0 14px 10px; background: #1f1f1f; border-radius: 12px; border: 1px solid #888; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); display: flex; align-items: center; gap: 12px; }
     .tension-left { flex: 1; }
     .tension-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
