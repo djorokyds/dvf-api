@@ -9,8 +9,8 @@ function haversine(lat1, lon1, lat2, lon2) {
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
 }
 
-function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_cadastrale, type_bien, chartData, tendance) {
-  if (chartData.length < 2) {
+function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_cadastrale, type_bien, chartDataSection, chartDataVille) {
+  if (chartDataSection.length < 2) {
     return `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -29,43 +29,41 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
   <div class="box">
     <h2>📊 Données insuffisantes</h2>
     <p>Une seule année disponible pour cette section.</p>
-    <div class="year">${chartData[0]?.prix_median?.toLocaleString('fr-FR')} €/m²</div>
-    <p>Prix médian ${chartData[0]?.annee} • ${chartData[0]?.nb_transactions} transactions<br>Importez les données 2020-2023 pour voir l'évolution.</p>
+    <div class="year">${chartDataSection[0]?.prix_median?.toLocaleString('fr-FR')} €/m²</div>
+    <p>Prix médian ${chartDataSection[0]?.annee} • ${chartDataSection[0]?.nb_transactions} transactions<br>Importez les données 2020-2023 pour voir l'évolution.</p>
   </div>
 </body>
 </html>`;
   }
 
-  const labels = chartData.map(d => d.annee.toString());
-  const values = chartData.map(d => d.prix_median);
+  const toutesAnnees = [...new Set([
+    ...chartDataSection.map(d => d.annee),
+    ...chartDataVille.map(d => d.annee)
+  ])].sort();
 
-  const projectionHTML = tendance ? `
-    <div class="projection-box">
-      <div class="proj-label">📈 Tendance annuelle</div>
-      <div class="proj-value" style="color:${tendance.pct > 0 ? '#27ae60' : '#e74c3c'}">
-        ${tendance.pct > 0 ? '+' : ''}${tendance.pct.toFixed(1)}% / an
-      </div>
-      <div class="proj-detail">
-        Projection ${parseInt(labels[labels.length-1])+1} : <strong>${tendance.proj1.toLocaleString('fr-FR')} €/m²</strong><br>
-        Projection ${parseInt(labels[labels.length-1])+2} : <strong>${tendance.proj2.toLocaleString('fr-FR')} €/m²</strong>
-      </div>
-    </div>
-  ` : '';
+  const sectionMap = Object.fromEntries(chartDataSection.map(d => [d.annee, d.prix_median]));
+  const villeMap = Object.fromEntries(chartDataVille.map(d => [d.annee, d.prix_median]));
 
-  const anneeRows = chartData.map(d => `
-    <tr>
-      <td><strong>${d.annee}</strong></td>
-      <td>${d.prix_median.toLocaleString('fr-FR')} €/m²</td>
-      <td>${d.nb_transactions} ventes</td>
-      <td style="color:${d.evolution > 0 ? '#27ae60' : d.evolution < 0 ? '#e74c3c' : '#888'}">
-        ${d.evolution !== null ? (d.evolution > 0 ? '+' : '') + d.evolution.toFixed(1) + '%' : '-'}
-      </td>
-    </tr>
-  `).join('');
+  const labels = toutesAnnees.map(a => a.toString());
+  const valuesSection = toutesAnnees.map(a => sectionMap[a] || null);
+  const valuesVille = toutesAnnees.map(a => villeMap[a] || null);
 
-  const lastAnnee = parseInt(labels[labels.length-1]);
-  const projLabels = [...labels, `${lastAnnee+1}*`, `${lastAnnee+2}*`];
-  const projValues = [...values, tendance ? tendance.proj1 : null, tendance ? tendance.proj2 : null];
+  const anneeRows = toutesAnnees.map((annee, i) => {
+    const prixSection = sectionMap[annee] || null;
+    const prixVille = villeMap[annee] || null;
+    const prevSection = i > 0 ? sectionMap[toutesAnnees[i-1]] : null;
+    const evoSection = prevSection && prixSection ? ((prixSection - prevSection) / prevSection) * 100 : null;
+    return `
+      <tr>
+        <td><strong>${annee}</strong></td>
+        <td>${prixSection ? prixSection.toLocaleString('fr-FR') + ' €/m²' : '-'}</td>
+        <td>${prixVille ? prixVille.toLocaleString('fr-FR') + ' €/m²' : '-'}</td>
+        <td style="color:${evoSection > 0 ? '#27ae60' : evoSection < 0 ? '#e74c3c' : '#888'}">
+          ${evoSection !== null ? (evoSection > 0 ? '+' : '') + evoSection.toFixed(1) + '%' : '-'}
+        </td>
+      </tr>
+    `;
+  }).join('');
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -79,15 +77,14 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f7fa; color: #333; }
     .header { background: linear-gradient(135deg, #2c3e50, #8e44ad); color: white; padding: 20px 16px; }
     .header h1 { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
-    .header p { font-size: 12px; opacity: 0.8; }
+    .header p { font-size: 12px; opacity: 0.8; margin-top: 2px; }
     .badge-section { display: inline-block; margin-top: 8px; background: rgba(255,255,255,0.2); padding: 3px 10px; border-radius: 20px; font-size: 11px; }
     .chart-box { margin: 14px; background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
-    .chart-title { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 12px; }
+    .chart-title { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 8px; }
+    .legend { display: flex; gap: 16px; margin-bottom: 12px; flex-wrap: wrap; }
+    .legend-item { display: flex; align-items: center; gap: 6px; font-size: 11px; color: #555; }
+    .legend-line { width: 24px; height: 3px; border-radius: 2px; }
     .chart-wrap { position: relative; height: 220px; }
-    .projection-box { margin: 0 14px 14px; background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #8e44ad; }
-    .proj-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 4px; }
-    .proj-value { font-size: 24px; font-weight: 700; margin-bottom: 6px; }
-    .proj-detail { font-size: 12px; color: #666; line-height: 1.8; }
     .section-title { padding: 0 14px 8px; font-size: 13px; font-weight: 600; color: #555; }
     .table-wrap { padding: 0 14px 14px; overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; background: white; border-radius: 12px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); font-size: 12px; }
@@ -107,12 +104,20 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
 
   <div class="chart-box">
     <div class="chart-title">Prix médian au m² par année</div>
+    <div class="legend">
+      <div class="legend-item">
+        <div class="legend-line" style="background:#8e44ad;"></div>
+        Section ${section_cadastrale || 'N/A'}
+      </div>
+      <div class="legend-item">
+        <div class="legend-line" style="background:#3498db;"></div>
+        ${ville}
+      </div>
+    </div>
     <div class="chart-wrap">
       <canvas id="chart"></canvas>
     </div>
   </div>
-
-  ${projectionHTML}
 
   <div class="section-title">📊 Détail par année</div>
   <div class="table-wrap">
@@ -120,9 +125,9 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
       <thead>
         <tr>
           <th>Année</th>
-          <th>Prix médian</th>
-          <th>Volume</th>
-          <th>Évolution</th>
+          <th>Section ${section_cadastrale || 'N/A'}</th>
+          <th>${ville}</th>
+          <th>Évolution section</th>
         </tr>
       </thead>
       <tbody>${anneeRows}</tbody>
@@ -133,30 +138,42 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
 
   <script>
     const ctx = document.getElementById('chart').getContext('2d');
-    const projLabels = ${JSON.stringify(projLabels)};
-    const projValues = ${JSON.stringify(projValues)};
-    const nbReal = ${labels.length};
 
     new Chart(ctx, {
       type: 'line',
       data: {
-        labels: projLabels,
-        datasets: [{
-          label: 'Prix médian €/m²',
-          data: projValues,
-          borderColor: '#8e44ad',
-          backgroundColor: 'rgba(142,68,173,0.08)',
-          borderWidth: 2.5,
-          pointBackgroundColor: projLabels.map((l, i) => l.includes('*') ? 'rgba(142,68,173,0.4)' : '#8e44ad'),
-          pointBorderColor: 'white',
-          pointBorderWidth: 2,
-          pointRadius: 6,
-          fill: true,
-          tension: 0.3,
-          segment: {
-            borderDash: (ctx) => ctx.p1DataIndex >= nbReal ? [6, 4] : []
+        labels: ${JSON.stringify(labels)},
+        datasets: [
+          {
+            label: 'Section ${section_cadastrale || 'N/A'}',
+            data: ${JSON.stringify(valuesSection)},
+            borderColor: '#8e44ad',
+            backgroundColor: 'rgba(142,68,173,0.08)',
+            borderWidth: 2.5,
+            pointBackgroundColor: '#8e44ad',
+            pointBorderColor: 'white',
+            pointBorderWidth: 2,
+            pointRadius: 6,
+            fill: true,
+            tension: 0.3,
+            spanGaps: true
+          },
+          {
+            label: '${ville}',
+            data: ${JSON.stringify(valuesVille)},
+            borderColor: '#3498db',
+            backgroundColor: 'transparent',
+            borderWidth: 2,
+            borderDash: [6, 4],
+            pointBackgroundColor: '#3498db',
+            pointBorderColor: 'white',
+            pointBorderWidth: 2,
+            pointRadius: 5,
+            fill: false,
+            tension: 0.3,
+            spanGaps: true
           }
-        }]
+        ]
       },
       options: {
         responsive: true,
@@ -165,8 +182,8 @@ function generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_c
           legend: { display: false },
           tooltip: {
             callbacks: {
-              label: (ctx) => ctx.parsed.y 
-                ? ctx.parsed.y.toLocaleString('fr-FR') + ' €/m²' + (ctx.label.includes('*') ? ' (projection)' : '') 
+              label: (ctx) => ctx.parsed.y
+                ? ctx.dataset.label + ' : ' + ctx.parsed.y.toLocaleString('fr-FR') + ' €/m²'
                 : 'N/A'
             }
           }
@@ -251,11 +268,9 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: "Section cadastrale introuvable" });
     }
 
-    // Étape 3 : Toutes les transactions de la section sans limite
-    let sectionUrl = `${SUPABASE_URL}/rest/v1/transactions?cle_section=eq.${sectionPrincipale}&select=date_mutation,type_bien,prix_m2&order=date_mutation.desc.nullslast`;
-    if (type_bien) {
-      sectionUrl += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
-    }
+    // Étape 3 : Toutes les transactions de la section
+    let sectionUrl = `${SUPABASE_URL}/rest/v1/transactions?cle_section=eq.${sectionPrincipale}&select=date_mutation,prix_m2&order=date_mutation.desc.nullslast`;
+    if (type_bien) sectionUrl += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
 
     const sectionRes = await fetch(sectionUrl, {
       headers: {
@@ -270,16 +285,20 @@ export default async function handler(req, res) {
       return res.status(404).json({ error: "Aucune transaction dans cette section" });
     }
 
-    // Étape 4 : Grouper par année — format AAAA-MM-DD
-    const parAnnee = {};
-    sectionTransactions.forEach(t => {
-      const date = t.date_mutation || '';
-      const annee = date.length >= 4 ? parseInt(date.substring(0, 4)) : null;
-      if (!annee || isNaN(annee)) return;
-      if (!parAnnee[annee]) parAnnee[annee] = [];
-      if (t.prix_m2 > 0) parAnnee[annee].push(t.prix_m2);
-    });
+    // Étape 4 : Toutes les transactions de la ville
+    let villeUrl = `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=date_mutation,prix_m2&order=date_mutation.desc.nullslast`;
+    if (type_bien) villeUrl += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
 
+    const villeRes = await fetch(villeUrl, {
+      headers: {
+        'apikey': SUPABASE_KEY,
+        'Authorization': `Bearer ${SUPABASE_KEY}`,
+        'Accept': 'application/json'
+      }
+    });
+    const villeTransactions = await villeRes.json();
+
+    // Étape 5 : Grouper par année
     const median = arr => {
       if (arr.length === 0) return 0;
       const sorted = [...arr].sort((a, b) => a - b);
@@ -289,36 +308,31 @@ export default async function handler(req, res) {
         : sorted[mid];
     };
 
-    const chartData = Object.keys(parAnnee)
-      .map(a => parseInt(a))
-      .sort()
-      .map((annee, i, arr) => {
-        const prix = median(parAnnee[annee]);
-        const prixPrecedent = i > 0 ? median(parAnnee[arr[i-1]]) : null;
-        const evolution = prixPrecedent ? ((prix - prixPrecedent) / prixPrecedent) * 100 : null;
-        return {
-          annee,
-          prix_median: prix,
-          nb_transactions: parAnnee[annee].length,
-          evolution
-        };
+    const groupByYear = (transactions) => {
+      const parAnnee = {};
+      transactions.forEach(t => {
+        const date = t.date_mutation || '';
+        const annee = date.length >= 4 ? parseInt(date.substring(0, 4)) : null;
+        if (!annee || isNaN(annee)) return;
+        if (!parAnnee[annee]) parAnnee[annee] = [];
+        if (t.prix_m2 > 0) parAnnee[annee].push(t.prix_m2);
       });
+      return Object.keys(parAnnee)
+        .map(a => parseInt(a))
+        .sort()
+        .map((annee, i, arr) => {
+          const prix = median(parAnnee[annee]);
+          const prixPrecedent = i > 0 ? median(parAnnee[arr[i-1]]) : null;
+          const evolution = prixPrecedent ? ((prix - prixPrecedent) / prixPrecedent) * 100 : null;
+          return { annee, prix_median: prix, nb_transactions: parAnnee[annee].length, evolution };
+        });
+    };
 
-    // Étape 5 : Tendance et projection
-    let tendance = null;
-    if (chartData.length >= 2) {
-      const first = chartData[0];
-      const last = chartData[chartData.length - 1];
-      const nbAnnees = last.annee - first.annee;
-      const pctTotal = ((last.prix_median - first.prix_median) / first.prix_median) * 100;
-      const pctAnnuel = pctTotal / nbAnnees;
-      const proj1 = Math.round(last.prix_median * (1 + pctAnnuel / 100));
-      const proj2 = Math.round(proj1 * (1 + pctAnnuel / 100));
-      tendance = { pct: pctAnnuel, proj1, proj2 };
-    }
+    const chartDataSection = groupByYear(sectionTransactions);
+    const chartDataVille = groupByYear(villeTransactions || []);
 
     if (format === 'html') {
-      const html = generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_cadastrale, type_bien, chartData, tendance);
+      const html = generateEvolutionHTML(adresse_normalisee, ville, code_postal, section_cadastrale, type_bien, chartDataSection, chartDataVille);
       res.setHeader('Content-Type', 'text/html; charset=utf-8');
       return res.status(200).send(html);
     }
@@ -329,9 +343,8 @@ export default async function handler(req, res) {
       ville,
       code_postal,
       section_cadastrale,
-      nb_transactions_section: sectionTransactions.length,
-      chartData,
-      tendance
+      chartDataSection,
+      chartDataVille
     });
 
   } catch (error) {
