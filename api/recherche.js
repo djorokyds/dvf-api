@@ -20,9 +20,7 @@ function getPrixMedian(transactions) {
 
 function generateHTML(params, capacite, bienEstime, liens) {
   const { code_postal, type_projet, type_bien, nb_pieces } = params;
-
   const projetLabel = type_projet === 'locatif' ? '🏢 Investissement locatif' : '🏠 Résidence principale';
-  const budgetColor = capacite.budget > 0 ? '#27ae60' : '#e74c3c';
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -48,26 +46,25 @@ function generateHTML(params, capacite, bienEstime, liens) {
     .card.highlight .unit { color: rgba(255,255,255,0.8); }
     .card.warning { background: linear-gradient(135deg, #e74c3c, #c0392b); color: white; grid-column: 1 / -1; }
     .card.warning .label { color: rgba(255,255,255,0.7); }
-    .card.warning .value { color: white; font-size: 20px; }
+    .card.warning .value { color: white; font-size: 16px; }
     .bien-box { margin: 0 14px 14px; background: white; border-radius: 12px; padding: 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #3498db; }
     .bien-title { font-size: 13px; font-weight: 600; color: #555; margin-bottom: 12px; }
     .bien-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .bien-item .b-label { font-size: 10px; color: #888; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 2px; }
     .bien-item .b-value { font-size: 16px; font-weight: 700; color: #2c3e50; }
+    .locatif-box { margin: 0 14px 14px; background: #fff9e6; border-radius: 12px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #f39c12; }
+    .locatif-title { font-size: 12px; font-weight: 600; color: #f39c12; margin-bottom: 6px; }
+    .locatif-text { font-size: 12px; color: #666; line-height: 1.6; }
     .section-title { padding: 0 14px 8px; font-size: 13px; font-weight: 600; color: #555; }
+    .note { padding: 0 14px 10px; font-size: 10px; color: #aaa; }
     .liens { padding: 0 14px 14px; display: flex; flex-direction: column; gap: 10px; }
-    .lien-btn { display: flex; align-items: center; gap: 12px; background: white; border-radius: 12px; padding: 14px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); text-decoration: none; color: #333; transition: transform 0.1s; }
-    .lien-btn:active { transform: scale(0.98); }
-    .lien-logo { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 18px; }
+    .lien-btn { display: flex; align-items: center; gap: 12px; background: white; border-radius: 12px; padding: 14px 16px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); text-decoration: none; color: #333; }
+    .lien-logo { width: 36px; height: 36px; border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 20px; }
     .lien-info { flex: 1; }
     .lien-name { font-size: 14px; font-weight: 600; margin-bottom: 2px; }
     .lien-desc { font-size: 11px; color: #888; }
     .lien-arrow { font-size: 18px; color: #ccc; }
-    .locatif-box { margin: 0 14px 14px; background: #fff9e6; border-radius: 12px; padding: 14px; box-shadow: 0 2px 8px rgba(0,0,0,0.06); border-left: 4px solid #f39c12; }
-    .locatif-title { font-size: 12px; font-weight: 600; color: #f39c12; margin-bottom: 6px; }
-    .locatif-text { font-size: 12px; color: #666; line-height: 1.6; }
     .footer { text-align: center; padding: 14px; font-size: 10px; color: #aaa; }
-    .note { padding: 0 14px 10px; font-size: 10px; color: #aaa; }
   </style>
 </head>
 <body>
@@ -137,23 +134,23 @@ function generateHTML(params, capacite, bienEstime, liens) {
   <p class="note">* Liens pré-filtrés selon ton budget et ton profil</p>
   <div class="liens">
     <a href="${liens.leboncoin}" target="_blank" class="lien-btn">
-      <div class="lien-logo" style="background:#f5a623;">🟠</div>
+      <div class="lien-logo" style="background:#f5f0e8;">🟠</div>
       <div class="lien-info">
         <div class="lien-name">LeBonCoin</div>
         <div class="lien-desc">${type_bien || 'Biens'} • ${code_postal} • max ${capacite.budget.toLocaleString('fr-FR')} €</div>
       </div>
       <div class="lien-arrow">›</div>
     </a>
-    <a href="${liens.seloger}" target="_blank" class="lien-btn">
-      <div class="lien-logo" style="background:#e74c3c;">🔴</div>
+    <a href="${liens.pap}" target="_blank" class="lien-btn">
+      <div class="lien-logo" style="background:#e8f4f8;">🔵</div>
       <div class="lien-info">
-        <div class="lien-name">SeLoger</div>
+        <div class="lien-name">PAP</div>
         <div class="lien-desc">${type_bien || 'Biens'} • ${code_postal} • max ${capacite.budget.toLocaleString('fr-FR')} €</div>
       </div>
       <div class="lien-arrow">›</div>
     </a>
     <a href="${liens.bienici}" target="_blank" class="lien-btn">
-      <div class="lien-logo" style="background:#3498db;">🔵</div>
+      <div class="lien-logo" style="background:#e8f8f0;">🟢</div>
       <div class="lien-info">
         <div class="lien-name">Bien'ici</div>
         <div class="lien-desc">${type_bien || 'Biens'} • ${code_postal} • max ${capacite.budget.toLocaleString('fr-FR')} €</div>
@@ -194,23 +191,18 @@ module.exports = async function handler(req, res) {
     const apportNum = parseFloat(apport.replace(/\s/g, '').replace(',', '.'));
     const dureeNum = parseInt(duree_emprunt);
     const tauxImmoNum = parseFloat(taux_immobilier.replace(',', '.'));
+    const nbPiecesNum = nb_pieces ? parseInt(nb_pieces) : null;
 
-    // Calcul capacité
     const marge = 35 - tauxEndettementNum;
 
-    // Si locatif : estimer loyers à 5% du budget estimé / 12 × 70%
-    // On fait un calcul en 2 passes pour le locatif
     let revenusEffectifs = revenusNum;
     let loyersEstimes = 0;
 
     if (type_projet === 'locatif') {
-      // Passe 1 : estimation grossière du budget sans loyers
       const mensualiteBrute = revenusNum * (marge / 100);
       const capitalBrut = calculCapital(mensualiteBrute, tauxImmoNum, dureeNum);
       const budgetBrut = capitalBrut + apportNum;
-      // Loyers estimés = 5% du budget annuel / 12
       loyersEstimes = Math.round(budgetBrut * 0.05 / 12);
-      // Revenus effectifs = revenus + loyers × 70%
       revenusEffectifs = revenusNum + loyersEstimes * 0.7;
     }
 
@@ -227,14 +219,11 @@ module.exports = async function handler(req, res) {
       loyersEstimes
     };
 
-    // Récupérer prix médian DVF
-    let prixMedian = null;
+    // Prix médian DVF
     let bienEstime = null;
-
     try {
       let dvfUrl = `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=prix_m2&limit=500`;
       if (type_bien) dvfUrl += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
-
       const dvfRes = await fetch(dvfUrl, {
         headers: {
           'apikey': SUPABASE_KEY,
@@ -243,38 +232,34 @@ module.exports = async function handler(req, res) {
         }
       });
       const dvfData = await dvfRes.json();
-
       if (Array.isArray(dvfData) && dvfData.length > 0) {
-        prixMedian = getPrixMedian(dvfData);
+        const prixMedian = getPrixMedian(dvfData);
         if (prixMedian && budget > 0) {
-          const surface = Math.round(budget / prixMedian);
-          bienEstime = { surface, prixMedian };
+          bienEstime = {
+            surface: Math.round(budget / prixMedian),
+            prixMedian
+          };
         }
       }
-    } catch (e) {
-      // DVF non disponible — on continue sans
-    }
+    } catch (e) {}
 
     // Génération des liens
     const budgetMax = Math.round(budget);
-    const budgetMin = Math.round(budget * 0.7);
     const surfaceMin = bienEstime ? Math.max(20, bienEstime.surface - 15) : 30;
     const surfaceMax = bienEstime ? bienEstime.surface + 15 : 100;
-    const typeBienParam = type_bien === 'Maison' ? 'maison' : type_bien === 'Appartement' ? 'appartement' : '';
-    const nbPiecesNum = nb_pieces ? parseInt(nb_pieces) : null;
 
     // LeBonCoin
-    const leboncoinType = type_bien === 'Maison' ? 'ventes_immobilieres' : 'ventes_immobilieres';
     const leboncoin = `https://www.leboncoin.fr/recherche?category=9&locations=${code_postal}&real_estate_type=${type_bien === 'Maison' ? '2' : '1'}&price=0-${budgetMax}&square=${surfaceMin}-${surfaceMax}${nbPiecesNum ? `&rooms=${nbPiecesNum}-${nbPiecesNum + 1}` : ''}`;
 
-    // SeLoger
-    const selogerType = type_bien === 'Maison' ? '2' : '1';
-    const seloger = `https://www.seloger.com/list.htm?projects=2&types=${selogerType}&natures=1&cp=${code_postal}&price=0/${budgetMax}&surface=${surfaceMin}/${surfaceMax}${nbPiecesNum ? `&rooms=${nbPiecesNum}` : ''}`;
+    // PAP
+    const papType = type_bien === 'Maison' ? 'maison' : type_bien === 'Appartement' ? 'appartement' : 'bien-immobilier';
+    const pap = `https://www.pap.fr/annonce/vente-${papType}-${code_postal}?prix-max=${budgetMax}&surface-min=${surfaceMin}${nbPiecesNum ? `&nb-pieces-min=${nbPiecesNum}` : ''}`;
 
     // Bien'ici
-    const bienici = `https://www.bienici.com/recherche/achat/${code_postal}${typeBienParam ? `/${typeBienParam}` : ''}?prix-max=${budgetMax}&surface-min=${surfaceMin}${nbPiecesNum ? `&nb-pieces-min=${nbPiecesNum}` : ''}`;
+    const bieniciType = type_bien === 'Maison' ? 'maison' : type_bien === 'Appartement' ? 'appartement' : '';
+    const bienici = `https://www.bienici.com/recherche/achat/${code_postal}${bieniciType ? `/${bieniciType}` : ''}?prix-max=${budgetMax}&surface-min=${surfaceMin}${nbPiecesNum ? `&nb-pieces-min=${nbPiecesNum}` : ''}`;
 
-    const liens = { leboncoin, seloger, bienici };
+    const liens = { leboncoin, pap, bienici };
 
     if (format === 'html') {
       const html = generateHTML(
