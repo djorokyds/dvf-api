@@ -1,6 +1,5 @@
 function calculScoreOpportunite(bscore, tri, coc, payback, ecartPrix, nbTransactionsSection) {
   const scoreProfit = Math.min(25, Math.round((bscore / 100) * 25));
-
   const scoreCoc = Math.min(15, Math.round((Math.max(0, coc) / 6) * 15));
   const scoreTri = Math.min(12, Math.round((Math.max(0, tri) / 10) * 12));
   const scorePayback = payback < 10 ? 8 : payback <= 15 ? 4 : 0;
@@ -21,7 +20,7 @@ function calculScoreOpportunite(bscore, tri, coc, payback, ecartPrix, nbTransact
 }
 
 function generateHTML(params) {
-  const { adresse_normalisee, section_cadastrale, scoring } = params;
+  const { scoring } = params;
   const { total } = scoring;
 
   let scoreEmoji, scoreLabel, scoreDesc;
@@ -36,8 +35,8 @@ function generateHTML(params) {
     scoreDesc = 'Ce projet présente des signaux faibles — à analyser en détail.';
   }
 
-  // Calcul angle aiguille : -90deg (gauche) à +90deg (droite)
-  const angle = -90 + (total / 100) * 180;
+  // Angle aiguille : de -135deg (0) à +135deg (100)
+  const angle = -135 + (total / 100) * 270;
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -49,7 +48,7 @@ function generateHTML(params) {
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #1f1f1f;
+      background: #1a1a1a;
       color: #eaeaea;
       display: flex;
       align-items: center;
@@ -64,40 +63,32 @@ function generateHTML(params) {
     }
     .gauge-wrap {
       position: relative;
-      width: 280px;
-      height: 150px;
-      margin: 0 auto 8px;
-    }
-    .gauge-svg {
-      width: 280px;
-      height: 150px;
+      width: 260px;
+      height: 160px;
+      margin: 0 auto 20px;
     }
     .needle {
-      transform-origin: 140px 140px;
-      transform: rotate(${angle}deg);
-      transition: transform 1.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      transform-box: fill-box;
+      transform-origin: 50% 85%;
+      transform: rotate(-135deg);
+      transition: transform 1.4s cubic-bezier(0.34, 1.2, 0.64, 1);
     }
-    .score-center {
-      position: absolute;
-      bottom: 0px;
-      left: 50%;
-      transform: translateX(-50%);
-      text-align: center;
+    .needle.animated {
+      transform: rotate(${angle}deg);
     }
     .score-number {
-      font-size: 48px;
+      font-size: 42px;
       font-weight: 800;
+      color: #eaeaea;
       line-height: 1;
-      background: linear-gradient(90deg, #e74c3c, #f39c12, #27ae60);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      background-clip: text;
+      margin-bottom: 4px;
     }
-    .score-max { font-size: 13px; color: #888; margin-top: 2px; }
+    .score-max { font-size: 13px; color: #666; }
     .score-label {
-      font-size: 17px;
+      font-size: 16px;
       font-weight: 700;
-      margin: 12px 0 8px;
+      margin: 14px 0 8px;
+      color: #eaeaea;
     }
     .score-desc {
       font-size: 12px;
@@ -106,102 +97,77 @@ function generateHTML(params) {
       max-width: 260px;
       margin: 0 auto;
     }
-    .gauge-labels {
-      display: flex;
-      justify-content: space-between;
-      width: 280px;
-      margin: 0 auto 4px;
-      font-size: 10px;
-      color: #666;
-    }
   </style>
 </head>
 <body>
   <div class="container">
 
     <div class="gauge-wrap">
-      <svg class="gauge-svg" viewBox="0 0 280 150">
+      <svg viewBox="0 0 260 160" width="260" height="160">
         <defs>
-          <linearGradient id="gaugeGrad" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%"   stop-color="#e74c3c"/>
-            <stop offset="50%"  stop-color="#f39c12"/>
-            <stop offset="100%" stop-color="#27ae60"/>
-          </linearGradient>
-          <linearGradient id="needleGrad" x1="0%" y1="0%" x2="0%" y2="100%">
-            <stop offset="0%" stop-color="#ffffff"/>
-            <stop offset="100%" stop-color="#888888"/>
-          </linearGradient>
+          <!-- Filtre ombre douce -->
+          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.4"/>
+          </filter>
         </defs>
 
-        <!-- Arc de fond -->
+        <!-- Segment ROUGE (gauche) : -135deg à -45deg -->
         <path
-          d="M 20 140 A 120 120 0 0 1 260 140"
+          d="M 38 148 A 92 92 0 0 1 98 60"
           fill="none"
-          stroke="#2a2a2a"
-          stroke-width="22"
+          stroke="#e05565"
+          stroke-width="20"
           stroke-linecap="round"
+          filter="url(#shadow)"
         />
 
-        <!-- Arc coloré dégradé -->
+        <!-- Segment GRIS (centre) : -45deg à +45deg -->
         <path
-          d="M 20 140 A 120 120 0 0 1 260 140"
+          d="M 103 57 A 92 92 0 0 1 157 57"
           fill="none"
-          stroke="url(#gaugeGrad)"
-          stroke-width="18"
+          stroke="#555555"
+          stroke-width="20"
           stroke-linecap="round"
-          opacity="0.85"
+          filter="url(#shadow)"
         />
 
-        <!-- Tirets de graduation -->
-        ${[0, 25, 50, 75, 100].map(v => {
-          const a = (-180 + (v / 100) * 180) * Math.PI / 180;
-          const r1 = 108, r2 = 122;
-          const cx = 140, cy = 140;
-          const x1 = cx + r1 * Math.cos(a);
-          const y1 = cy + r1 * Math.sin(a);
-          const x2 = cx + r2 * Math.cos(a);
-          const y2 = cy + r2 * Math.sin(a);
-          return `<line x1="${x1.toFixed(1)}" y1="${y1.toFixed(1)}" x2="${x2.toFixed(1)}" y2="${y2.toFixed(1)}" stroke="#1f1f1f" stroke-width="2"/>`;
-        }).join('')}
+        <!-- Segment VERT (droite) : +45deg à +135deg -->
+        <path
+          d="M 162 60 A 92 92 0 0 1 222 148"
+          fill="none"
+          stroke="#3dbf8a"
+          stroke-width="20"
+          stroke-linecap="round"
+          filter="url(#shadow)"
+        />
 
         <!-- Aiguille -->
-        <g class="needle">
+        <g class="needle" id="needle">
+          <!-- Corps de l'aiguille -->
           <polygon
-            points="140,145 136,145 138,30 142,30"
-            fill="url(#needleGrad)"
+            points="130,42 126,118 134,118"
+            fill="white"
             opacity="0.95"
+            filter="url(#shadow)"
           />
-          <circle cx="140" cy="140" r="8" fill="#eaeaea" stroke="#888" stroke-width="1.5"/>
-          <circle cx="140" cy="140" r="3" fill="#1f1f1f"/>
+          <!-- Base de l'aiguille -->
+          <circle cx="130" cy="120" r="10" fill="#2a2a2a" stroke="#555" stroke-width="1.5"/>
+          <circle cx="130" cy="120" r="4" fill="white" opacity="0.8"/>
         </g>
+
       </svg>
-
-      <div class="score-center">
-        <div class="score-number">${total}</div>
-        <div class="score-max">/100</div>
-      </div>
     </div>
 
-    <div class="gauge-labels">
-      <span>0</span>
-      <span>25</span>
-      <span>50</span>
-      <span>75</span>
-      <span>100</span>
-    </div>
-
+    <div class="score-number">${total}<span style="font-size:18px;color:#666">/100</span></div>
     <div class="score-label">${scoreEmoji} ${scoreLabel}</div>
     <div class="score-desc">${scoreDesc}</div>
 
   </div>
 
   <script>
-    // Animation aiguille au chargement
-    const needle = document.querySelector('.needle');
-    needle.style.transform = 'rotate(-90deg)';
     setTimeout(() => {
-      needle.style.transform = 'rotate(${angle}deg)';
-    }, 300);
+      document.getElementById('needle').classList.add('animated');
+    }, 400);
   </script>
 </body>
 </html>`;
