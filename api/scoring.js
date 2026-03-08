@@ -35,7 +35,7 @@ function generateHTML(params) {
     scoreDesc = 'Ce projet présente des signaux faibles — à analyser en détail.';
   }
 
-  // Angle aiguille : de -135deg (0) à +135deg (100)
+  // Angle : -135deg (0) → +135deg (100), pivot centre jauge
   const angle = -135 + (total / 100) * 270;
 
   return `<!DOCTYPE html>
@@ -55,113 +55,90 @@ function generateHTML(params) {
       justify-content: center;
       min-height: 100vh;
     }
-    .container {
-      text-align: center;
-      padding: 24px;
-      width: 100%;
-      max-width: 340px;
-    }
-    .gauge-wrap {
-      position: relative;
-      width: 260px;
-      height: 160px;
-      margin: 0 auto 20px;
-    }
-    .needle {
+    .container { text-align: center; padding: 24px; width: 100%; max-width: 360px; }
+    .gauge-wrap { position: relative; width: 300px; height: 175px; margin: 0 auto 20px; }
+    #needle {
       transform-box: fill-box;
-      transform-origin: 50% 85%;
+      transform-origin: 50% 100%;
       transform: rotate(-135deg);
-      transition: transform 1.4s cubic-bezier(0.34, 1.2, 0.64, 1);
+      transition: transform 1.6s cubic-bezier(0.34, 1.1, 0.64, 1);
     }
-    .needle.animated {
-      transform: rotate(${angle}deg);
-    }
-    .score-number {
-      font-size: 42px;
-      font-weight: 800;
-      color: #eaeaea;
-      line-height: 1;
-      margin-bottom: 4px;
-    }
-    .score-max { font-size: 13px; color: #666; }
-    .score-label {
-      font-size: 16px;
-      font-weight: 700;
-      margin: 14px 0 8px;
-      color: #eaeaea;
-    }
-    .score-desc {
-      font-size: 12px;
-      color: #888;
-      line-height: 1.6;
-      max-width: 260px;
-      margin: 0 auto;
-    }
+    #needle.animated { transform: rotate(${angle}deg); }
+    .score-number { font-size: 44px; font-weight: 800; color: #eaeaea; line-height: 1; margin-bottom: 4px; }
+    .score-label { font-size: 16px; font-weight: 700; margin: 14px 0 8px; color: #eaeaea; }
+    .score-desc { font-size: 12px; color: #888; line-height: 1.6; max-width: 280px; margin: 0 auto; }
   </style>
 </head>
 <body>
   <div class="container">
-
     <div class="gauge-wrap">
-      <svg viewBox="0 0 260 160" width="260" height="160">
+      <svg viewBox="0 0 300 175" width="300" height="175">
         <defs>
-          <!-- Filtre ombre douce -->
-          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.4"/>
+          <filter id="glow-red">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="glow-yellow">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="glow-green">
+            <feGaussianBlur stdDeviation="3" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          </filter>
+          <filter id="needle-shadow">
+            <feDropShadow dx="1" dy="1" stdDeviation="2" flood-color="#000" flood-opacity="0.6"/>
           </filter>
         </defs>
 
-        <!-- Segment ROUGE (gauche) : -135deg à -45deg -->
+        <!-- Arc ROUGE : -135deg à -45deg (0 à 33) -->
         <path
-          d="M 38 148 A 92 92 0 0 1 98 60"
-          fill="none"
-          stroke="#e05565"
-          stroke-width="20"
-          stroke-linecap="round"
-          filter="url(#shadow)"
+          d="M 34 152 A 108 108 0 0 1 95 52"
+          fill="none" stroke="#e05565" stroke-width="22" stroke-linecap="round"
+          filter="url(#glow-red)"
         />
 
-        <!-- Segment GRIS (centre) : -45deg à +45deg -->
+        <!-- Arc JAUNE : -45deg à +45deg (33 à 66) -->
         <path
-          d="M 103 57 A 92 92 0 0 1 157 57"
-          fill="none"
-          stroke="#555555"
-          stroke-width="20"
-          stroke-linecap="round"
-          filter="url(#shadow)"
+          d="M 101 49 A 108 108 0 0 1 199 49"
+          fill="none" stroke="#f0b429" stroke-width="22" stroke-linecap="round"
+          filter="url(#glow-yellow)"
         />
 
-        <!-- Segment VERT (droite) : +45deg à +135deg -->
+        <!-- Arc VERT : +45deg à +135deg (66 à 100) -->
         <path
-          d="M 162 60 A 92 92 0 0 1 222 148"
-          fill="none"
-          stroke="#3dbf8a"
-          stroke-width="20"
-          stroke-linecap="round"
-          filter="url(#shadow)"
+          d="M 205 52 A 108 108 0 0 1 266 152"
+          fill="none" stroke="#3dbf8a" stroke-width="22" stroke-linecap="round"
+          filter="url(#glow-green)"
         />
 
         <!-- Aiguille -->
-        <g class="needle" id="needle">
-          <!-- Corps de l'aiguille -->
+        <g id="needle">
+          <!-- Tige longue effilée -->
           <polygon
-            points="130,42 126,118 134,118"
-            fill="white"
-            opacity="0.95"
-            filter="url(#shadow)"
+            points="150,155 147,155 149,48 151,48"
+            fill="#cccccc"
+            filter="url(#needle-shadow)"
           />
-          <!-- Base de l'aiguille -->
-          <circle cx="130" cy="120" r="10" fill="#2a2a2a" stroke="#555" stroke-width="1.5"/>
-          <circle cx="130" cy="120" r="4" fill="white" opacity="0.8"/>
+          <!-- Tige courte arrière -->
+          <polygon
+            points="150,155 153,155 151,175 149,175"
+            fill="#888888"
+          />
+          <!-- Base cercle extérieur -->
+          <circle cx="150" cy="155" r="12" fill="#2e2e2e" stroke="#555" stroke-width="1.5" filter="url(#needle-shadow)"/>
+          <!-- Base cercle intérieur clair -->
+          <circle cx="150" cy="155" r="6" fill="#cccccc"/>
+          <!-- Centre point -->
+          <circle cx="150" cy="155" r="2.5" fill="#1a1a1a"/>
         </g>
 
       </svg>
     </div>
 
-    <div class="score-number">${total}<span style="font-size:18px;color:#666">/100</span></div>
+    <div class="score-number">${total}<span style="font-size:18px;color:#555">/100</span></div>
     <div class="score-label">${scoreEmoji} ${scoreLabel}</div>
     <div class="score-desc">${scoreDesc}</div>
-
   </div>
 
   <script>
