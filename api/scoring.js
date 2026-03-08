@@ -35,38 +35,25 @@ function generateHTML(params) {
     scoreDesc = 'Ce projet présente des signaux faibles — à analyser en détail.';
   }
 
-  // Angle aiguille : -90deg (gauche) → +90deg (droite)
   const angle = -90 + (total / 100) * 180;
-
-  // Calcul des arcs avec espaces
-  // Demi-cercle : de 180deg à 0deg (sens horaire en SVG)
-  // Centre : 150, 130 — Rayon : 90
-  // Arc ROUGE  : 180deg → 120deg  (60deg)
-  // GAP        : 120deg → 112deg  (8deg)
-  // Arc JAUNE  : 112deg → 68deg   (44deg)
-  // GAP        : 68deg  → 60deg   (8deg)
-  // Arc VERT   : 60deg  → 0deg    (60deg)
 
   function polarToXY(cx, cy, r, angleDeg) {
     const rad = (angleDeg * Math.PI) / 180;
-    return {
-      x: cx + r * Math.cos(rad),
-      y: cy + r * Math.sin(rad)
-    };
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
   }
 
-  const cx = 150, cy = 130, r = 90;
+  const cx = 150, cy = 150, r = 120;
 
-  const p1 = polarToXY(cx, cy, r, 180);  // début rouge
-  const p2 = polarToXY(cx, cy, r, 122);  // fin rouge
-  const p3 = polarToXY(cx, cy, r, 112);  // début jaune
-  const p4 = polarToXY(cx, cy, r, 68);   // fin jaune
-  const p5 = polarToXY(cx, cy, r, 58);   // début vert
-  const p6 = polarToXY(cx, cy, r, 0);    // fin vert
+  const p1 = polarToXY(cx, cy, r, 180);
+  const p2 = polarToXY(cx, cy, r, 122);
+  const p3 = polarToXY(cx, cy, r, 112);
+  const p4 = polarToXY(cx, cy, r, 68);
+  const p5 = polarToXY(cx, cy, r, 58);
+  const p6 = polarToXY(cx, cy, r, 0);
 
-  const arcRouge  = `M ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} A ${r} ${r} 0 0 1 ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
-  const arcJaune  = `M ${p3.x.toFixed(2)} ${p3.y.toFixed(2)} A ${r} ${r} 0 0 1 ${p4.x.toFixed(2)} ${p4.y.toFixed(2)}`;
-  const arcVert   = `M ${p5.x.toFixed(2)} ${p5.y.toFixed(2)} A ${r} ${r} 0 0 1 ${p6.x.toFixed(2)} ${p6.y.toFixed(2)}`;
+  const arcRouge = `M ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} A ${r} ${r} 0 0 1 ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+  const arcJaune = `M ${p3.x.toFixed(2)} ${p3.y.toFixed(2)} A ${r} ${r} 0 0 1 ${p4.x.toFixed(2)} ${p4.y.toFixed(2)}`;
+  const arcVert  = `M ${p5.x.toFixed(2)} ${p5.y.toFixed(2)} A ${r} ${r} 0 0 1 ${p6.x.toFixed(2)} ${p6.y.toFixed(2)}`;
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -86,10 +73,9 @@ function generateHTML(params) {
       min-height: 100vh;
     }
     .container { text-align: center; padding: 24px; width: 100%; max-width: 360px; }
-    .gauge-wrap { width: 300px; height: 170px; margin: 0 auto 24px; }
+    .gauge-wrap { width: 300px; height: 160px; margin: 0 auto 24px; overflow: hidden; }
     #needle {
-      transform-box: fill-box;
-      transform-origin: 150px 130px;
+      transform-origin: 150px 150px;
       transform: rotate(-90deg);
       transition: transform 1.6s cubic-bezier(0.34, 1.05, 0.64, 1);
     }
@@ -102,10 +88,10 @@ function generateHTML(params) {
 <body>
   <div class="container">
     <div class="gauge-wrap">
-      <svg viewBox="0 0 300 170" width="300" height="170">
+      <svg viewBox="0 0 300 160" width="300" height="160">
         <defs>
           <filter id="arc-glow">
-            <feGaussianBlur stdDeviation="2.5" result="blur"/>
+            <feGaussianBlur stdDeviation="2" result="blur"/>
             <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
           <filter id="needle-shadow">
@@ -114,48 +100,20 @@ function generateHTML(params) {
         </defs>
 
         <!-- Arc ROUGE -->
-        <path
-          d="${arcRouge}"
-          fill="none"
-          stroke="#e05565"
-          stroke-width="18"
-          stroke-linecap="round"
-          filter="url(#arc-glow)"
-        />
+        <path d="${arcRouge}" fill="none" stroke="#e05565" stroke-width="18" stroke-linecap="round" filter="url(#arc-glow)"/>
 
         <!-- Arc JAUNE -->
-        <path
-          d="${arcJaune}"
-          fill="none"
-          stroke="#f0b429"
-          stroke-width="18"
-          stroke-linecap="round"
-          filter="url(#arc-glow)"
-        />
+        <path d="${arcJaune}" fill="none" stroke="#f0b429" stroke-width="18" stroke-linecap="round" filter="url(#arc-glow)"/>
 
         <!-- Arc VERT -->
-        <path
-          d="${arcVert}"
-          fill="none"
-          stroke="#3dbf8a"
-          stroke-width="18"
-          stroke-linecap="round"
-          filter="url(#arc-glow)"
-        />
+        <path d="${arcVert}" fill="none" stroke="#3dbf8a" stroke-width="18" stroke-linecap="round" filter="url(#arc-glow)"/>
 
         <!-- AIGUILLE -->
         <g id="needle" filter="url(#needle-shadow)">
-          <!-- Corps effilé blanc -->
-          <polygon
-            points="150,130 147.5,130 149.2,48 150.8,48 152.5,130"
-            fill="white"
-          />
-          <!-- Cercle extérieur sombre -->
-          <circle cx="150" cy="130" r="11" fill="#222" stroke="#444" stroke-width="1.5"/>
-          <!-- Cercle intérieur clair -->
-          <circle cx="150" cy="130" r="5" fill="white"/>
-          <!-- Point centre -->
-          <circle cx="150" cy="130" r="2" fill="#1a1a1a"/>
+          <polygon points="150,150 147.5,150 149.2,45 150.8,45 152.5,150" fill="white"/>
+          <circle cx="150" cy="150" r="11" fill="#222" stroke="#444" stroke-width="1.5"/>
+          <circle cx="150" cy="150" r="5" fill="white"/>
+          <circle cx="150" cy="150" r="2" fill="#1a1a1a"/>
         </g>
 
       </svg>
