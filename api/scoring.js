@@ -23,20 +23,20 @@ function generateHTML(params) {
   const { scoring } = params;
   const { total } = scoring;
 
-  let scoreLabel, scoreDesc;
+  let scoreEmoji, scoreLabel, scoreDesc;
   if (total >= 70) {
-    scoreLabel = 'Bonne opportunité';
+    scoreEmoji = '🟢'; scoreLabel = 'Bonne opportunité';
     scoreDesc = 'Ce projet présente de solides indicateurs financiers et de marché.';
   } else if (total >= 40) {
-    scoreLabel = 'Projet acceptable';
+    scoreEmoji = '🟡'; scoreLabel = 'Projet acceptable';
     scoreDesc = 'Ce projet est viable mais certains indicateurs méritent attention.';
   } else {
-    scoreLabel = 'Projet risqué';
+    scoreEmoji = '🔴'; scoreLabel = 'Projet risqué';
     scoreDesc = 'Ce projet présente des signaux faibles — à analyser en détail.';
   }
 
-  // Angle aiguille : -90deg (gauche) → +90deg (droite) sur demi-cercle
-  const angle = -90 + (total / 100) * 180;
+  // Angle aiguille : de -135deg (0) à +135deg (100)
+  const angle = -135 + (total / 100) * 270;
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -55,26 +55,47 @@ function generateHTML(params) {
       justify-content: center;
       min-height: 100vh;
     }
-    .container { text-align: center; padding: 32px 24px; width: 100%; max-width: 360px; }
-    .gauge-wrap { width: 220px; height: 120px; margin: 0 auto 32px; position: relative; }
-    #needle {
-      transform-box: fill-box;
-      transform-origin: 50% 100%;
-      transform: rotate(-90deg);
-      transition: transform 1.6s cubic-bezier(0.34, 1.05, 0.64, 1);
+    .container {
+      text-align: center;
+      padding: 24px;
+      width: 100%;
+      max-width: 340px;
     }
-    #needle.animated { transform: rotate(${angle}deg); }
-    .score-label {
-      font-size: 32px;
+    .gauge-wrap {
+      position: relative;
+      width: 260px;
+      height: 160px;
+      margin: 0 auto 20px;
+    }
+    .needle {
+      transform-box: fill-box;
+      transform-origin: 50% 85%;
+      transform: rotate(-135deg);
+      transition: transform 1.4s cubic-bezier(0.34, 1.2, 0.64, 1);
+    }
+    .needle.animated {
+      transform: rotate(${angle}deg);
+    }
+    .score-number {
+      font-size: 42px;
       font-weight: 800;
-      color: #ffffff;
-      margin-bottom: 12px;
-      letter-spacing: -0.5px;
+      color: #eaeaea;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .score-max { font-size: 13px; color: #666; }
+    .score-label {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 14px 0 8px;
+      color: #eaeaea;
     }
     .score-desc {
-      font-size: 16px;
-      color: #666;
-      line-height: 1.5;
+      font-size: 12px;
+      color: #888;
+      line-height: 1.6;
+      max-width: 260px;
+      margin: 0 auto;
     }
   </style>
 </head>
@@ -82,67 +103,63 @@ function generateHTML(params) {
   <div class="container">
 
     <div class="gauge-wrap">
-      <svg viewBox="0 0 220 120" width="220" height="120">
+      <svg viewBox="0 0 260 160" width="260" height="160">
         <defs>
-          <filter id="seg-shadow">
-            <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.5"/>
-          </filter>
-          <filter id="needle-glow">
-            <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#000" flood-opacity="0.7"/>
+          <!-- Filtre ombre douce -->
+          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
+            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.4"/>
           </filter>
         </defs>
 
-        <!-- Arc ROUGE : gauche, -180deg à -120deg -->
+        <!-- Segment ROUGE (gauche) : -135deg à -45deg -->
         <path
-          d="M 18 110 A 92 92 0 0 1 64 26"
+          d="M 38 148 A 92 92 0 0 1 98 60"
           fill="none"
           stroke="#e05565"
-          stroke-width="16"
+          stroke-width="20"
           stroke-linecap="round"
-          filter="url(#seg-shadow)"
+          filter="url(#shadow)"
         />
 
-        <!-- Arc GRIS (neutre centre) : -110deg à -70deg -->
+        <!-- Segment GRIS (centre) : -45deg à +45deg -->
         <path
-          d="M 76 19 A 92 92 0 0 1 144 19"
+          d="M 103 57 A 92 92 0 0 1 157 57"
           fill="none"
           stroke="#555555"
-          stroke-width="16"
+          stroke-width="20"
           stroke-linecap="round"
-          filter="url(#seg-shadow)"
+          filter="url(#shadow)"
         />
 
-        <!-- Tiret blanc centre haut -->
-        <line x1="110" y1="10" x2="110" y2="20" stroke="white" stroke-width="2" stroke-linecap="round"/>
-
-        <!-- Arc VERT : droite, +120deg à +180deg -->
+        <!-- Segment VERT (droite) : +45deg à +135deg -->
         <path
-          d="M 156 26 A 92 92 0 0 1 202 110"
+          d="M 162 60 A 92 92 0 0 1 222 148"
           fill="none"
           stroke="#3dbf8a"
-          stroke-width="16"
+          stroke-width="20"
           stroke-linecap="round"
-          filter="url(#seg-shadow)"
+          filter="url(#shadow)"
         />
 
-        <!-- AIGUILLE -->
-        <g id="needle">
-          <!-- Corps blanc effilé -->
+        <!-- Aiguille -->
+        <g class="needle" id="needle">
+          <!-- Corps de l'aiguille -->
           <polygon
-            points="110,110 108,110 109,28 111,28"
+            points="130,42 126,118 134,118"
             fill="white"
-            filter="url(#needle-glow)"
+            opacity="0.95"
+            filter="url(#shadow)"
           />
-          <!-- Base sombre -->
-          <circle cx="110" cy="110" r="10" fill="#222222" stroke="#444" stroke-width="1"/>
-          <!-- Point blanc centre -->
-          <circle cx="110" cy="110" r="4" fill="white"/>
+          <!-- Base de l'aiguille -->
+          <circle cx="130" cy="120" r="10" fill="#2a2a2a" stroke="#555" stroke-width="1.5"/>
+          <circle cx="130" cy="120" r="4" fill="white" opacity="0.8"/>
         </g>
 
       </svg>
     </div>
 
-    <div class="score-label">${scoreLabel}</div>
+    <div class="score-number">${total}<span style="font-size:18px;color:#666">/100</span></div>
+    <div class="score-label">${scoreEmoji} ${scoreLabel}</div>
     <div class="score-desc">${scoreDesc}</div>
 
   </div>
@@ -150,7 +167,7 @@ function generateHTML(params) {
   <script>
     setTimeout(() => {
       document.getElementById('needle').classList.add('animated');
-    }, 300);
+    }, 400);
   </script>
 </body>
 </html>`;
