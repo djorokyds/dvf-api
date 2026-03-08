@@ -67,6 +67,10 @@ function generateHTML(params) {
       height: 160px;
       margin: 0 auto 20px;
     }
+    svg {
+      width: 100%;
+      height: 100%;
+    }
     .needle {
       transform-box: fill-box;
       transform-origin: 50% 85%;
@@ -101,67 +105,25 @@ function generateHTML(params) {
 </head>
 <body>
   <div class="container">
-
     <div class="gauge-wrap">
-      <svg viewBox="0 0 260 160" width="260" height="160">
-        <defs>
-          <!-- Filtre ombre douce -->
-          <filter id="shadow" x="-20%" y="-20%" width="140%" height="140%">
-            <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.4"/>
-          </filter>
-        </defs>
-
-        <!-- Segment ROUGE (gauche) : -135deg à -45deg -->
-        <path
-          d="M 38 148 A 92 92 0 0 1 98 60"
-          fill="none"
-          stroke="#e05565"
-          stroke-width="20"
-          stroke-linecap="round"
-          filter="url(#shadow)"
-        />
-
-        <!-- Segment GRIS (centre) : -45deg à +45deg -->
-        <path
-          d="M 103 57 A 92 92 0 0 1 157 57"
-          fill="none"
-          stroke="#555555"
-          stroke-width="20"
-          stroke-linecap="round"
-          filter="url(#shadow)"
-        />
-
-        <!-- Segment VERT (droite) : +45deg à +135deg -->
-        <path
-          d="M 162 60 A 92 92 0 0 1 222 148"
-          fill="none"
-          stroke="#3dbf8a"
-          stroke-width="20"
-          stroke-linecap="round"
-          filter="url(#shadow)"
-        />
-
-        <!-- Aiguille -->
-        <g class="needle" id="needle">
-          <!-- Corps de l'aiguille -->
-          <polygon
-            points="130,42 126,118 134,118"
-            fill="white"
-            opacity="0.95"
-            filter="url(#shadow)"
-          />
-          <!-- Base de l'aiguille -->
-          <circle cx="130" cy="120" r="10" fill="#2a2a2a" stroke="#555" stroke-width="1.5"/>
-          <circle cx="130" cy="120" r="4" fill="white" opacity="0.8"/>
-        </g>
-
+      <svg viewBox="0 0 260 160">
+      <!-- Rouge -->
+      <path d="M38,148 A92,92 0 0 1 100,60" fill="none" stroke="#e05565" stroke-width="20" stroke-linecap="round"/>
+      <!-- Gris -->
+      <path d="M106,57 A92,92 0 0 1 154,57" fill="none" stroke="#555555" stroke-width="20" stroke-linecap="round"/>
+      <!-- Vert -->
+      <path d="M160,60 A92,92 0 0 1 222,148" fill="none" stroke="#3dbf8a" stroke-width="20" stroke-linecap="round"/>
+      <g class="needle" id="needle" style="transform-box: fill-box; transform-origin: 130px 68px; transform: rotate(-135deg); transition: transform 1.4s cubic-bezier(0.34, 1.2, 0.64, 1);">
+        <!-- Aiguille blanche avec pointe arrondie -->
+        <polygon points="128,20 132,20 130,68" fill="white" stroke="white" stroke-linejoin="round"/>
+        <!-- Cercle central pour l'axe -->
+        <circle cx="130" cy="68" r="6" fill="white"/>
+      </g>
       </svg>
     </div>
-
     <div class="score-number">${total}<span style="font-size:18px;color:#666">/100</span></div>
     <div class="score-label">${scoreEmoji} ${scoreLabel}</div>
     <div class="score-desc">${scoreDesc}</div>
-
   </div>
 
   <script>
@@ -227,7 +189,7 @@ module.exports = async function handler(req, res) {
     if (Array.isArray(transactions) && transactions.length > 0) {
       const withDistance = transactions
         .filter(t => t.latitude != null && t.longitude != null)
-        .map(t => ({ ...t, distance_m: Math.round(haversine(lat, lon, parseFloat(t.latitude), parseFloat(t.longitude)) * 1000) }))
+        .map(t => ({ ...t, distance_m: Math.round(haversine(lat, lon, parseFloat(t.latitude), parseFloat(t.longitude)) * 1000) } ))
         .filter(t => t.distance_m <= 1000)
         .sort((a, b) => a.distance_m - b.distance_m);
 
