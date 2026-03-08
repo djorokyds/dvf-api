@@ -1,11 +1,13 @@
 function calculScoreOpportunite(tri, coc, payback, ecartPrix, nbTransactionsSection) {
+  const triNegatif = tri < 0;
+
   // 1. Rentabilité (50pts)
-  // CoC Return : 0-6% → 0-20pts
-  const scoreCoc = Math.min(20, Math.round((Math.max(0, coc) / 6) * 20));
-  // TRI 10ans : 0-10% → 0-18pts
-  const scoreTri = Math.min(18, Math.round((Math.max(0, tri) / 10) * 18));
-  // Payback : >15ans=0 / 10-15=6 / <10ans=12pts
-  const scorePayback = payback < 10 ? 12 : payback <= 15 ? 6 : 0;
+  // CoC Return : seuil 10% → 0-20pts
+  const scoreCoc = Math.min(20, Math.round((Math.max(0, coc) / 10) * 20));
+  // TRI : négatif = -15pts, sinon 0-18pts
+  const scoreTri = tri < 0 ? -15 : Math.min(18, Math.round((tri / 10) * 18));
+  // Payback : 0 = 0pts, <10ans = 12pts, 10-15ans = 6pts, >15ans = 0pts
+  const scorePayback = payback === 0 ? 0 : payback < 10 ? 12 : payback <= 15 ? 6 : 0;
   const scoreRentabilite = scoreCoc + scoreTri + scorePayback;
 
   // 2. Prix marché (30pts)
@@ -20,8 +22,12 @@ function calculScoreOpportunite(tri, coc, payback, ecartPrix, nbTransactionsSect
   else if (nbTransactionsSection <= 20) scoreTension = 12;
   else scoreTension = 5;
 
-  const total = Math.min(100, scoreRentabilite + scorePrix + scoreTension);
-  return { total, details: { rentabilite: scoreRentabilite, prix: scorePrix, tension: scoreTension } };
+  let total = Math.min(100, Math.max(0, scoreRentabilite + scorePrix + scoreTension));
+
+  // Plafond 40 si TRI négatif
+  if (triNegatif) total = Math.min(40, total);
+
+  return { total, details: { rentabilite: Math.max(0, scoreRentabilite), prix: scorePrix, tension: scoreTension } };
 }
 
 function generateHTML(params) {
