@@ -23,20 +23,20 @@ function generateHTML(params) {
   const { scoring } = params;
   const { total } = scoring;
 
-  let scoreLabel, scoreDesc;
+  let scoreEmoji, scoreLabel, scoreDesc;
   if (total >= 70) {
-    scoreLabel = 'Bonne opportunité';
+    scoreEmoji = '🟢'; scoreLabel = 'Bonne opportunité';
     scoreDesc = 'Ce projet présente de solides indicateurs financiers et de marché.';
   } else if (total >= 40) {
-    scoreLabel = 'Projet acceptable';
+    scoreEmoji = '🟡'; scoreLabel = 'Projet acceptable';
     scoreDesc = 'Ce projet est viable mais certains indicateurs méritent attention.';
   } else {
-    scoreLabel = 'Projet risqué';
+    scoreEmoji = '🔴'; scoreLabel = 'Projet risqué';
     scoreDesc = 'Ce projet présente des signaux faibles — à analyser en détail.';
   }
 
-  // Angle aiguille : -90deg (gauche) → +90deg (droite) sur demi-cercle
-  const angle = -90 + (total / 100) * 180;
+  // Angle aiguille : de -135deg (0) à +135deg (100)
+  const angle = -135 + (total / 100) * 270;
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -55,102 +55,81 @@ function generateHTML(params) {
       justify-content: center;
       min-height: 100vh;
     }
-    .container { text-align: center; padding: 32px 24px; width: 100%; max-width: 360px; }
-    .gauge-wrap { width: 220px; height: 120px; margin: 0 auto 32px; position: relative; }
-    #needle {
-      transform-box: fill-box;
-      transform-origin: 50% 100%;
-      transform: rotate(-90deg);
-      transition: transform 1.6s cubic-bezier(0.34, 1.05, 0.64, 1);
+    .container {
+      text-align: center;
+      padding: 24px;
+      width: 100%;
+      max-width: 340px;
     }
-    #needle.animated { transform: rotate(${angle}deg); }
-    .score-label {
-      font-size: 32px;
+    .gauge-wrap {
+      position: relative;
+      width: 260px;
+      height: 160px;
+      margin: 0 auto 20px;
+    }
+    svg {
+      width: 100%;
+      height: 100%;
+    }
+    .needle {
+      transform-box: fill-box;
+      transform-origin: 50% 85%;
+      transform: rotate(-135deg);
+      transition: transform 1.4s cubic-bezier(0.34, 1.2, 0.64, 1);
+    }
+    .needle.animated {
+      transform: rotate(${angle}deg);
+    }
+    .score-number {
+      font-size: 42px;
       font-weight: 800;
-      color: #ffffff;
-      margin-bottom: 12px;
-      letter-spacing: -0.5px;
+      color: #eaeaea;
+      line-height: 1;
+      margin-bottom: 4px;
+    }
+    .score-max { font-size: 13px; color: #666; }
+    .score-label {
+      font-size: 16px;
+      font-weight: 700;
+      margin: 14px 0 8px;
+      color: #eaeaea;
     }
     .score-desc {
-      font-size: 16px;
-      color: #666;
-      line-height: 1.5;
+      font-size: 12px;
+      color: #888;
+      line-height: 1.6;
+      max-width: 260px;
+      margin: 0 auto;
     }
   </style>
 </head>
 <body>
   <div class="container">
-
     <div class="gauge-wrap">
-      <svg viewBox="0 0 220 120" width="220" height="120">
-        <defs>
-          <filter id="seg-shadow">
-            <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.5"/>
-          </filter>
-          <filter id="needle-glow">
-            <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#000" flood-opacity="0.7"/>
-          </filter>
-        </defs>
-
-        <!-- Arc ROUGE : gauche, -180deg à -120deg -->
-        <path
-          d="M 18 110 A 92 92 0 0 1 64 26"
-          fill="none"
-          stroke="#e05565"
-          stroke-width="16"
-          stroke-linecap="round"
-          filter="url(#seg-shadow)"
-        />
-
-        <!-- Arc GRIS (neutre centre) : -110deg à -70deg -->
-        <path
-          d="M 76 19 A 92 92 0 0 1 144 19"
-          fill="none"
-          stroke="#555555"
-          stroke-width="16"
-          stroke-linecap="round"
-          filter="url(#seg-shadow)"
-        />
-
-        <!-- Tiret blanc centre haut -->
-        <line x1="110" y1="10" x2="110" y2="20" stroke="white" stroke-width="2" stroke-linecap="round"/>
-
-        <!-- Arc VERT : droite, +120deg à +180deg -->
-        <path
-          d="M 156 26 A 92 92 0 0 1 202 110"
-          fill="none"
-          stroke="#3dbf8a"
-          stroke-width="16"
-          stroke-linecap="round"
-          filter="url(#seg-shadow)"
-        />
-
-        <!-- AIGUILLE -->
-        <g id="needle">
-          <!-- Corps blanc effilé -->
-          <polygon
-            points="110,110 108,110 109,28 111,28"
-            fill="white"
-            filter="url(#needle-glow)"
-          />
-          <!-- Base sombre -->
-          <circle cx="110" cy="110" r="10" fill="#222222" stroke="#444" stroke-width="1"/>
-          <!-- Point blanc centre -->
-          <circle cx="110" cy="110" r="4" fill="white"/>
-        </g>
-
+      <svg viewBox="0 0 260 160">
+      <!-- Rouge -->
+      <path d="M38,148 A92,92 0 0 1 100,60" fill="none" stroke="#e05565" stroke-width="20" stroke-linecap="round"/>
+      <!-- Gris -->
+      <path d="M106,57 A92,92 0 0 1 154,57" fill="none" stroke="#555555" stroke-width="20" stroke-linecap="round"/>
+      <!-- Vert -->
+      <path d="M160,60 A92,92 0 0 1 222,148" fill="none" stroke="#3dbf8a" stroke-width="20" stroke-linecap="round"/>
+      <g class="needle" id="needle" style="transform-box: fill-box; transform-origin: 130px 68px; transform: rotate(-135deg); transition: transform 1.4s cubic-bezier(0.34, 1.2, 0.64, 1);">
+        <!-- Aiguille blanche avec pointe arrondie -->
+        <polygon points="128,20 132,20 130,68" fill="white" stroke="white" stroke-linejoin="round"/>
+        <!-- Cercle central pour l'axe -->
+        <circle cx="130" cy="68" r="6" fill="white"/>
+      </g>
       </svg>
     </div>
-
-    <div class="score-label">${scoreLabel}</div>
+    <div class="score-number">${total}<span style="font-size:18px;color:#666">/100</span></div>
+    <div class="score-label">${scoreEmoji} ${scoreLabel}</div>
     <div class="score-desc">${scoreDesc}</div>
-
   </div>
 
   <script>
     setTimeout(() => {
       document.getElementById('needle').classList.add('animated');
-    }, 300);
+    }, 400);
   </script>
 </body>
 </html>`;
@@ -210,7 +189,7 @@ module.exports = async function handler(req, res) {
     if (Array.isArray(transactions) && transactions.length > 0) {
       const withDistance = transactions
         .filter(t => t.latitude != null && t.longitude != null)
-        .map(t => ({ ...t, distance_m: Math.round(haversine(lat, lon, parseFloat(t.latitude), parseFloat(t.longitude)) * 1000) }))
+        .map(t => ({ ...t, distance_m: Math.round(haversine(lat, lon, parseFloat(t.latitude), parseFloat(t.longitude)) * 1000) } ))
         .filter(t => t.distance_m <= 1000)
         .sort((a, b) => a.distance_m - b.distance_m);
 
