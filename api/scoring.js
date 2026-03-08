@@ -48,7 +48,7 @@ function generateHTML(params) {
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #1a1a1a;
+      background: #1f1f1f;
       color: #eaeaea;
       display: flex;
       align-items: center;
@@ -108,7 +108,7 @@ function generateHTML(params) {
     <div class="gauge-wrap">
       <svg viewBox="0 0 260 160">
         <!-- Gris -->
-        <path d="M103,57 A92,92 0 0 1 157,57" fill="none" stroke="#888" stroke-width="20" stroke-linecap="round"/>
+        <path d="M103,57 A92,92 0 0 1 157,57" fill="none" stroke="#1f1f1f" stroke-width="19" stroke-linecap="round"/>
         <!-- Rouge -->
         <path d="M38,148 A92,92 0 0 1 98,60" fill="none" stroke="#e05565" stroke-width="20" stroke-linecap="round"/>
         <!-- Vert -->
