@@ -107,10 +107,10 @@ function generateHTML(params) {
   <div class="container">
     <div class="gauge-wrap">
       <svg viewBox="0 0 260 160">
-        <!-- Rouge -->
-        <path d="M38,148 A92,92 0 0 1 92,224" fill="none" stroke="#e05565" stroke-width="20" stroke-linecap="round"/>
         <!-- Gris -->
         <path d="M103,57 A92,92 0 0 1 157,57" fill="none" stroke="#555555" stroke-width="20" stroke-linecap="round"/>
+        <!-- Rouge -->
+        <path d="M38,148 A92,92 0 0 1 98,60" fill="none" stroke="#e05565" stroke-width="20" stroke-linecap="round"/>
         <!-- Vert -->
         <path d="M162,60 A92,92 0 0 1 222,148" fill="none" stroke="#3dbf8a" stroke-width="20" stroke-linecap="round"/>
         <!-- Aiguille -->
