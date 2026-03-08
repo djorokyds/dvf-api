@@ -107,18 +107,18 @@ function generateHTML(params) {
   <div class="container">
     <div class="gauge-wrap">
       <svg viewBox="0 0 260 160">
-        <!-- Rouge -->
-        <path d="M38,148 A92,92 0 0 1 96,62" fill="none" stroke="#e05565" stroke-width="20" stroke-linecap="round"/>
+       <!-- Rouge réduit -->
+        <path d="M48,148 A92,92 0 0 1 98,68" fill="none" stroke="#e05565" stroke-width="20" stroke-linecap="round"/>
         <!-- Gris -->
-        <path d="M104,60 A92,92 0 0 1 156,60" fill="none" stroke="#555555" stroke-width="20" stroke-linecap="round"/>
-        <!-- Vert -->
-        <path d="M164,62 A92,92 0 0 1 222,148" fill="none" stroke="#3dbf8a" stroke-width="20" stroke-linecap="round"/>
-        <!-- Aiguille -->
+        <path d="M103,68 A92,92 0 0 1 157,68" fill="none" stroke="#555555" stroke-width="20" stroke-linecap="round"/>
+        <!-- Vert réduit -->
+        <path d="M162,68 A92,92 0 0 1 212,148" fill="none" stroke="#3dbf8a" stroke-width="20" stroke-linecap="round"/>
         <g class="needle" id="needle">
-          <polygon points="130,42 126,118 134,118" fill="white"/>
-          <circle cx="130" cy="120" r="10" fill="#2a2a2a" stroke="#555" stroke-width="1.5"/>
-          <circle cx="130" cy="120" r="4" fill="white"/>
-        </g>
+        <!-- Aiguille blanche avec pointe arrondie -->
+          <polygon points="130,42 126,118 134,118" fill="white" stroke="white" stroke-linejoin="round"/>
+          <!-- Cercle central pour l'axe -->
+          <circle cx="130" cy="120" r="8" fill="white"/>
+      </g>
       </svg>
     </div>
     <div class="score-number">${total}<span style="font-size:18px;color:#666">/100</span></div>
