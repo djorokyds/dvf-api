@@ -23,20 +23,20 @@ function generateHTML(params) {
   const { scoring } = params;
   const { total } = scoring;
 
-  let scoreEmoji, scoreLabel, scoreDesc;
+  let scoreLabel, scoreDesc;
   if (total >= 70) {
-    scoreEmoji = '🟢'; scoreLabel = 'Bonne opportunité';
+    scoreLabel = 'Bonne opportunité';
     scoreDesc = 'Ce projet présente de solides indicateurs financiers et de marché.';
   } else if (total >= 40) {
-    scoreEmoji = '🟡'; scoreLabel = 'Projet acceptable';
+    scoreLabel = 'Projet acceptable';
     scoreDesc = 'Ce projet est viable mais certains indicateurs méritent attention.';
   } else {
-    scoreEmoji = '🔴'; scoreLabel = 'Projet risqué';
+    scoreLabel = 'Projet risqué';
     scoreDesc = 'Ce projet présente des signaux faibles — à analyser en détail.';
   }
 
-  // Angle : -135deg (0) → +135deg (100), pivot centre jauge
-  const angle = -135 + (total / 100) * 270;
+  // Angle aiguille : -90deg (gauche) → +90deg (droite) sur demi-cercle
+  const angle = -90 + (total / 100) * 180;
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -55,96 +55,102 @@ function generateHTML(params) {
       justify-content: center;
       min-height: 100vh;
     }
-    .container { text-align: center; padding: 24px; width: 100%; max-width: 360px; }
-    .gauge-wrap { position: relative; width: 300px; height: 175px; margin: 0 auto 20px; }
+    .container { text-align: center; padding: 32px 24px; width: 100%; max-width: 360px; }
+    .gauge-wrap { width: 220px; height: 120px; margin: 0 auto 32px; position: relative; }
     #needle {
       transform-box: fill-box;
       transform-origin: 50% 100%;
-      transform: rotate(-135deg);
-      transition: transform 1.6s cubic-bezier(0.34, 1.1, 0.64, 1);
+      transform: rotate(-90deg);
+      transition: transform 1.6s cubic-bezier(0.34, 1.05, 0.64, 1);
     }
     #needle.animated { transform: rotate(${angle}deg); }
-    .score-number { font-size: 44px; font-weight: 800; color: #eaeaea; line-height: 1; margin-bottom: 4px; }
-    .score-label { font-size: 16px; font-weight: 700; margin: 14px 0 8px; color: #eaeaea; }
-    .score-desc { font-size: 12px; color: #888; line-height: 1.6; max-width: 280px; margin: 0 auto; }
+    .score-label {
+      font-size: 32px;
+      font-weight: 800;
+      color: #ffffff;
+      margin-bottom: 12px;
+      letter-spacing: -0.5px;
+    }
+    .score-desc {
+      font-size: 16px;
+      color: #666;
+      line-height: 1.5;
+    }
   </style>
 </head>
 <body>
   <div class="container">
+
     <div class="gauge-wrap">
-      <svg viewBox="0 0 300 175" width="300" height="175">
+      <svg viewBox="0 0 220 120" width="220" height="120">
         <defs>
-          <filter id="glow-red">
-            <feGaussianBlur stdDeviation="3" result="blur"/>
-            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+          <filter id="seg-shadow">
+            <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.5"/>
           </filter>
-          <filter id="glow-yellow">
-            <feGaussianBlur stdDeviation="3" result="blur"/>
-            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-          <filter id="glow-green">
-            <feGaussianBlur stdDeviation="3" result="blur"/>
-            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-          </filter>
-          <filter id="needle-shadow">
-            <feDropShadow dx="1" dy="1" stdDeviation="2" flood-color="#000" flood-opacity="0.6"/>
+          <filter id="needle-glow">
+            <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#000" flood-opacity="0.7"/>
           </filter>
         </defs>
 
-        <!-- Arc ROUGE : -135deg à -45deg (0 à 33) -->
+        <!-- Arc ROUGE : gauche, -180deg à -120deg -->
         <path
-          d="M 34 152 A 108 108 0 0 1 95 52"
-          fill="none" stroke="#e05565" stroke-width="22" stroke-linecap="round"
-          filter="url(#glow-red)"
+          d="M 18 110 A 92 92 0 0 1 64 26"
+          fill="none"
+          stroke="#e05565"
+          stroke-width="16"
+          stroke-linecap="round"
+          filter="url(#seg-shadow)"
         />
 
-        <!-- Arc JAUNE : -45deg à +45deg (33 à 66) -->
+        <!-- Arc GRIS (neutre centre) : -110deg à -70deg -->
         <path
-          d="M 101 49 A 108 108 0 0 1 199 49"
-          fill="none" stroke="#f0b429" stroke-width="22" stroke-linecap="round"
-          filter="url(#glow-yellow)"
+          d="M 76 19 A 92 92 0 0 1 144 19"
+          fill="none"
+          stroke="#555555"
+          stroke-width="16"
+          stroke-linecap="round"
+          filter="url(#seg-shadow)"
         />
 
-        <!-- Arc VERT : +45deg à +135deg (66 à 100) -->
+        <!-- Tiret blanc centre haut -->
+        <line x1="110" y1="10" x2="110" y2="20" stroke="white" stroke-width="2" stroke-linecap="round"/>
+
+        <!-- Arc VERT : droite, +120deg à +180deg -->
         <path
-          d="M 205 52 A 108 108 0 0 1 266 152"
-          fill="none" stroke="#3dbf8a" stroke-width="22" stroke-linecap="round"
-          filter="url(#glow-green)"
+          d="M 156 26 A 92 92 0 0 1 202 110"
+          fill="none"
+          stroke="#3dbf8a"
+          stroke-width="16"
+          stroke-linecap="round"
+          filter="url(#seg-shadow)"
         />
 
-        <!-- Aiguille -->
+        <!-- AIGUILLE -->
         <g id="needle">
-          <!-- Tige longue effilée -->
+          <!-- Corps blanc effilé -->
           <polygon
-            points="150,155 147,155 149,48 151,48"
-            fill="#cccccc"
-            filter="url(#needle-shadow)"
+            points="110,110 108,110 109,28 111,28"
+            fill="white"
+            filter="url(#needle-glow)"
           />
-          <!-- Tige courte arrière -->
-          <polygon
-            points="150,155 153,155 151,175 149,175"
-            fill="#888888"
-          />
-          <!-- Base cercle extérieur -->
-          <circle cx="150" cy="155" r="12" fill="#2e2e2e" stroke="#555" stroke-width="1.5" filter="url(#needle-shadow)"/>
-          <!-- Base cercle intérieur clair -->
-          <circle cx="150" cy="155" r="6" fill="#cccccc"/>
-          <!-- Centre point -->
-          <circle cx="150" cy="155" r="2.5" fill="#1a1a1a"/>
+          <!-- Base sombre -->
+          <circle cx="110" cy="110" r="10" fill="#222222" stroke="#444" stroke-width="1"/>
+          <!-- Point blanc centre -->
+          <circle cx="110" cy="110" r="4" fill="white"/>
         </g>
 
       </svg>
     </div>
 
-    <div class="score-number">${total}<span style="font-size:18px;color:#555">/100</span></div>
-    <div class="score-label">${scoreEmoji} ${scoreLabel}</div>
+    <div class="score-label">${scoreLabel}</div>
     <div class="score-desc">${scoreDesc}</div>
+
   </div>
 
   <script>
     setTimeout(() => {
       document.getElementById('needle').classList.add('animated');
-    }, 400);
+    }, 300);
   </script>
 </body>
 </html>`;
