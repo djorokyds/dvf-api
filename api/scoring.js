@@ -23,20 +23,50 @@ function generateHTML(params) {
   const { scoring } = params;
   const { total } = scoring;
 
-  let scoreLabel, scoreDesc;
+  let scoreEmoji, scoreLabel, scoreDesc;
   if (total >= 70) {
-    scoreLabel = 'Bonne opportunité';
+    scoreEmoji = '🟢'; scoreLabel = 'Bonne opportunité';
     scoreDesc = 'Ce projet présente de solides indicateurs financiers et de marché.';
   } else if (total >= 40) {
-    scoreLabel = 'Projet acceptable';
+    scoreEmoji = '🟡'; scoreLabel = 'Projet acceptable';
     scoreDesc = 'Ce projet est viable mais certains indicateurs méritent attention.';
   } else {
-    scoreLabel = 'Projet risqué';
+    scoreEmoji = '🔴'; scoreLabel = 'Projet risqué';
     scoreDesc = 'Ce projet présente des signaux faibles — à analyser en détail.';
   }
 
-  // Angle aiguille : -90deg (gauche) → +90deg (droite) sur demi-cercle
+  // Angle aiguille : -90deg (gauche) → +90deg (droite)
   const angle = -90 + (total / 100) * 180;
+
+  // Calcul des arcs avec espaces
+  // Demi-cercle : de 180deg à 0deg (sens horaire en SVG)
+  // Centre : 150, 130 — Rayon : 90
+  // Arc ROUGE  : 180deg → 120deg  (60deg)
+  // GAP        : 120deg → 112deg  (8deg)
+  // Arc JAUNE  : 112deg → 68deg   (44deg)
+  // GAP        : 68deg  → 60deg   (8deg)
+  // Arc VERT   : 60deg  → 0deg    (60deg)
+
+  function polarToXY(cx, cy, r, angleDeg) {
+    const rad = (angleDeg * Math.PI) / 180;
+    return {
+      x: cx + r * Math.cos(rad),
+      y: cy + r * Math.sin(rad)
+    };
+  }
+
+  const cx = 150, cy = 130, r = 90;
+
+  const p1 = polarToXY(cx, cy, r, 180);  // début rouge
+  const p2 = polarToXY(cx, cy, r, 122);  // fin rouge
+  const p3 = polarToXY(cx, cy, r, 112);  // début jaune
+  const p4 = polarToXY(cx, cy, r, 68);   // fin jaune
+  const p5 = polarToXY(cx, cy, r, 58);   // début vert
+  const p6 = polarToXY(cx, cy, r, 0);    // fin vert
+
+  const arcRouge  = `M ${p1.x.toFixed(2)} ${p1.y.toFixed(2)} A ${r} ${r} 0 0 1 ${p2.x.toFixed(2)} ${p2.y.toFixed(2)}`;
+  const arcJaune  = `M ${p3.x.toFixed(2)} ${p3.y.toFixed(2)} A ${r} ${r} 0 0 1 ${p4.x.toFixed(2)} ${p4.y.toFixed(2)}`;
+  const arcVert   = `M ${p5.x.toFixed(2)} ${p5.y.toFixed(2)} A ${r} ${r} 0 0 1 ${p6.x.toFixed(2)} ${p6.y.toFixed(2)}`;
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -55,96 +85,85 @@ function generateHTML(params) {
       justify-content: center;
       min-height: 100vh;
     }
-    .container { text-align: center; padding: 32px 24px; width: 100%; max-width: 360px; }
-    .gauge-wrap { width: 220px; height: 120px; margin: 0 auto 32px; position: relative; }
+    .container { text-align: center; padding: 24px; width: 100%; max-width: 360px; }
+    .gauge-wrap { width: 300px; height: 170px; margin: 0 auto 24px; }
     #needle {
       transform-box: fill-box;
-      transform-origin: 50% 100%;
+      transform-origin: 150px 130px;
       transform: rotate(-90deg);
       transition: transform 1.6s cubic-bezier(0.34, 1.05, 0.64, 1);
     }
     #needle.animated { transform: rotate(${angle}deg); }
-    .score-label {
-      font-size: 32px;
-      font-weight: 800;
-      color: #ffffff;
-      margin-bottom: 12px;
-      letter-spacing: -0.5px;
-    }
-    .score-desc {
-      font-size: 16px;
-      color: #666;
-      line-height: 1.5;
-    }
+    .score-number { font-size: 40px; font-weight: 800; color: #eaeaea; line-height: 1; margin-bottom: 4px; }
+    .score-label { font-size: 17px; font-weight: 700; margin: 14px 0 8px; color: #eaeaea; }
+    .score-desc { font-size: 12px; color: #777; line-height: 1.6; max-width: 280px; margin: 0 auto; }
   </style>
 </head>
 <body>
   <div class="container">
-
     <div class="gauge-wrap">
-      <svg viewBox="0 0 220 120" width="220" height="120">
+      <svg viewBox="0 0 300 170" width="300" height="170">
         <defs>
-          <filter id="seg-shadow">
-            <feDropShadow dx="0" dy="2" stdDeviation="2" flood-color="#000" flood-opacity="0.5"/>
+          <filter id="arc-glow">
+            <feGaussianBlur stdDeviation="2.5" result="blur"/>
+            <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
           </filter>
-          <filter id="needle-glow">
-            <feDropShadow dx="0" dy="1" stdDeviation="1.5" flood-color="#000" flood-opacity="0.7"/>
+          <filter id="needle-shadow">
+            <feDropShadow dx="0" dy="1" stdDeviation="2" flood-color="#000" flood-opacity="0.7"/>
           </filter>
         </defs>
 
-        <!-- Arc ROUGE : gauche, -180deg à -120deg -->
+        <!-- Arc ROUGE -->
         <path
-          d="M 18 110 A 92 92 0 0 1 64 26"
+          d="${arcRouge}"
           fill="none"
           stroke="#e05565"
-          stroke-width="16"
+          stroke-width="18"
           stroke-linecap="round"
-          filter="url(#seg-shadow)"
+          filter="url(#arc-glow)"
         />
 
-        <!-- Arc GRIS (neutre centre) : -110deg à -70deg -->
+        <!-- Arc JAUNE -->
         <path
-          d="M 76 19 A 92 92 0 0 1 144 19"
+          d="${arcJaune}"
           fill="none"
-          stroke="#555555"
-          stroke-width="16"
+          stroke="#f0b429"
+          stroke-width="18"
           stroke-linecap="round"
-          filter="url(#seg-shadow)"
+          filter="url(#arc-glow)"
         />
 
-        <!-- Tiret blanc centre haut -->
-        <line x1="110" y1="10" x2="110" y2="20" stroke="white" stroke-width="2" stroke-linecap="round"/>
-
-        <!-- Arc VERT : droite, +120deg à +180deg -->
+        <!-- Arc VERT -->
         <path
-          d="M 156 26 A 92 92 0 0 1 202 110"
+          d="${arcVert}"
           fill="none"
           stroke="#3dbf8a"
-          stroke-width="16"
+          stroke-width="18"
           stroke-linecap="round"
-          filter="url(#seg-shadow)"
+          filter="url(#arc-glow)"
         />
 
         <!-- AIGUILLE -->
-        <g id="needle">
-          <!-- Corps blanc effilé -->
+        <g id="needle" filter="url(#needle-shadow)">
+          <!-- Corps effilé blanc -->
           <polygon
-            points="110,110 108,110 109,28 111,28"
+            points="150,130 147.5,130 149.2,48 150.8,48 152.5,130"
             fill="white"
-            filter="url(#needle-glow)"
           />
-          <!-- Base sombre -->
-          <circle cx="110" cy="110" r="10" fill="#222222" stroke="#444" stroke-width="1"/>
-          <!-- Point blanc centre -->
-          <circle cx="110" cy="110" r="4" fill="white"/>
+          <!-- Cercle extérieur sombre -->
+          <circle cx="150" cy="130" r="11" fill="#222" stroke="#444" stroke-width="1.5"/>
+          <!-- Cercle intérieur clair -->
+          <circle cx="150" cy="130" r="5" fill="white"/>
+          <!-- Point centre -->
+          <circle cx="150" cy="130" r="2" fill="#1a1a1a"/>
         </g>
 
       </svg>
     </div>
 
-    <div class="score-label">${scoreLabel}</div>
+    <div class="score-number">${total}<span style="font-size:16px;color:#555">/100</span></div>
+    <div class="score-label">${scoreEmoji} ${scoreLabel}</div>
     <div class="score-desc">${scoreDesc}</div>
-
   </div>
 
   <script>
