@@ -107,18 +107,18 @@ function generateHTML(params) {
   <div class="container">
     <div class="gauge-wrap">
       <svg viewBox="0 0 260 160">
-      <!-- Rouge -->
-      <path d="M38,148 A92,92 0 0 1 100,60" fill="none" stroke="#e05565" stroke-width="20" stroke-linecap="round"/>
-      <!-- Gris -->
-      <path d="M106,57 A92,92 0 0 1 154,57" fill="none" stroke="#555555" stroke-width="20" stroke-linecap="round"/>
-      <!-- Vert -->
-      <path d="M160,60 A92,92 0 0 1 222,148" fill="none" stroke="#3dbf8a" stroke-width="20" stroke-linecap="round"/>
-      <g class="needle" id="needle" style="transform-box: fill-box; transform-origin: 130px 68px; transform: rotate(-135deg); transition: transform 1.4s cubic-bezier(0.34, 1.2, 0.64, 1);">
-        <!-- Aiguille blanche avec pointe arrondie -->
-        <polygon points="128,20 132,20 130,68" fill="white" stroke="white" stroke-linejoin="round"/>
-        <!-- Cercle central pour l'axe -->
-        <circle cx="130" cy="68" r="6" fill="white"/>
-      </g>
+        <!-- Rouge -->
+        <path d="M38,148 A92,92 0 0 1 98,60" fill="none" stroke="#e05565" stroke-width="20" stroke-linecap="round"/>
+        <!-- Gris -->
+        <path d="M103,57 A92,92 0 0 1 157,57" fill="none" stroke="#555555" stroke-width="20" stroke-linecap="round"/>
+        <!-- Vert -->
+        <path d="M162,60 A92,92 0 0 1 222,148" fill="none" stroke="#3dbf8a" stroke-width="20" stroke-linecap="round"/>
+        <!-- Aiguille -->
+        <g class="needle" id="needle">
+          <polygon points="130,42 126,118 134,118" fill="white"/>
+          <circle cx="130" cy="120" r="10" fill="#2a2a2a" stroke="#555" stroke-width="1.5"/>
+          <circle cx="130" cy="120" r="4" fill="white"/>
+        </g>
       </svg>
     </div>
     <div class="score-number">${total}<span style="font-size:18px;color:#666">/100</span></div>
