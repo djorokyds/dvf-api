@@ -23,118 +23,63 @@ function generateHTML(params) {
   const { scoring } = params;
   const { total } = scoring;
 
-  let scoreEmoji, scoreLabel, scoreDesc;
+  let scoreEmoji = '🔴', scoreLabel = 'Projet risqué', scoreDesc = 'Ce projet présente des signaux faibles — à analyser en détail.';
   if (total >= 70) {
     scoreEmoji = '🟢'; scoreLabel = 'Bonne opportunité';
     scoreDesc = 'Ce projet présente de solides indicateurs financiers et de marché.';
   } else if (total >= 40) {
     scoreEmoji = '🟡'; scoreLabel = 'Projet acceptable';
     scoreDesc = 'Ce projet est viable mais certains indicateurs méritent attention.';
-  } else {
-    scoreEmoji = '🔴'; scoreLabel = 'Projet risqué';
-    scoreDesc = 'Ce projet présente des signaux faibles — à analyser en détail.';
   }
 
-  // Angle aiguille : de -135deg (0) à +135deg (100)
   const angle = -135 + (total / 100) * 270;
 
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Score Opportunité - Fi-One</title>
-  <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
-    body {
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #1a1a1a;
-      color: #eaeaea;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      min-height: 100vh;
-    }
-    .container {
-      text-align: center;
-      padding: 24px;
-      width: 100%;
-      max-width: 340px;
-    }
-    .gauge-wrap {
-      position: relative;
-      width: 260px;
-      height: 160px;
-      margin: 0 auto 20px;
-    }
-    svg {
-      width: 100%;
-      height: 100%;
-    }
-    .needle {
-      transform-box: fill-box;
-      transform-origin: 50% 85%;
-      transform: rotate(-135deg);
-      transition: transform 1.4s cubic-bezier(0.34, 1.2, 0.64, 1);
-    }
-    .needle.animated {
-      transform: rotate(${angle}deg);
-    }
-    .score-number {
-      font-size: 42px;
-      font-weight: 800;
-      color: #eaeaea;
-      line-height: 1;
-      margin-bottom: 4px;
-    }
-    .score-max { font-size: 13px; color: #666; }
-    .score-label {
-      font-size: 16px;
-      font-weight: 700;
-      margin: 14px 0 8px;
-      color: #eaeaea;
-    }
-    .score-desc {
-      font-size: 12px;
-      color: #888;
-      line-height: 1.6;
-      max-width: 260px;
-      margin: 0 auto;
-    }
-  </style>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Score Opportunité - Fi-One</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #1a1a1a; color: #eaeaea; display: flex; align-items: center; justify-content: center; min-height: 100vh; }
+.container { text-align: center; padding: 24px; width: 100%; max-width: 340px; }
+.gauge-wrap { position: relative; width: 260px; height: 160px; margin: 0 auto 20px; }
+svg { width: 100%; height: 100%; }
+.needle { transform-box: fill-box; transform-origin: 130px 140px; transform: rotate(-135deg); transition: transform 1.4s cubic-bezier(0.34, 1.2, 0.64, 1); }
+.score-number { font-size: 42px; font-weight: 800; color: #eaeaea; line-height: 1; margin-bottom: 4px; }
+.score-label { font-size: 16px; font-weight: 700; margin: 14px 0 8px; color: #eaeaea; }
+.score-desc { font-size: 12px; color: #888; line-height: 1.6; max-width: 260px; margin: 0 auto; }
+</style>
 </head>
 <body>
-  <div class="container">
-    <div class="gauge-wrap">
+<div class="container">
+  <div class="gauge-wrap">
     <svg viewBox="0 0 260 160">
-      <!-- Rouge (0 à 35%) -->
-      <path d="M38,148 A92,92 0 0 1 100,60" fill="none" stroke="#e05565" stroke-width="20" stroke-linecap="round"/>
-      <!-- Espace (invisible) -->
-      <path d="M101,61 A92,92 0 0 1 105,60" fill="none" stroke="transparent" stroke-width="2"/>
-      <!-- Gris (35% à 65%) -->
-      <path d="M106,57 A92,92 0 0 1 154,57" fill="none" stroke="#555555" stroke-width="20" stroke-linecap="round"/>
-      <!-- Espace (invisible) -->
-      <path d="M155,57 A92,92 0 0 1 157,58" fill="none" stroke="transparent" stroke-width="2"/>
-      <!-- Vert (65% à 100%) -->
-      <path d="M160,60 A92,92 0 0 1 222,148" fill="none" stroke="#3dbf8a" stroke-width="20" stroke-linecap="round"/>
-      
+      <!-- Rouge -->
+      <path d="M38,148 A92,92 0 0 1 98,62" fill="none" stroke="#e05565" stroke-width="20" stroke-linecap="round"/>
+      <path d="M99,61 A92,92 0 0 1 102,60" fill="none" stroke="transparent" stroke-width="2"/>
+      <!-- Gris -->
+      <path d="M104,57 A92,92 0 0 1 156,57" fill="none" stroke="#555555" stroke-width="20" stroke-linecap="round"/>
+      <path d="M157,57 A92,92 0 0 1 160,60" fill="none" stroke="transparent" stroke-width="2"/>
+      <!-- Vert -->
+      <path d="M162,62 A92,92 0 0 1 222,148" fill="none" stroke="#3dbf8a" stroke-width="20" stroke-linecap="round"/>
       <!-- Aiguille -->
-      <g class="needle" id="needle" style="transform-box: fill-box; transform-origin: 130px 140px; transform: rotate(-135deg); transition: transform 1.4s cubic-bezier(0.34, 1.2, 0.64, 1);">
+      <g class="needle" id="needle">
         <polygon points="128,20 132,20 130,120" fill="white" stroke="white" stroke-linejoin="round"/>
         <circle cx="130" cy="120" r="6" fill="white"/>
       </g>
     </svg>
-    </div>
-    <div class="score-number">${total}<span style="font-size:18px;color:#666">/100</span></div>
-    <div class="score-label">${scoreEmoji} ${scoreLabel}</div>
-    <div class="score-desc">${scoreDesc}</div>
   </div>
-
-  <script>
-    setTimeout(() => {
-      document.getElementById('needle').classList.add('animated');
-    }, 400);
-  </script>
+  <div class="score-number">${total}<span style="font-size:18px;color:#666">/100</span></div>
+  <div class="score-label">${scoreEmoji} ${scoreLabel}</div>
+  <div class="score-desc">${scoreDesc}</div>
+</div>
+<script>
+setTimeout(() => {
+  document.getElementById('needle').style.transform = 'rotate(${angle}deg)';
+}, 400);
+</script>
 </body>
 </html>`;
 }
@@ -149,6 +94,7 @@ module.exports = async function handler(req, res) {
   if (!bscore || !tri || !coc || !payback) return res.status(400).json({ error: "Paramètres scoring manquants" });
 
   try {
+    // Géocodage
     const geoRes = await fetch(`https://data.geopf.fr/geocodage/search?q=${encodeURIComponent(adresse)}&limit=1`);
     const geoData = await geoRes.json();
     if (!geoData.features || geoData.features.length === 0) return res.status(404).json({ error: "Adresse non trouvée" });
@@ -172,9 +118,7 @@ module.exports = async function handler(req, res) {
       const R = 6371;
       const dLat = (lat2 - lat1) * Math.PI / 180;
       const dLon = (lon2 - lon1) * Math.PI / 180;
-      const a = Math.sin(dLat/2)*Math.sin(dLat/2) +
-        Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
-        Math.sin(dLon/2)*Math.sin(dLon/2);
+      const a = Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
       return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
     }
 
