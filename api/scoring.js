@@ -81,8 +81,8 @@ function generateHTML(params) {
       transform: rotate(${angle}deg);
     }
     .score-number {
-      font-size: 42px;
-      font-weight: 800;
+      font-size: 20px;
+      font-weight: 700;
       color: #eaeaea;
       line-height: 1;
       margin-bottom: 4px;
