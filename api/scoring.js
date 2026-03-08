@@ -33,7 +33,7 @@ function generateHTML(params) {
     scoreEmoji = '🟢'; scoreLabel = 'Bonne opportunité';
     scoreDesc = 'Ce projet présente de solides indicateurs financiers et de marché.';
   } else if (total >= 40) {
-    scoreEmoji = '🟡'; scoreLabel = 'Projet acceptable';
+    scoreEmoji = '⚪'; scoreLabel = 'Projet acceptable';
     scoreDesc = 'Ce projet est viable mais certains indicateurs méritent attention.';
   } else {
     scoreEmoji = '🔴'; scoreLabel = 'Projet risqué';
@@ -69,7 +69,7 @@ function generateHTML(params) {
       transition: transform 1.4s cubic-bezier(0.34, 1.2, 0.64, 1);
     }
     .needle.animated { transform: rotate(${angle}deg); }
-    .score-number { font-size: 20px; font-weight: 700; color: #eaeaea; line-height: 1; margin-bottom: 4px; }
+    .score-number { font-size: 35px; font-weight: 700; color: #eaeaea; line-height: 1; margin-bottom: 4px; }
     .score-label { font-size: 16px; font-weight: 700; margin: 14px 0 8px; color: #eaeaea; }
     .score-desc { font-size: 12px; color: #888; line-height: 1.6; max-width: 260px; margin: 0 auto; }
   </style>
