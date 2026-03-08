@@ -38,7 +38,7 @@ function generateHTML(params) {
   if (total >= 70) {
     scoreEmoji = '🟢'; scoreLabel = 'Bonne opportunité';
     scoreDesc = 'Ce projet présente de solides indicateurs financiers et de marché.';
-  } else if (total >= 40) {
+  } else if (total >= 50) {
     scoreEmoji = '⚪'; scoreLabel = 'Projet acceptable';
     scoreDesc = 'Ce projet est viable mais certains indicateurs méritent attention.';
   } else {
