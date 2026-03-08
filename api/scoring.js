@@ -108,7 +108,7 @@ function generateHTML(params) {
     <div class="gauge-wrap">
       <svg viewBox="0 0 260 160">
         <!-- Gris -->
-        <path d="M103,57 A92,92 0 0 1 157,57" fill="none" stroke="#555555" stroke-width="20" stroke-linecap="round"/>
+        <path d="M103,57 A92,92 0 0 1 157,57" fill="none" stroke="#DCDBDB" stroke-width="20" stroke-linecap="round"/>
         <!-- Rouge -->
         <path d="M38,148 A92,92 0 0 1 98,60" fill="none" stroke="#e05565" stroke-width="20" stroke-linecap="round"/>
         <!-- Vert -->
@@ -116,8 +116,8 @@ function generateHTML(params) {
         <!-- Aiguille -->
         <g class="needle" id="needle">
           <polygon points="130,42 126,118 134,118" fill="white"/>
-          <circle cx="130" cy="120" r="10" fill="#2a2a2a" stroke="#555" stroke-width="1.5"/>
-          <circle cx="130" cy="120" r="4" fill="white"/>
+          <circle cx="130" cy="140" r="10" fill="#2a2a2a" stroke="#555" stroke-width="1.5"/>
+          <circle cx="130" cy="140" r="4" fill="white"/>
         </g>
       </svg>
     </div>
