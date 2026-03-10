@@ -225,7 +225,7 @@ function generateHTML(data, userLat, userLon, surfaceRecherche, nbPiecesRecherch
     </div>
     <div class="tension-nb">
       <div class="nb" style="color:${tensionColor}">${nbTransactionsSection}</div>
-      <div class="nb-label">ventes dans section cadastrale / 1000 dernières ventes dans la ville</div>
+      <div class="nb-label">ventes dans section cadastrale / 500 dernières ventes dans la ville</div>
     </div>
   </div>
 
