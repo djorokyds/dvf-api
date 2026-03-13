@@ -84,13 +84,12 @@ function generateHTML(params) {
   <div class="container">
     <div class="gauge-wrap">
       <svg viewBox="0 0 260 160">
-       
+        <!-- Gris centre -->
+        <path d="M103,57 A92,92 0 0 1 157,57" fill="none" stroke="#1f1f1f" stroke-width="19" stroke-linecap="round"/>
         <!-- Rouge -->
         <path d="M38,148 A92,92 0 0 1 98,60" fill="none" stroke="#f7251c" stroke-width="20" stroke-linecap="round"/>
         <!-- Vert -->
         <path d="M162,60 A92,92 0 0 1 222,148" fill="none" stroke="#227e19" stroke-width="20" stroke-linecap="round"/>
-        <!-- Gris centre -->
-        <path d="M103,57 A92,92 0 0 1 157,57" fill="none" stroke="#DADADA" stroke-width="19" stroke-linecap="round"/>
         <!-- Aiguille -->
         <g class="needle" id="needle">
           <polygon points="130,42 126,118 134,118" fill="white"/>
