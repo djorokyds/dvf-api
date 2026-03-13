@@ -35,10 +35,10 @@ function generateHTML(params) {
   const { total } = scoring;
 
   let scoreEmoji, scoreLabel, scoreDesc;
-  if (total >= 65) {
+  if (total >= 70) {
     scoreEmoji = '🟢'; scoreLabel = 'Bonne opportunité';
     scoreDesc = 'Ce projet présente de solides indicateurs financiers et de marché.';
-  } else if (total >= 50) {
+  } else if (total >= 60) {
     scoreEmoji = '⚪'; scoreLabel = 'Projet acceptable';
     scoreDesc = 'Ce projet est viable mais certains indicateurs méritent attention.';
   } else {
@@ -85,13 +85,6 @@ function generateHTML(params) {
     <div class="gauge-wrap">
       <svg viewBox="0 0 260 160">
         <defs>
-          <!-- Dégradé rouge -->
-          <linearGradient id="redGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#f7251c"/>
-            <stop offset="50%" stop-color="#FEE7E6"/>
-            <stop offset="100%" stop-color="#DADADA"/>
-          </linearGradient>
-
           <!-- Dégradé vert -->
           <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stop-color="#DADADA"/>
@@ -103,7 +96,7 @@ function generateHTML(params) {
         <!-- Gris centre -->
         <path d="M103,57 A92,92 0 0 1 157,57" fill="none" stroke="#1f1f1f" stroke-width="19" stroke-linecap="round"/>
         <!-- Rouge -->
-        <path d="M38,148 A92,92 0 0 1 98,60" fill="none" stroke="url(#redGradient)" stroke-width="20" stroke-linecap="round"/>
+        <path d="M38,148 A92,92 0 0 1 98,60" fill="none" stroke="#f7251c" stroke-width="20" stroke-linecap="round"/>
         <!-- Vert -->
         <path d="M162,60 A92,92 0 0 1 222,148" fill="none" stroke="url(#greenGradient)" stroke-width="20" stroke-linecap="round"/>
         <!-- Aiguille -->
