@@ -42,7 +42,7 @@ function generateHTML(params) {
     scoreEmoji = '⚪'; scoreLabel = 'Projet acceptable';
     scoreDesc = 'Ce projet est viable mais certains indicateurs méritent attention.';
   } else {
-    scoreEmoji = '🔴'; scoreLabel = 'Projet risqué';
+    scoreEmoji = '🔻'; scoreLabel = 'Projet risqué';
     scoreDesc = 'Ce projet présente des signaux faibles — à analyser en détail.';
   }
 
