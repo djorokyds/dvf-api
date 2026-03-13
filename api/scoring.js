@@ -35,7 +35,7 @@ function generateHTML(params) {
   const { total } = scoring;
 
   let scoreEmoji, scoreLabel, scoreDesc;
-  if (total >= 70) {
+  if (total >= 65) {
     scoreEmoji = '🟢'; scoreLabel = 'Bonne opportunité';
     scoreDesc = 'Ce projet présente de solides indicateurs financiers et de marché.';
   } else if (total >= 50) {
@@ -66,7 +66,7 @@ function generateHTML(params) {
       min-height: 100vh;
     }
     .container { text-align: center; padding: 24px; width: 100%; max-width: 340px; }
-    .gauge-wrap { position: relative; width: 260px; height: 160px; margin: 0 auto 20px; }
+    .gauge-wrap { position: relative; width: 130px; height: 80px; margin: 0 auto 20px; }
     svg { width: 100%; height: 100%; }
     .needle {
       transform-box: fill-box;
