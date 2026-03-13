@@ -87,15 +87,15 @@ function generateHTML(params) {
         <defs>
           <!-- Dégradé rouge -->
           <linearGradient id="redGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#ff5f57"/>
-            <stop offset="50%" stop-color="#ff3b30"/>
-            <stop offset="100%" stop-color="#f7251c"/>
+            <stop offset="0%" stop-color="#f7251c"/>
+            <stop offset="50%" stop-color="#F96762"/>
+            <stop offset="100%" stop-color="#DADADA"/>
           </linearGradient>
 
           <!-- Dégradé vert -->
           <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#7CFF7C"/>
-            <stop offset="50%" stop-color="#38d938"/>
+            <stop offset="0%" stop-color="#DADADA"/>
+            <stop offset="50%" stop-color="#38D52A"/>
             <stop offset="100%" stop-color="#227e19"/>
           </linearGradient>
         </defs>
