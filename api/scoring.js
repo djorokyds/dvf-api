@@ -88,14 +88,14 @@ function generateHTML(params) {
           <!-- Dégradé rouge -->
           <linearGradient id="redGradient" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stop-color="#f7251c"/>
-            <stop offset="50%" stop-color="#F96762"/>
+            <stop offset="50%" stop-color="#FB918E"/>
             <stop offset="100%" stop-color="#DADADA"/>
           </linearGradient>
 
           <!-- Dégradé vert -->
           <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="0%">
             <stop offset="0%" stop-color="#DADADA"/>
-            <stop offset="50%" stop-color="#38D52A"/>
+            <stop offset="50%" stop-color="#A4EC9D"/>
             <stop offset="100%" stop-color="#227e19"/>
           </linearGradient>
         </defs>
