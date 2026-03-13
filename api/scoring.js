@@ -84,12 +84,28 @@ function generateHTML(params) {
   <div class="container">
     <div class="gauge-wrap">
       <svg viewBox="0 0 260 160">
+        <defs>
+          <!-- Dégradé rouge -->
+          <linearGradient id="redGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#ff5f57"/>
+            <stop offset="50%" stop-color="#ff3b30"/>
+            <stop offset="100%" stop-color="#f7251c"/>
+          </linearGradient>
+
+          <!-- Dégradé vert -->
+          <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="0%">
+            <stop offset="0%" stop-color="#7CFF7C"/>
+            <stop offset="50%" stop-color="#38d938"/>
+            <stop offset="100%" stop-color="#227e19"/>
+          </linearGradient>
+        </defs>
+
         <!-- Gris centre -->
         <path d="M103,57 A92,92 0 0 1 157,57" fill="none" stroke="#1f1f1f" stroke-width="19" stroke-linecap="round"/>
         <!-- Rouge -->
-        <path d="M38,148 A92,92 0 0 1 98,60" fill="none" stroke="#f7251c" stroke-width="20" stroke-linecap="round"/>
+        <path d="M38,148 A92,92 0 0 1 98,60" fill="none" stroke="url(#redGradient)" stroke-width="20" stroke-linecap="round"/>
         <!-- Vert -->
-        <path d="M162,60 A92,92 0 0 1 222,148" fill="none" stroke="#227e19" stroke-width="20" stroke-linecap="round"/>
+        <path d="M162,60 A92,92 0 0 1 222,148" fill="none" stroke="url(#greenGradient)" stroke-width="20" stroke-linecap="round"/>
         <!-- Aiguille -->
         <g class="needle" id="needle">
           <polygon points="130,42 126,118 134,118" fill="white"/>
