@@ -76,7 +76,7 @@ function generateHTML(params) {
     }
     .needle.animated { transform: rotate(${angle}deg); }
     .score-number { font-size: 25px; font-weight: 700; color: #eaeaea; line-height: 1; margin-bottom: 4px; }
-    .score-label { font-size: 10px; font-weight: 700; margin: 14px 0 8px; color: #eaeaea; }
+    .score-label { font-size: 12px; font-weight: 700; margin: 14px 0 8px; color: #eaeaea; }
     .score-desc { font-size: 12px; color: #888; line-height: 1.6; max-width: 260px; margin: 0 auto; }
   </style>
 </head>
