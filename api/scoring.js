@@ -87,7 +87,7 @@ function generateHTML(params) {
         <defs>
           <!-- Dégradé vert -->
           <linearGradient id="greenGradient" x1="0%" y1="0%" x2="100%" y2="0%">
-            <stop offset="0%" stop-color="#DADADA"/>
+            <stop offset="0%" stop-color="#1f1f1f"/>
             <stop offset="50%" stop-color="#C7F3C3"/>
             <stop offset="100%" stop-color="#227e19"/>
           </linearGradient>
