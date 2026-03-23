@@ -1,9 +1,9 @@
 module.exports = async function handler(req, res) {
 
-  // -------- Date prochain lundi 19h --------
+  // -------- Prochain lundi 19h --------
 
   const now = new Date();
-  const day = now.getDay(); // 0=dimanche
+  const day = now.getDay();
 
   const daysUntilMonday =
     day === 1 ? 7 : (8 - day) % 7;
@@ -16,73 +16,57 @@ module.exports = async function handler(req, res) {
 
   nextMonday.setHours(19, 0, 0, 0);
 
-  // -------- Format UTC obligatoire --------
+  // -------- Format UTC --------
 
   const pad = n =>
     String(n).padStart(2, "0");
 
-  const formatUTC = date =>
-    date.getUTCFullYear() +
-    pad(date.getUTCMonth() + 1) +
-    pad(date.getUTCDate()) +
+  const formatUTC = d =>
+    d.getUTCFullYear() +
+    pad(d.getUTCMonth() + 1) +
+    pad(d.getUTCDate()) +
     "T" +
-    pad(date.getUTCHours()) +
-    pad(date.getUTCMinutes()) +
-    pad(date.getUTCSeconds()) +
+    pad(d.getUTCHours()) +
+    pad(d.getUTCMinutes()) +
+    pad(d.getUTCSeconds()) +
     "Z";
 
   const start = new Date(nextMonday);
   const end = new Date(nextMonday);
 
-  end.setMinutes(
-    end.getMinutes() + 15
-  );
+  end.setMinutes(end.getMinutes() + 15);
 
   const dtStart = formatUTC(start);
   const dtEnd = formatUTC(end);
   const dtStamp = formatUTC(new Date());
 
-  // -------- ICS propre iOS compatible --------
+  // -------- ICS minimal fiable --------
 
   const icsContent =
 `BEGIN:VCALENDAR
 VERSION:2.0
 PRODID:-//Fi-One//FR
-CALSCALE:GREGORIAN
 BEGIN:VEVENT
-UID:fi-one-budget-rappel@fi-one
+UID:fi-one-${Date.now()}
 DTSTAMP:${dtStamp}
 DTSTART:${dtStart}
 DTEND:${dtEnd}
 RRULE:FREQ=WEEKLY;BYDAY=MO
-SUMMARY:💰 Fi-One — Saisis tes dépenses !
-DESCRIPTION:Ton budget du mois t'attend.\\n2 minutes suffisent pour rester sur la bonne voie 🎯\\nOuvrir Fi-One : https://fi-one.glide.page
-BEGIN:VALARM
-TRIGGER:-PT0M
-ACTION:DISPLAY
-DESCRIPTION:Rappel Fi-One
-END:VALARM
+SUMMARY:Fi-One — Saisis tes dépenses
+DESCRIPTION:Ouvrir Fi-One : https://fi-one.glide.page
 END:VEVENT
 END:VCALENDAR`;
 
-  // -------- Headers essentiels --------
+  // 🔥 très important
 
-  res.setHeader(
-    "Content-Type",
-    "text/calendar; charset=utf-8"
-  );
+  const buffer = Buffer.from(icsContent, "utf-8");
 
-  res.setHeader(
-    "Content-Disposition",
-    "attachment; filename=fi-one-rappel.ics"
-  );
+  res.writeHead(200, {
+    "Content-Type": "text/calendar; charset=utf-8",
+    "Content-Disposition": "attachment; filename=fi-one-rappel.ics",
+    "Content-Length": buffer.length,
+    "Cache-Control": "no-store"
+  });
 
-  res.setHeader(
-    "Cache-Control",
-    "no-store"
-  );
-
-  return res
-    .status(200)
-    .send(icsContent);
+  res.end(buffer);
 };
