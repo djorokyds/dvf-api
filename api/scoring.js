@@ -1,37 +1,46 @@
 function calculScoreOpportunite(
   tri,
   coc,
-  cashflow10,
+  cashflow9,
   ecartPrix,
   nbTransactionsSection
 ) {
+
   const triNegatif = tri < 0;
 
   // 1. Rentabilité (50pts)
 
-  // CoC Return : seuil 10% → 0-20pts
   const scoreCoc =
-    Math.min(20, Math.round((Math.max(0, coc) / 10) * 20));
+    Math.min(20,
+      Math.round(
+        (Math.max(0, coc) / 10) * 20
+      )
+    );
 
-  // TRI ajusté (15% = score max)
   const scoreTri =
     tri < 0
       ? -15
-      : Math.min(18, Math.round((tri / 15) * 18));
+      : Math.min(
+          18,
+          Math.round(
+            (tri / 15) * 18
+          )
+        );
 
-  // Cashflow cumulé 10 ans
+  // Nouveau scoring cashflow 9 ans
+
   let scoreCashflow = 0;
 
-  if (cashflow10 > 100000)
+  if (cashflow9 > 50000)
     scoreCashflow = 12;
 
-  else if (cashflow10 > 50000)
+  else if (cashflow9 > 30000)
     scoreCashflow = 10;
 
-  else if (cashflow10 > 20000)
+  else if (cashflow9 > 15000)
     scoreCashflow = 7;
 
-  else if (cashflow10 > 0)
+  else if (cashflow9 > 5000)
     scoreCashflow = 4;
 
   else
@@ -42,11 +51,10 @@ function calculScoreOpportunite(
     scoreTri +
     scoreCashflow;
 
-  // 2. Prix marché (30pts)
+  // 2. Prix marché
 
   let scorePrix = 0;
 
-  // Bonus super affaire
   if (ecartPrix <= -20)
     scorePrix = 35;
 
@@ -64,11 +72,12 @@ function calculScoreOpportunite(
       Math.max(
         0,
         Math.round(
-          6 - ((ecartPrix - 20) / 10) * 6
+          6 -
+          ((ecartPrix - 20) / 10) * 6
         )
       );
 
-  // 3. Tension marché (20pts)
+  // 3. Tension marché
 
   let scoreTension = 0;
 
@@ -92,24 +101,24 @@ function calculScoreOpportunite(
       )
     );
 
-  // Plafond 40 si TRI négatif
+  // Plafonds sécurité
+
   if (triNegatif)
     total = Math.min(40, total);
 
-  // Plafond 50 si cashflow négatif
-  if (cashflow10 <= 0)
+  if (cashflow9 <= 0)
     total = Math.min(50, total);
 
   return {
     total,
     details: {
-      rentabilite: Math.max(0, scoreRentabilite),
+      rentabilite:
+        Math.max(0, scoreRentabilite),
       prix: scorePrix,
       tension: scoreTension
     }
   };
 }
-
 
 function generateHTML(params) {
   const { scoring } = params;
@@ -117,7 +126,7 @@ function generateHTML(params) {
 
   let scoreEmoji, scoreLabel, scoreDesc;
 
-  if (total >= 75) {
+  if (total >= 70) {
     scoreEmoji = '🚀';
     scoreLabel = 'Bonne opportunité';
     scoreDesc =
@@ -239,7 +248,7 @@ x2="100%"
 y2="0%">
 
 <stop offset="0%" stop-color="#F2F2F2"/>
-<stop offset="50%" stop-color="#1f1f1f"/>
+<stop offset="70%" stop-color="#1f1f1f"/>
 <stop offset="100%" stop-color="#227e19"/>
 
 </linearGradient>
