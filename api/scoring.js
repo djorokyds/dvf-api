@@ -46,7 +46,7 @@ function generateHTML(params) {
     scoreDesc = 'Ce projet présente des signaux faibles — à analyser en détail.';
   }
 
-  const pct = total; // 0-100
+  const pct = total;
 
   return `<!DOCTYPE html>
 <html lang="fr">
@@ -71,8 +71,6 @@ function generateHTML(params) {
       width: 100%;
       max-width: 400px;
     }
-
-    /* Score number */
     .score-number {
       font-size: 72px;
       font-weight: 800;
@@ -82,122 +80,73 @@ function generateHTML(params) {
     }
     .score-number span { font-size: 22px; color: #555; }
 
-    /* Gauge */
     .gauge-container {
       position: relative;
-      margin: 28px 0 20px;
-      padding: 0 8px;
-    }
-    .gauge-track {
-      position: relative;
-      height: 14px;
-      border-radius: 7px;
-      background: linear-gradient(to right, #e05565 0%, #f0b429 50%, #3dbf8a 100%);
-      box-shadow: 0 0 12px rgba(255,255,255,0.08);
-    }
-    /* Zone markers */
-    .gauge-track::before {
-      content: '';
-      position: absolute;
-      left: 40%;
-      top: 0; bottom: 0;
-      width: 2px;
-      background: rgba(0,0,0,0.35);
-      border-radius: 1px;
-    }
-    .gauge-track::after {
-      content: '';
-      position: absolute;
-      left: 70%;
-      top: 0; bottom: 0;
-      width: 2px;
-      background: rgba(0,0,0,0.35);
-      border-radius: 1px;
+      margin: 40px 0 16px;
+      padding: 0 4px;
     }
 
-    /* Arrow indicator */
-    .gauge-arrow-wrap {
+    /* Triangle indicator above track */
+    .gauge-triangle-wrap {
       position: absolute;
-      top: -28px;
-      transform: translateX(-50%);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      transition: left 1.4s cubic-bezier(0.34, 1.05, 0.64, 1);
+      top: -26px;
       left: 0%;
+      transform: translateX(-50%);
+      transition: left 1.4s cubic-bezier(0.34, 1.05, 0.64, 1);
     }
-    .gauge-arrow-wrap.animated {
+    .gauge-triangle-wrap.animated {
       left: ${pct}%;
     }
-    .arrow-label {
-      font-size: 13px;
-      font-weight: 700;
-      color: #eaeaea;
-      white-space: nowrap;
-      background: #2a2a2a;
-      border: 1px solid #444;
-      border-radius: 6px;
-      padding: 3px 8px;
-      margin-bottom: 4px;
-    }
-    .arrow-body {
-      width: 3px;
-      height: 16px;
-      background: white;
-      border-radius: 2px;
-    }
-    .arrow-tip {
+    .gauge-triangle {
       width: 0;
       height: 0;
-      border-left: 6px solid transparent;
-      border-right: 6px solid transparent;
-      border-top: 8px solid white;
+      border-left: 9px solid transparent;
+      border-right: 9px solid transparent;
+      border-top: 16px solid white;
+      filter: drop-shadow(0 2px 4px rgba(0,0,0,0.5));
     }
 
-    /* Dot on track */
-    .gauge-dot-wrap {
+    /* Track */
+    .gauge-track {
+      position: relative;
+      height: 16px;
+      border-radius: 8px;
+      background: linear-gradient(to right, #e05565 0%, #f0b429 50%, #3dbf8a 100%);
+      box-shadow: 0 0 14px rgba(255,255,255,0.06);
+    }
+
+    /* Séparateurs de zones */
+    .gauge-sep {
       position: absolute;
-      top: 50%;
-      transform: translate(-50%, -50%);
-      transition: left 1.4s cubic-bezier(0.34, 1.05, 0.64, 1);
-      left: 0%;
-    }
-    .gauge-dot-wrap.animated {
-      left: ${pct}%;
-    }
-    .gauge-dot {
-      width: 22px;
-      height: 22px;
-      background: white;
-      border-radius: 50%;
-      border: 3px solid #1a1a1a;
-      box-shadow: 0 0 10px rgba(255,255,255,0.5);
+      top: 0; bottom: 0;
+      width: 2px;
+      background: rgba(0,0,0,0.3);
+      border-radius: 1px;
     }
 
     /* Labels */
     .gauge-labels {
       display: flex;
       justify-content: space-between;
-      margin-top: 8px;
+      margin-top: 10px;
       font-size: 10px;
-      color: #555;
+      color: #444;
     }
     .zone-labels {
       display: flex;
       justify-content: space-between;
-      margin-top: 4px;
-      font-size: 9px;
+      margin-top: 5px;
       padding: 0 2px;
+      font-size: 10px;
     }
-    .zone-label { color: #444; }
-    .zone-label.red { color: #e05565; }
-    .zone-label.yellow { color: #f0b429; }
-    .zone-label.green { color: #3dbf8a; }
+    .zone-label.red   { color: #e05565; }
+    .zone-label.yellow { color: #f0b429; text-align: center; flex: 1; }
+    .zone-label.green  { color: #3dbf8a; text-align: right; }
 
     .score-label {
       font-size: 18px;
       font-weight: 700;
-      margin: 8px 0 8px;
+      margin: 20px 0 8px;
       color: #eaeaea;
     }
     .score-desc {
@@ -215,22 +164,19 @@ function generateHTML(params) {
     <div class="score-number">${total}<span>/100</span></div>
 
     <div class="gauge-container">
-      <!-- Arrow above -->
-      <div class="gauge-arrow-wrap" id="arrow">
-        <div class="arrow-label">${total}/100</div>
-        <div class="arrow-body"></div>
-        <div class="arrow-tip"></div>
+
+      <!-- Triangle au dessus -->
+      <div class="gauge-triangle-wrap" id="triangle">
+        <div class="gauge-triangle"></div>
       </div>
 
-      <!-- Track -->
+      <!-- Barre -->
       <div class="gauge-track">
-        <!-- Dot on track -->
-        <div class="gauge-dot-wrap" id="dot">
-          <div class="gauge-dot"></div>
-        </div>
+        <div class="gauge-sep" style="left: 40%"></div>
+        <div class="gauge-sep" style="left: 70%"></div>
       </div>
 
-      <!-- Labels -->
+      <!-- Chiffres -->
       <div class="gauge-labels">
         <span>0</span>
         <span>25</span>
@@ -238,11 +184,14 @@ function generateHTML(params) {
         <span>75</span>
         <span>100</span>
       </div>
+
+      <!-- Zones -->
       <div class="zone-labels">
         <span class="zone-label red">Risqué</span>
         <span class="zone-label yellow">Acceptable</span>
         <span class="zone-label green">Opportunité</span>
       </div>
+
     </div>
 
     <div class="score-label">${scoreEmoji} ${scoreLabel}</div>
@@ -252,8 +201,7 @@ function generateHTML(params) {
 
   <script>
     setTimeout(() => {
-      document.getElementById('arrow').classList.add('animated');
-      document.getElementById('dot').classList.add('animated');
+      document.getElementById('triangle').classList.add('animated');
     }, 300);
   </script>
 </body>
