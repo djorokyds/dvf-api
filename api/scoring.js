@@ -1,123 +1,33 @@
-function calculScoreOpportunite(
-  tri,
-  coc,
-  cashflow9,
-  ecartPrix,
-  nbTransactionsSection
-) {
-
+function calculScoreOpportunite(tri, coc, cashflow9, ecartPrix, nbTransactionsSection) {
   const triNegatif = tri < 0;
-
-  // 1. Rentabilité (50pts)
-
-  const scoreCoc =
-    Math.min(20,
-      Math.round(
-        (Math.max(0, coc) / 10) * 20
-      )
-    );
-
-  const scoreTri =
-    tri < 0
-      ? -15
-      : Math.min(
-          18,
-          Math.round(
-            (tri / 15) * 18
-          )
-        );
-
-  // Nouveau scoring cashflow 9 ans
+  const scoreCoc = Math.min(20, Math.round((Math.max(0, coc) / 10) * 20));
+  const scoreTri = tri < 0 ? -15 : Math.min(18, Math.round((tri / 15) * 18));
 
   let scoreCashflow = 0;
+  if (cashflow9 > 50000) scoreCashflow = 12;
+  else if (cashflow9 > 30000) scoreCashflow = 10;
+  else if (cashflow9 > 15000) scoreCashflow = 7;
+  else if (cashflow9 > 5000) scoreCashflow = 4;
+  else scoreCashflow = 0;
 
-  if (cashflow9 > 50000)
-    scoreCashflow = 12;
-
-  else if (cashflow9 > 30000)
-    scoreCashflow = 10;
-
-  else if (cashflow9 > 15000)
-    scoreCashflow = 7;
-
-  else if (cashflow9 > 5000)
-    scoreCashflow = 4;
-
-  else
-    scoreCashflow = 0;
-
-  const scoreRentabilite =
-    scoreCoc +
-    scoreTri +
-    scoreCashflow;
-
-  // 2. Prix marché
+  const scoreRentabilite = scoreCoc + scoreTri + scoreCashflow;
 
   let scorePrix = 0;
-
-  if (ecartPrix <= -20)
-    scorePrix = 35;
-
-  else if (ecartPrix <= 0)
-    scorePrix = 30;
-
-  else if (ecartPrix <= 20)
-    scorePrix =
-      Math.round(
-        30 - (ecartPrix / 20) * 24
-      );
-
-  else
-    scorePrix =
-      Math.max(
-        0,
-        Math.round(
-          6 -
-          ((ecartPrix - 20) / 10) * 6
-        )
-      );
-
-  // 3. Tension marché
+  if (ecartPrix <= -20) scorePrix = 35;
+  else if (ecartPrix <= 0) scorePrix = 30;
+  else if (ecartPrix <= 20) scorePrix = Math.round(30 - (ecartPrix / 20) * 24);
+  else scorePrix = Math.max(0, Math.round(6 - ((ecartPrix - 20) / 10) * 6));
 
   let scoreTension = 0;
+  if (nbTransactionsSection < 10) scoreTension = 20;
+  else if (nbTransactionsSection <= 20) scoreTension = 12;
+  else scoreTension = 5;
 
-  if (nbTransactionsSection < 10)
-    scoreTension = 20;
+  let total = Math.min(100, Math.max(0, scoreRentabilite + scorePrix + scoreTension));
+  if (triNegatif) total = Math.min(40, total);
+  if (cashflow9 <= 0) total = Math.min(50, total);
 
-  else if (nbTransactionsSection <= 20)
-    scoreTension = 12;
-
-  else
-    scoreTension = 5;
-
-  let total =
-    Math.min(
-      100,
-      Math.max(
-        0,
-        scoreRentabilite +
-        scorePrix +
-        scoreTension
-      )
-    );
-
-  // Plafonds sécurité
-
-  if (triNegatif)
-    total = Math.min(40, total);
-
-  if (cashflow9 <= 0)
-    total = Math.min(50, total);
-
-  return {
-    total,
-    details: {
-      rentabilite:
-        Math.max(0, scoreRentabilite),
-      prix: scorePrix,
-      tension: scoreTension
-    }
-  };
+  return { total, details: { rentabilite: Math.max(0, scoreRentabilite), prix: scorePrix, tension: scoreTension } };
 }
 
 function generateHTML(params) {
@@ -125,583 +35,319 @@ function generateHTML(params) {
   const { total } = scoring;
 
   let scoreEmoji, scoreLabel, scoreDesc;
-
   if (total >= 70) {
-    scoreEmoji = '🚀';
-    scoreLabel = 'Bonne opportunité';
-    scoreDesc =
-      'Ce projet présente de solides indicateurs financiers et de marché.';
+    scoreEmoji = '🟢'; scoreLabel = 'Bonne opportunité';
+    scoreDesc = 'Ce projet présente de solides indicateurs financiers et de marché.';
+  } else if (total >= 40) {
+    scoreEmoji = '🟡'; scoreLabel = 'Projet acceptable';
+    scoreDesc = 'Ce projet est viable mais certains indicateurs méritent attention.';
+  } else {
+    scoreEmoji = '🔴'; scoreLabel = 'Projet risqué';
+    scoreDesc = 'Ce projet présente des signaux faibles — à analyser en détail.';
   }
 
-  else if (total >= 60) {
-    scoreEmoji = '🤔';
-    scoreLabel = 'Projet fragile';
-    scoreDesc =
-      'Ce projet est viable mais certains indicateurs méritent attention.';
-  }
-
-  else {
-    scoreEmoji = '🔻';
-    scoreLabel = 'Projet risqué';
-    scoreDesc =
-      'Ce projet présente des signaux faibles — à analyser en détail.';
-  }
-
-  const angle =
-    -135 + (total / 100) * 270;
+  const pct = total; // 0-100
 
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Score Opportunité - Fi-One</title>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Score Opportunité - Fi-One</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #1a1a1a;
+      color: #eaeaea;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+    }
+    .container {
+      text-align: center;
+      padding: 32px 28px;
+      width: 100%;
+      max-width: 400px;
+    }
 
-<style>
-* {
-box-sizing: border-box;
-margin: 0;
-padding: 0;
-}
+    /* Score number */
+    .score-number {
+      font-size: 72px;
+      font-weight: 800;
+      color: #eaeaea;
+      line-height: 1;
+      margin-bottom: 6px;
+    }
+    .score-number span { font-size: 22px; color: #555; }
 
-body {
-font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-background: #1f1f1f;
-color: #eaeaea;
-display: flex;
-align-items: center;
-justify-content: center;
-min-height: 100vh;
-}
+    /* Gauge */
+    .gauge-container {
+      position: relative;
+      margin: 28px 0 20px;
+      padding: 0 8px;
+    }
+    .gauge-track {
+      position: relative;
+      height: 14px;
+      border-radius: 7px;
+      background: linear-gradient(to right, #e05565 0%, #f0b429 50%, #3dbf8a 100%);
+      box-shadow: 0 0 12px rgba(255,255,255,0.08);
+    }
+    /* Zone markers */
+    .gauge-track::before {
+      content: '';
+      position: absolute;
+      left: 40%;
+      top: 0; bottom: 0;
+      width: 2px;
+      background: rgba(0,0,0,0.35);
+      border-radius: 1px;
+    }
+    .gauge-track::after {
+      content: '';
+      position: absolute;
+      left: 70%;
+      top: 0; bottom: 0;
+      width: 2px;
+      background: rgba(0,0,0,0.35);
+      border-radius: 1px;
+    }
 
-.container {
-text-align: center;
-padding: 24px;
-width: 100%;
-max-width: 340px;
-}
+    /* Arrow indicator */
+    .gauge-arrow-wrap {
+      position: absolute;
+      top: -28px;
+      transform: translateX(-50%);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      transition: left 1.4s cubic-bezier(0.34, 1.05, 0.64, 1);
+      left: 0%;
+    }
+    .gauge-arrow-wrap.animated {
+      left: ${pct}%;
+    }
+    .arrow-label {
+      font-size: 13px;
+      font-weight: 700;
+      color: #eaeaea;
+      white-space: nowrap;
+      background: #2a2a2a;
+      border: 1px solid #444;
+      border-radius: 6px;
+      padding: 3px 8px;
+      margin-bottom: 4px;
+    }
+    .arrow-body {
+      width: 3px;
+      height: 16px;
+      background: white;
+      border-radius: 2px;
+    }
+    .arrow-tip {
+      width: 0;
+      height: 0;
+      border-left: 6px solid transparent;
+      border-right: 6px solid transparent;
+      border-top: 8px solid white;
+    }
 
-.gauge-wrap {
-position: relative;
-width: 130px;
-height: 80px;
-margin: 0 auto 20px;
-}
+    /* Dot on track */
+    .gauge-dot-wrap {
+      position: absolute;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      transition: left 1.4s cubic-bezier(0.34, 1.05, 0.64, 1);
+      left: 0%;
+    }
+    .gauge-dot-wrap.animated {
+      left: ${pct}%;
+    }
+    .gauge-dot {
+      width: 22px;
+      height: 22px;
+      background: white;
+      border-radius: 50%;
+      border: 3px solid #1a1a1a;
+      box-shadow: 0 0 10px rgba(255,255,255,0.5);
+    }
 
-svg {
-width: 100%;
-height: 100%;
-}
+    /* Labels */
+    .gauge-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 8px;
+      font-size: 10px;
+      color: #555;
+    }
+    .zone-labels {
+      display: flex;
+      justify-content: space-between;
+      margin-top: 4px;
+      font-size: 9px;
+      padding: 0 2px;
+    }
+    .zone-label { color: #444; }
+    .zone-label.red { color: #e05565; }
+    .zone-label.yellow { color: #f0b429; }
+    .zone-label.green { color: #3dbf8a; }
 
-.needle {
-transform-box: fill-box;
-transform-origin: 50% 85%;
-transform: rotate(-135deg);
-transition: transform 1.4s cubic-bezier(0.34, 1.2, 0.64, 1);
-}
-
-.needle.animated {
-transform: rotate(${angle}deg);
-}
-
-.score-number {
-font-size: 25px;
-font-weight: 700;
-color: #eaeaea;
-line-height: 1;
-margin-bottom: 4px;
-}
-
-.score-label {
-font-size: 16px;
-font-weight: 700;
-margin: 14px 0 8px;
-color: #eaeaea;
-}
-
-.score-desc {
-font-size: 16px;
-color: #888;
-line-height: 1.6;
-max-width: 260px;
-margin: 0 auto;
-}
-</style>
-
+    .score-label {
+      font-size: 18px;
+      font-weight: 700;
+      margin: 8px 0 8px;
+      color: #eaeaea;
+    }
+    .score-desc {
+      font-size: 12px;
+      color: #777;
+      line-height: 1.6;
+      max-width: 300px;
+      margin: 0 auto;
+    }
+  </style>
 </head>
-
 <body>
+  <div class="container">
 
-<div class="container">
+    <div class="score-number">${total}<span>/100</span></div>
 
-<div class="gauge-wrap">
+    <div class="gauge-container">
+      <!-- Arrow above -->
+      <div class="gauge-arrow-wrap" id="arrow">
+        <div class="arrow-label">${total}/100</div>
+        <div class="arrow-body"></div>
+        <div class="arrow-tip"></div>
+      </div>
 
-<svg viewBox="0 0 260 160">
+      <!-- Track -->
+      <div class="gauge-track">
+        <!-- Dot on track -->
+        <div class="gauge-dot-wrap" id="dot">
+          <div class="gauge-dot"></div>
+        </div>
+      </div>
 
-<defs>
+      <!-- Labels -->
+      <div class="gauge-labels">
+        <span>0</span>
+        <span>25</span>
+        <span>50</span>
+        <span>75</span>
+        <span>100</span>
+      </div>
+      <div class="zone-labels">
+        <span class="zone-label red">Risqué</span>
+        <span class="zone-label yellow">Acceptable</span>
+        <span class="zone-label green">Opportunité</span>
+      </div>
+    </div>
 
-<linearGradient
-id="greenGradient"
-x1="0%"
-y1="0%"
-x2="100%"
-y2="0%">
+    <div class="score-label">${scoreEmoji} ${scoreLabel}</div>
+    <div class="score-desc">${scoreDesc}</div>
 
-<stop offset="0%" stop-color="#F2F2F2"/>
-<stop offset="70%" stop-color="#1f1f1f"/>
-<stop offset="100%" stop-color="#227e19"/>
+  </div>
 
-</linearGradient>
-
-</defs>
-
-<path
-d="M103,57 A92,92 0 0 1 157,57"
-fill="none"
-stroke="#1f1f1f"
-stroke-width="19"
-stroke-linecap="round"/>
-
-<path
-d="M38,148 A92,92 0 0 1 98,60"
-fill="none"
-stroke="#f7251c"
-stroke-width="20"
-stroke-linecap="round"/>
-
-<path
-d="M162,60 A92,92 0 0 1 222,148"
-fill="none"
-stroke="url(#greenGradient)"
-stroke-width="20"
-stroke-linecap="round"/>
-
-<g
-class="needle"
-id="needle">
-
-<polygon
-points="130,42 126,118 134,118"
-fill="white"/>
-
-<circle
-cx="130"
-cy="150"
-r="10"
-fill="#2a2a2a"
-stroke="#555"
-stroke-width="1.5"/>
-
-<circle
-cx="130"
-cy="150"
-r="4"
-fill="white"/>
-
-</g>
-
-</svg>
-
-</div>
-
-<div class="score-number">
-
-${total}
-<span style="font-size:16px;color:#666">/100</span>
-
-</div>
-
-<div class="score-label">
-
-${scoreEmoji} ${scoreLabel}
-
-</div>
-
-<div class="score-desc">
-
-${scoreDesc}
-
-</div>
-
-</div>
-
-<script>
-
-setTimeout(() => {
-
-document
-.getElementById('needle')
-.classList.add('animated');
-
-}, 400);
-
-</script>
-
+  <script>
+    setTimeout(() => {
+      document.getElementById('arrow').classList.add('animated');
+      document.getElementById('dot').classList.add('animated');
+    }, 300);
+  </script>
 </body>
 </html>`;
 }
 
-
-
 module.exports = async function handler(req, res) {
-
-const {
-adresse,
-type_bien,
-surface,
-prix_bien,
-tri,
-coc,
-cashflow10,
-format
-} = req.query;
-
-const SUPABASE_URL =
-process.env.SUPABASE_URL;
-
-const SUPABASE_KEY =
-process.env.SUPABASE_KEY;
-
-
-
-if (!adresse)
-return res.status(400).json({
-error: "adresse manquante"
-});
-
-if (!tri || !coc)
-return res.status(400).json({
-error: "Paramètres scoring manquants (tri, coc)"
-});
-
-
-
-try {
-
-const geoRes =
-await fetch(
-`https://data.geopf.fr/geocodage/search?q=${encodeURIComponent(adresse)}&limit=1`
-);
-
-const geoData =
-await geoRes.json();
-
-
-
-if (!geoData.features ||
-geoData.features.length === 0)
-
-return res.status(404).json({
-error: "Adresse non trouvée"
-});
-
-
-
-const feature =
-geoData.features[0];
-
-if (feature.properties.score < 0.7)
-
-return res.status(400).json({
-error: "Adresse non reconnue"
-});
-
-
-
-const lon =
-feature.geometry.coordinates[0];
-
-const lat =
-feature.geometry.coordinates[1];
-
-const code_postal =
-feature.properties.postcode?.trim() || '';
-
-const adresse_normalisee =
-feature.properties.label;
-
-
-
-const surfaceRecherche =
-surface
-? parseFloat(surface.replace(/\s/g, ''))
-: null;
-
-
-
-const prixBienNum =
-prix_bien
-? parseFloat(
-prix_bien
-.replace(/\s/g, '')
-.replace(',', '.')
-)
-: null;
-
-
-
-const triNum =
-parseFloat(tri);
-
-const cocNum =
-parseFloat(coc);
-
-const cashflow10Num =
-cashflow10
-? parseFloat(cashflow10)
-: 0;
-
-
-
-function haversine(lat1, lon1, lat2, lon2) {
-
-const R = 6371;
-
-const dLat =
-(lat2 - lat1) * Math.PI / 180;
-
-const dLon =
-(lon2 - lon1) * Math.PI / 180;
-
-const a =
-Math.sin(dLat/2)*Math.sin(dLat/2) +
-
-Math.cos(lat1*Math.PI/180)*
-Math.cos(lat2*Math.PI/180)*
-
-Math.sin(dLon/2)*
-Math.sin(dLon/2);
-
-return R *
-2 *
-Math.atan2(
-Math.sqrt(a),
-Math.sqrt(1-a)
-);
-
-}
-
-
-
-let url =
-`${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=prix_median_section,section_cadastrale,cle_section,latitude,longitude&latitude=not.is.null&order=date_mutation.desc.nullslast&limit=1000`;
-
-
-
-if (type_bien)
-
-url +=
-`&type_bien=eq.${encodeURIComponent(type_bien)}`;
-
-
-
-const supaRes =
-await fetch(url, {
-
-headers: {
-
-'apikey': SUPABASE_KEY,
-
-'Authorization':
-`Bearer ${SUPABASE_KEY}`,
-
-'Accept': 'application/json'
-
-}
-
-});
-
-
-
-const transactions =
-await supaRes.json();
-
-
-
-let prix_median_m2 = 0;
-
-let section_cadastrale = null;
-
-let nbTransactionsSection = 0;
-
-
-
-if (
-Array.isArray(transactions) &&
-transactions.length > 0
-) {
-
-const withDistance =
-transactions
-
-.filter(
-t =>
-t.latitude != null &&
-t.longitude != null
-)
-
-.map(
-t => ({
-...t,
-distance_m:
-
-Math.round(
-
-haversine(
-lat,
-lon,
-parseFloat(t.latitude),
-parseFloat(t.longitude)
-) * 1000
-
-)
-
-})
-)
-
-.filter(
-t => t.distance_m <= 1000
-)
-
-.sort(
-(a, b) =>
-a.distance_m - b.distance_m
-);
-
-
-
-const closest =
-withDistance[0];
-
-
-
-if (closest) {
-
-prix_median_m2 =
-closest.prix_median_section || 0;
-
-section_cadastrale =
-closest.section_cadastrale;
-
-const sectionPrincipale =
-closest.cle_section;
-
-
-
-nbTransactionsSection =
-sectionPrincipale
-
-? transactions.filter(
-t =>
-t.cle_section === sectionPrincipale
-).length
-
-: transactions.length;
-
-}
-
-}
-
-
-
-const prixM2Bien =
-(prixBienNum && surfaceRecherche)
-
-? prixBienNum / surfaceRecherche
-
-: null;
-
-
-
-const ecartPrix =
-(prixM2Bien && prix_median_m2)
-
-? (
-(prixM2Bien - prix_median_m2)
-/
-prix_median_m2
-* 100
-)
-
-: 0;
-
-
-
-const scoring =
-calculScoreOpportunite(
-triNum,
-cocNum,
-cashflow10Num,
-ecartPrix,
-nbTransactionsSection
-);
-
-
-
-const params = {
-
-adresse_normalisee,
-
-section_cadastrale,
-
-prix_median_m2,
-
-tri: triNum,
-
-coc: cocNum,
-
-cashflow10: cashflow10Num,
-
-prixBien: prixBienNum,
-
-surfaceRecherche,
-
-nbTransactionsSection,
-
-scoring
-
-};
-
-
-
-if (format === 'html') {
-
-const html =
-generateHTML(params);
-
-res.setHeader(
-'Content-Type',
-'text/html; charset=utf-8'
-);
-
-return res
-.status(200)
-.send(html);
-
-}
-
-
-
-return res.status(200).json({
-
-success: true,
-
-...params
-
-});
-
-
-
-}
-
-catch (error) {
-
-return res.status(500).json({
-
-error: error.message
-
-});
-
-}
-
+  const { adresse, type_bien, surface, prix_bien, tri, coc, cashflow_9, format } = req.query;
+
+  const SUPABASE_URL = process.env.SUPABASE_URL;
+  const SUPABASE_KEY = process.env.SUPABASE_KEY;
+
+  if (!adresse) return res.status(400).json({ error: "adresse manquante" });
+  if (!tri || !coc || !cashflow_9) return res.status(400).json({ error: "Paramètres scoring manquants (tri, coc, cashflow_9)" });
+
+  try {
+    const geoRes = await fetch(`https://data.geopf.fr/geocodage/search?q=${encodeURIComponent(adresse)}&limit=1`);
+    const geoData = await geoRes.json();
+    if (!geoData.features || geoData.features.length === 0) return res.status(404).json({ error: "Adresse non trouvée" });
+
+    const feature = geoData.features[0];
+    if (feature.properties.score < 0.7) return res.status(400).json({ error: "Adresse non reconnue" });
+
+    const lon = feature.geometry.coordinates[0];
+    const lat = feature.geometry.coordinates[1];
+    const code_postal = feature.properties.postcode?.trim() || '';
+    const adresse_normalisee = feature.properties.label;
+
+    const surfaceRecherche = surface ? parseFloat(surface.replace(/\s/g, '')) : null;
+    const prixBienNum = prix_bien ? parseFloat(prix_bien.replace(/\s/g, '').replace(',', '.')) : null;
+    const triNum = parseFloat(tri);
+    const cocNum = parseFloat(coc);
+    const cashflow9Num = parseFloat(cashflow_9.replace(/\s/g, '').replace(',', '.'));
+
+    function haversine(lat1, lon1, lat2, lon2) {
+      const R = 6371;
+      const dLat = (lat2 - lat1) * Math.PI / 180;
+      const dLon = (lon2 - lon1) * Math.PI / 180;
+      const a = Math.sin(dLat/2)*Math.sin(dLat/2) +
+        Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*
+        Math.sin(dLon/2)*Math.sin(dLon/2);
+      return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+    }
+
+    let url = `${SUPABASE_URL}/rest/v1/transactions?code_postal=eq.${code_postal}&select=prix_median_section,section_cadastrale,cle_section,latitude,longitude&latitude=not.is.null&order=date_mutation.desc.nullslast&limit=1000`;
+    if (type_bien) url += `&type_bien=eq.${encodeURIComponent(type_bien)}`;
+
+    const supaRes = await fetch(url, {
+      headers: { 'apikey': SUPABASE_KEY, 'Authorization': `Bearer ${SUPABASE_KEY}`, 'Accept': 'application/json' }
+    });
+    const transactions = await supaRes.json();
+
+    let prix_median_m2 = 0;
+    let section_cadastrale = null;
+    let nbTransactionsSection = 0;
+
+    if (Array.isArray(transactions) && transactions.length > 0) {
+      const withDistance = transactions
+        .filter(t => t.latitude != null && t.longitude != null)
+        .map(t => ({ ...t, distance_m: Math.round(haversine(lat, lon, parseFloat(t.latitude), parseFloat(t.longitude)) * 1000) }))
+        .filter(t => t.distance_m <= 1000)
+        .sort((a, b) => a.distance_m - b.distance_m);
+
+      const closest = withDistance[0];
+      if (closest) {
+        prix_median_m2 = closest.prix_median_section || 0;
+        section_cadastrale = closest.section_cadastrale;
+        const sectionPrincipale = closest.cle_section;
+        nbTransactionsSection = sectionPrincipale
+          ? transactions.filter(t => t.cle_section === sectionPrincipale).length
+          : transactions.length;
+      }
+    }
+
+    const prixM2Bien = (prixBienNum && surfaceRecherche) ? prixBienNum / surfaceRecherche : null;
+    const ecartPrix = (prixM2Bien && prix_median_m2) ? ((prixM2Bien - prix_median_m2) / prix_median_m2 * 100) : 0;
+
+    const scoring = calculScoreOpportunite(triNum, cocNum, cashflow9Num, ecartPrix, nbTransactionsSection);
+
+    const params = {
+      adresse_normalisee, section_cadastrale, prix_median_m2,
+      tri: triNum, coc: cocNum, cashflow_9: cashflow9Num,
+      prixBien: prixBienNum, surfaceRecherche, nbTransactionsSection, scoring
+    };
+
+    if (format === 'html') {
+      const html = generateHTML(params);
+      res.setHeader('Content-Type', 'text/html; charset=utf-8');
+      return res.status(200).send(html);
+    }
+
+    return res.status(200).json({ success: true, ...params });
+
+  } catch (error) {
+    return res.status(500).json({ error: error.message });
+  }
 };
