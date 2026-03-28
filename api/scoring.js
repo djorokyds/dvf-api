@@ -36,13 +36,13 @@ function generateHTML(params) {
 
   let scoreEmoji, scoreLabel, scoreDesc;
   if (total >= 70) {
-    scoreEmoji = '🟢'; scoreLabel = 'Bonne opportunité';
+    scoreEmoji = '🚀'; scoreLabel = 'Bonne opportunité';
     scoreDesc = 'Ce projet présente de solides indicateurs financiers et de marché.';
   } else if (total >= 40) {
-    scoreEmoji = '🟡'; scoreLabel = 'Projet acceptable';
+    scoreEmoji = '🤔'; scoreLabel = 'Projet acceptable';
     scoreDesc = 'Ce projet est viable mais certains indicateurs méritent attention.';
   } else {
-    scoreEmoji = '🔴'; scoreLabel = 'Projet risqué';
+    scoreEmoji = '❌'; scoreLabel = 'Projet risqué';
     scoreDesc = 'Ce projet présente des signaux faibles — à analyser en détail.';
   }
 
