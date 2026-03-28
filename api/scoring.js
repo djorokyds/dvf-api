@@ -1,14 +1,21 @@
-function calculScoreOpportunite(tri, coc, payback, ecartPrix, nbTransactionsSection) {
+function calculScoreOpportunite(tri, coc, payback, cashflow10, ecartPrix, nbTransactionsSection) {
   const triNegatif = tri < 0;
 
   // 1. Rentabilité (50pts)
   // CoC Return : seuil 10% → 0-20pts
   const scoreCoc = Math.min(20, Math.round((Math.max(0, coc) / 10) * 20));
+
   // TRI : négatif = -15pts, sinon 0-18pts
   const scoreTri = tri < 0 ? -15 : Math.min(18, Math.round((tri / 10) * 18));
-  // Payback : 0 = 0pts, <10ans = 12pts, 10-15ans = 6pts, >15ans = 0pts
-  const scorePayback = payback === 0 ? 0 : payback < 10 ? 12 : payback <= 15 ? 6 : 0;
-  const scoreRentabilite = scoreCoc + scoreTri + scorePayback;
+
+  // Cashflow cumulé 10 ans (remplace Payback)
+  let scoreCashflow = 0;
+  if (cashflow10 > 50000) scoreCashflow = 12;
+  else if (cashflow10 > 20000) scoreCashflow = 8;
+  else if (cashflow10 > 0) scoreCashflow = 4;
+  else scoreCashflow = 0;
+
+  const scoreRentabilite = scoreCoc + scoreTri + scoreCashflow;
 
   // 2. Prix marché (30pts)
   let scorePrix = 0;
@@ -27,8 +34,12 @@ function calculScoreOpportunite(tri, coc, payback, ecartPrix, nbTransactionsSect
   // Plafond 40 si TRI négatif
   if (triNegatif) total = Math.min(40, total);
 
+  // Plafond 50 si cashflow cumulé négatif
+  if (cashflow10 <= 0) total = Math.min(50, total);
+
   return { total, details: { rentabilite: Math.max(0, scoreRentabilite), prix: scorePrix, tension: scoreTension } };
 }
+
 
 function generateHTML(params) {
   const { scoring } = params;
