@@ -161,8 +161,6 @@ function generateHTML(params) {
 <body>
   <div class="container">
 
-    <div class="score-number">${total}<span>/100</span></div>
-
     <div class="gauge-container">
 
       <!-- Triangle au dessus -->
