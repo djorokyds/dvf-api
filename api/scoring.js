@@ -58,7 +58,7 @@ function generateHTML(params) {
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #1a1a1a;
+      background: #1f1f1f;
       color: #eaeaea;
       display: flex;
       align-items: center;
