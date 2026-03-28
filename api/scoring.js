@@ -117,16 +117,16 @@ function generateHTML(params) {
 
   let scoreEmoji, scoreLabel, scoreDesc;
 
-  if (total >= 70) {
-    scoreEmoji = '🟢';
+  if (total >= 75) {
+    scoreEmoji = '🚀';
     scoreLabel = 'Bonne opportunité';
     scoreDesc =
       'Ce projet présente de solides indicateurs financiers et de marché.';
   }
 
   else if (total >= 60) {
-    scoreEmoji = '⚪';
-    scoreLabel = 'Projet acceptable';
+    scoreEmoji = '🤔';
+    scoreLabel = 'Projet fragile';
     scoreDesc =
       'Ce projet est viable mais certains indicateurs méritent attention.';
   }
@@ -238,7 +238,7 @@ y1="0%"
 x2="100%"
 y2="0%">
 
-<stop offset="0%" stop-color="#1f1f1f"/>
+<stop offset="0%" stop-color="#F2F2F2"/>
 <stop offset="50%" stop-color="#1f1f1f"/>
 <stop offset="100%" stop-color="#227e19"/>
 
