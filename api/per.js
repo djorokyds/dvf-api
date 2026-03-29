@@ -10,6 +10,12 @@ module.exports = async function handler(req, res) {
   const impotRestant = Math.max(0, impot - reduction);
   const pct = Math.round((reduction / impot) * 100);
 
+  const facteurCorrection = Math.min(1, pct / 30);
+
+  // Opacités ajustées
+  const opacityBottom1 = (0.5 * facteurCorrection).toFixed(3);
+  const opacityBottom2 = (0.25 * facteurCorrection).toFixed(3);
+
   const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -168,8 +174,8 @@ module.exports = async function handler(req, res) {
 
           <!-- Gradient cercle immergé (dessous) — plus sombre -->
           <radialGradient id="gradBottom" cx="50%" cy="40%" r="55%">
-            <stop offset="0%" stop-color="#E8845A" stop-opacity="0.25"/>
-            <stop offset="60%" stop-color="#C85A2A" stop-opacity="0.12"/>
+            <stop offset="0%" stop-color="#E8845A" stop-opacity="${opacityBottom1}"/>
+            <stop offset="60%" stop-color="#C85A2A" stop-opacity="${opacityBottom2}"/>
             <stop offset="100%" stop-color="#1f1f1f" stop-opacity="0"/>
           </radialGradient>
 
