@@ -66,7 +66,7 @@ module.exports = async function handler(req, res) {
     .label-top {
       position: absolute;
       top: 8px;
-      left: 0px;
+      left: -20px;
       text-align: left;
       z-index: 4;
     }
