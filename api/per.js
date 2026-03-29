@@ -15,7 +15,7 @@ module.exports = async function handler(req, res) {
   const rx = 110;
 
   // Partie visible (au dessus) : fixe
-  const ryTop = 80;
+  const ryTop = 60;
 
   // Partie immergée (en dessous) : grandit avec pct
   // pct=0 → ry=30, pct=100 → ry=140
@@ -30,7 +30,7 @@ module.exports = async function handler(req, res) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Analyse PER - Fi-One</title>
+  <title>Analyse PER</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -54,11 +54,11 @@ module.exports = async function handler(req, res) {
       z-index: 3;
     }
     .label-top { position: absolute; top: 8px; left: -12px; text-align: left; z-index: 4; }
-    .label-top .amount { font-size: 26px; font-weight: 800; color: #eaeaea; }
+    .label-top .amount { font-size: 20px; font-weight: 700; color: #eaeaea; }
     .label-top .desc { font-size: 11px; color: #C38F5A; margin-top: 2px; font-weight: 500; }
     .label-top .avant { font-size: 10px; color: #555; margin-top: 4px; }
     .label-bottom { position: absolute; bottom: 8px; right: 12px; text-align: right; z-index: 4; }
-    .label-bottom .amount { font-size: 26px; font-weight: 800; color: #eaeaea; }
+    .label-bottom .amount { font-size: 20px; font-weight: 700; color: #eaeaea; }
     .label-bottom .desc { font-size: 11px; color: #C38F5A; margin-top: 2px; font-weight: 500; }
     .iceberg-svg { position: absolute; top: 0; left: 0; width: 100%; height: 100%; }
     .badge { display: inline-block; background: #C38F5A; color: #1f1f1f; font-size: 13px; font-weight: 800; padding: 6px 16px; border-radius: 20px; margin-bottom: 16px; }
@@ -68,7 +68,7 @@ module.exports = async function handler(req, res) {
 </head>
 <body>
   <div class="container">
-    <div class="title">Analyse PER · Fi-One</div>
+    <div class="title">Analyse PER</div>
 
     <div class="iceberg-wrap">
       <div class="label-top">
@@ -91,8 +91,8 @@ module.exports = async function handler(req, res) {
             <stop offset="100%" stop-color="#8B5E2A" stop-opacity="0.7"/>
           </radialGradient>
           <radialGradient id="gradBottom" cx="50%" cy="20%" r="60%">
-            <stop offset="0%" stop-color="#C38F5A" stop-opacity="0.55"/>
-            <stop offset="55%" stop-color="#8B5E2A" stop-opacity="0.22"/>
+            <stop offset="0%" stop-color="#C38F5A" stop-opacity="0.85"/>
+            <stop offset="55%" stop-color="#8B5E2A" stop-opacity="0.45"/>
             <stop offset="100%" stop-color="#1f1f1f" stop-opacity="0"/>
           </radialGradient>
           <clipPath id="clipTop">
@@ -102,7 +102,7 @@ module.exports = async function handler(req, res) {
             <rect x="0" y="${horizonY}" width="300" height="${340 - horizonY}"/>
           </clipPath>
           <filter id="glow">
-            <feGaussianBlur stdDeviation="18" result="blur"/>
+            <feGaussianBlur stdDeviation="28" result="blur"/>
             <feMerge>
               <feMergeNode in="blur"/>
               <feMergeNode in="SourceGraphic"/>
