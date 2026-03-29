@@ -66,7 +66,7 @@ module.exports = async function handler(req, res) {
     .label-top {
       position: absolute;
       top: 8px;
-      left: 12px;
+      left: 0px;
       text-align: left;
       z-index: 4;
     }
@@ -144,6 +144,9 @@ module.exports = async function handler(req, res) {
       <div class="label-top">
         <div class="amount">${impotRestant.toLocaleString('fr-FR')} €</div>
         <div class="desc">Impôt restant dû</div>
+        <div style="font-size:10px;color:#555;margin-top:4px;">
+          Avant PER : ${impot.toLocaleString('fr-FR')} €
+        </div>
       </div>
 
       <div class="label-bottom">
