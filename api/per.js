@@ -15,7 +15,7 @@ module.exports = async function handler(req, res) {
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Analyse PER - Fi-One</title>
+  <title>Analyse PER </title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -56,7 +56,7 @@ module.exports = async function handler(req, res) {
     .horizon {
       position: absolute;
       left: 0; right: 0;
-      top: 42%;
+      top: 52%;
       height: 1px;
       background: rgba(255,255,255,0.15);
       z-index: 3;
@@ -175,12 +175,12 @@ module.exports = async function handler(req, res) {
 
           <!-- Clip pour la partie AU DESSUS de la ligne -->
           <clipPath id="clipTop">
-            <rect x="0" y="0" width="300" height="134"/>
+            <rect x="0" y="0" width="300" height="166"/>
           </clipPath>
 
           <!-- Clip pour la partie EN DESSOUS de la ligne -->
           <clipPath id="clipBottom">
-            <rect x="0" y="134" width="300" height="186"/>
+            <rect x="0" y="166" width="300" height="154"/>
           </clipPath>
 
           <!-- Blur pour le glow immergé -->
@@ -196,7 +196,7 @@ module.exports = async function handler(req, res) {
         <!-- Partie immergée (grande, floue, glow) -->
         <ellipse
           cx="150" cy="160"
-          rx="115" ry="130"
+          rx="115" ry="90"
           fill="url(#gradBottom)"
           clip-path="url(#clipBottom)"
           filter="url(#glow)"
