@@ -10,28 +10,17 @@ module.exports = async function handler(req, res) {
   const impotRestant = Math.max(0, impot - reduction);
   const pct = Math.min(100, Math.max(0, Math.round((reduction / impot) * 100)));
 
-  // État de référence : pct=50 → ryBottom=130, horizonY=134
-  // pct=0   → ryBottom=20  (quasi invisible)
-  // pct=50  → ryBottom=130 (état actuel du code de référence)
-  // pct=100 → ryBottom=200 (très grande partie immergée)
-
-  const ryTop = 60;  // partie visible — fixe et réduite
-  const ryBottom = Math.round(20 + (pct / 100) * 180);
-
-  // Centre ellipse fixe
-  const cx = 150;
-  const cy = 160;
-
-  // Horizon fixe — correspond à cy dans le viewBox 320
-  const horizonY = 134;
-  const horizonPct = (horizonY / 320) * 100; // ~41.9%
+  // pct=50 → ry=130 (état de référence)
+  // pct=0  → ry=20
+  // pct=100 → ry=200
+  const ryBottom = Math.round(20 + (pct / 100) * 360 / 1.8);
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Analyse PER - Fi-One</title>
+  <title>Analyse PER </title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
@@ -43,13 +32,30 @@ module.exports = async function handler(req, res) {
       justify-content: center;
       min-height: 100vh;
     }
-    .container { width: 100%; max-width: 380px; padding: 32px 24px; text-align: center; }
-    .title { font-size: 13px; font-weight: 600; letter-spacing: 2px; color: #888; text-transform: uppercase; margin-bottom: 28px; }
-    .iceberg-wrap { position: relative; width: 300px; height: 320px; margin: 0 auto 24px; }
+    .container {
+      width: 100%;
+      max-width: 380px;
+      padding: 32px 24px;
+      text-align: center;
+    }
+    .title {
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 2px;
+      color: #888;
+      text-transform: uppercase;
+      margin-bottom: 28px;
+    }
+    .iceberg-wrap {
+      position: relative;
+      width: 300px;
+      height: 320px;
+      margin: 0 auto 24px;
+    }
     .horizon {
       position: absolute;
       left: 0; right: 0;
-      top: ${horizonPct.toFixed(1)}%;
+      top: 42%;
       height: 1px;
       background: rgba(255,255,255,0.15);
       z-index: 3;
@@ -82,14 +88,16 @@ module.exports = async function handler(req, res) {
 <body>
   <div class="container">
 
-    <div class="title">Analyse PER · Fi-One</div>
+    <div class="title">Analyse PER </div>
 
     <div class="iceberg-wrap">
 
       <div class="label-top">
         <div class="amount">${impotRestant.toLocaleString('fr-FR')} €</div>
         <div class="desc">Impôt restant dû</div>
-        <div class="avant">Avant PER : ${impot.toLocaleString('fr-FR')} €</div>
+        <div style="font-size:10px;color:#555;margin-top:4px;">
+          Avant PER : ${impot.toLocaleString('fr-FR')} €
+        </div>
       </div>
 
       <div class="label-bottom">
@@ -105,16 +113,16 @@ module.exports = async function handler(req, res) {
             <stop offset="0%" stop-color="#C38F5A" stop-opacity="0.95"/>
             <stop offset="100%" stop-color="#8B5E2A" stop-opacity="0.7"/>
           </radialGradient>
-          <radialGradient id="gradBottom" cx="50%" cy="30%" r="60%">
+          <radialGradient id="gradBottom" cx="50%" cy="40%" r="55%">
             <stop offset="0%" stop-color="#C38F5A" stop-opacity="0.85"/>
-            <stop offset="55%" stop-color="#8B5E2A" stop-opacity="0.45"/>
+            <stop offset="60%" stop-color="#8B5E2A" stop-opacity="0.45"/>
             <stop offset="100%" stop-color="#1f1f1f" stop-opacity="0"/>
           </radialGradient>
           <clipPath id="clipTop">
-            <rect x="0" y="0" width="300" height="${horizonY}"/>
+            <rect x="0" y="0" width="300" height="134"/>
           </clipPath>
           <clipPath id="clipBottom">
-            <rect x="0" y="${horizonY}" width="300" height="${320 - horizonY}"/>
+            <rect x="0" y="134" width="300" height="186"/>
           </clipPath>
           <filter id="glow">
             <feGaussianBlur stdDeviation="28" result="blur"/>
@@ -125,19 +133,19 @@ module.exports = async function handler(req, res) {
           </filter>
         </defs>
 
-        <!-- Partie immergée — ryBottom varie selon pct -->
+        <!-- Partie immergée — SEUL ryBottom est dynamique -->
         <ellipse
-          cx="${cx}" cy="${cy}"
+          cx="150" cy="160"
           rx="115" ry="${ryBottom}"
           fill="url(#gradBottom)"
           clip-path="url(#clipBottom)"
           filter="url(#glow)"
         />
 
-        <!-- Partie visible — ryTop fixe et réduit -->
+        <!-- Partie visible — INCHANGÉE -->
         <ellipse
-          cx="${cx}" cy="${cy}"
-          rx="115" ry="${ryTop}"
+          cx="150" cy="160"
+          rx="115" ry="130"
           fill="url(#gradTop)"
           clip-path="url(#clipTop)"
         />
