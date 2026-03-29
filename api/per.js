@@ -168,8 +168,8 @@ module.exports = async function handler(req, res) {
 
           <!-- Gradient cercle immergé (dessous) — plus sombre -->
           <radialGradient id="gradBottom" cx="50%" cy="40%" r="55%">
-            <stop offset="0%" stop-color="#E8845A" stop-opacity="0.5"/>
-            <stop offset="60%" stop-color="#C85A2A" stop-opacity="0.25"/>
+            <stop offset="0%" stop-color="#E8845A" stop-opacity="0.25"/>
+            <stop offset="60%" stop-color="#C85A2A" stop-opacity="0.12"/>
             <stop offset="100%" stop-color="#1f1f1f" stop-opacity="0"/>
           </radialGradient>
 
