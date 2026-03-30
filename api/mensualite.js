@@ -45,33 +45,10 @@ module.exports = async function handler(req, res) {
     }
     canvas { width: 100% !important; }
 
-    /* Cards résumé */
-    .summary {
-      display: grid;
-      grid-template-columns: 1fr 1fr 1fr;
-      gap: 8px;
-      margin-top: 20px;
-    }
-    .summary-card {
-      background: #161b22;
-      border-radius: 10px;
-      padding: 10px 12px;
-      border-left: 3px solid;
-    }
     .s-label { font-size: 9px; color: #555; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 3px; }
     .s-value { font-size: 15px; font-weight: 700; }
     .s-pct { font-size: 9px; color: #444; margin-top: 2px; }
-
-    .total-card {
-      background: #161b22;
-      border-radius: 10px;
-      padding: 12px 16px;
-      border: 1px solid #C38F5A;
-      margin-bottom: 16px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+    
     .total-label { font-size: 11px; color: #888; }
     .total-value { font-size: 24px; font-weight: 800; color: #C38F5A; }
   </style>
@@ -81,31 +58,8 @@ module.exports = async function handler(req, res) {
 
     <div class="title">Décomposition mensuelle · Fi-One</div>
 
-    <div class="total-card">
-      <div class="total-label">Coût mensuel total</div>
-      <div class="total-value">${totalVal.toLocaleString('fr-FR')} €</div>
-    </div>
-
     <div class="sankey-wrap">
       <canvas id="sankeyChart"></canvas>
-    </div>
-
-    <div class="summary">
-      <div class="summary-card" style="border-color:#C38F5A">
-        <div class="s-label">Crédit</div>
-        <div class="s-value" style="color:#C38F5A">${credit.toLocaleString('fr-FR')} €</div>
-        <div class="s-pct">${Math.round(credit/totalVal*100)}% du total</div>
-      </div>
-      <div class="summary-card" style="border-color:#3dbf8a">
-        <div class="s-label">Impôts</div>
-        <div class="s-value" style="color:#3dbf8a">${impotVal.toLocaleString('fr-FR')} €</div>
-        <div class="s-pct">${Math.round(impotVal/totalVal*100)}% du total</div>
-      </div>
-      <div class="summary-card" style="border-color:#5b9bd5">
-        <div class="s-label">Charges</div>
-        <div class="s-value" style="color:#5b9bd5">${chargesVal.toLocaleString('fr-FR')} €</div>
-        <div class="s-pct">${Math.round(chargesVal/totalVal*100)}% du total</div>
-      </div>
     </div>
 
   </div>
