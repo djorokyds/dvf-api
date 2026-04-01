@@ -9,16 +9,13 @@ module.exports = async function handler(req, res) {
   const revenus = parseFloat(total_revenus.replace(/\s/g, '').replace(',', '.'));
   const pct = Math.min(100, Math.round((dettes / revenus) * 100));
 
-  // La partie colorée prend pct% de la hauteur depuis le bas
-  // La partie claire prend (100-pct)% depuis le haut
   const colorPct = pct;
   const clearPct = 100 - pct;
 
-  // Couleur selon niveau de dette
-  let color;
-  if (pct <= 30) color = '#27AE60';      // vert — sain
-  else if (pct <= 50) color = '#F39C12'; // orange — attention
-  else color = '#E74C3C';                // rouge — dangereux
+  let color, statusLabel;
+  if (pct <= 30) { color = '#27AE60'; statusLabel = '✓ Sain'; }
+  else if (pct <= 50) { color = '#F39C12'; statusLabel = '⚠ Attention'; }
+  else { color = '#E74C3C'; statusLabel = '✗ Élevé'; }
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -30,108 +27,101 @@ module.exports = async function handler(req, res) {
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
       width: 100%;
-      height: 100%;
+      height: 300px;
+      max-height: 300px;
+      overflow: hidden;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       display: flex;
       flex-direction: column;
-      min-height: 100vh;
+      height: 300px;
     }
 
-    /* Partie claire (haut) */
     .top {
       flex: ${clearPct};
       background: #F0EFE7;
       display: flex;
       align-items: flex-end;
       justify-content: flex-start;
-      padding: 0 28px 16px;
+      padding: 0 20px 10px;
       position: relative;
+      min-height: 0;
     }
-
     .top-label {
-      font-size: 13px;
+      font-size: 11px;
       font-weight: 600;
       color: #999;
       letter-spacing: 1px;
       text-transform: uppercase;
     }
+    .top-info {
+      position: absolute;
+      bottom: 10px;
+      right: 20px;
+      text-align: right;
+    }
+    .top-info .amount {
+      font-size: 13px;
+      font-weight: 700;
+      color: #aaa;
+    }
+    .top-info .label {
+      font-size: 9px;
+      color: #bbb;
+      margin-top: 1px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
 
-    /* Partie colorée (bas) */
     .bottom {
       flex: ${colorPct};
       background: ${color};
       display: flex;
       align-items: center;
       justify-content: flex-start;
-      padding: 0 24px;
+      padding: 0 20px;
       position: relative;
       overflow: hidden;
+      min-height: 0;
     }
-
-    /* Grand chiffre */
     .pct-number {
-      font-size: clamp(80px, 22vw, 140px);
+      font-size: clamp(48px, 14vw, 88px);
       font-weight: 900;
       color: #1a1a1a;
       line-height: 1;
-      letter-spacing: -4px;
+      letter-spacing: -3px;
     }
     .pct-sign {
-      font-size: clamp(40px, 10vw, 70px);
+      font-size: clamp(24px, 7vw, 44px);
       font-weight: 900;
       color: #1a1a1a;
       vertical-align: super;
-      letter-spacing: -2px;
+      letter-spacing: -1px;
     }
-
-    /* Info bas droite */
     .bottom-info {
       position: absolute;
-      bottom: 20px;
-      right: 24px;
+      bottom: 12px;
+      right: 20px;
       text-align: right;
     }
     .bottom-info .amount {
-      font-size: 14px;
+      font-size: 13px;
       font-weight: 700;
-      color: rgba(0,0,0,0.5);
+      color: rgba(0,0,0,0.45);
     }
     .bottom-info .label {
-      font-size: 10px;
+      font-size: 9px;
       color: rgba(0,0,0,0.35);
-      margin-top: 2px;
+      margin-top: 1px;
       text-transform: uppercase;
       letter-spacing: 0.5px;
     }
-
-    /* Info haut droite */
-    .top-info {
-      position: absolute;
-      bottom: 16px;
-      right: 24px;
-      text-align: right;
-    }
-    .top-info .amount {
-      font-size: 14px;
-      font-weight: 700;
-      color: #aaa;
-    }
-    .top-info .label {
-      font-size: 10px;
-      color: #bbb;
-      margin-top: 2px;
-      text-transform: uppercase;
-      letter-spacing: 0.5px;
-    }
-
-    /* Status */
     .status {
       position: absolute;
-      top: 20px;
-      right: 24px;
-      font-size: 11px;
+      top: 10px;
+      right: 20px;
+      font-size: 10px;
       font-weight: 700;
       color: rgba(0,0,0,0.45);
       text-transform: uppercase;
@@ -141,7 +131,6 @@ module.exports = async function handler(req, res) {
 </head>
 <body>
 
-  <!-- Partie claire -->
   <div class="top">
     <div class="top-label">Taux d'endettement</div>
     <div class="top-info">
@@ -150,10 +139,9 @@ module.exports = async function handler(req, res) {
     </div>
   </div>
 
-  <!-- Partie colorée -->
   <div class="bottom">
     <div class="pct-number">${pct}<span class="pct-sign">%</span></div>
-    <div class="status">${pct <= 30 ? '✓ Sain' : pct <= 50 ? '⚠ Attention' : '✗ Élevé'}</div>
+    <div class="status">${statusLabel}</div>
     <div class="bottom-info">
       <div class="amount">${dettes.toLocaleString('fr-FR')} €</div>
       <div class="label">Dettes</div>
