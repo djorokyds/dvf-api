@@ -166,15 +166,3 @@ module.exports = async function handler(req, res) {
   res.setHeader('Content-Type', 'text/html; charset=utf-8');
   return res.status(200).send(html);
 };
-```
-
-Commit comme `api/dette.js` et teste avec différents niveaux :
-```
-# Sain (vert)
-https://dvf-api-flame.vercel.app/api/dette?total_dettes=600&total_revenus=3000
-
-# Attention (orange)
-https://dvf-api-flame.vercel.app/api/dette?total_dettes=1200&total_revenus=3000
-
-# Élevé (rouge)
-https://dvf-api-flame.vercel.app/api/dette?total_dettes=2100&total_revenus=3000
