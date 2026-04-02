@@ -11,11 +11,11 @@ module.exports = async function handler(req, res) {
 
   let color1, color2, colorLight, label;
   if (pct <= 30) {
-    color1 = '#27AE60'; color2 = '#1a7a43'; colorLight = 'rgba(39,174,96,0.2)'; label = 'Sain';
+    color1 = '#27AE60'; color2 = '#1a7a43'; colorLight = 'rgba(39,174,96,0.2)'; label = '✅ Ratio Sain';
   } else if (pct <= 50) {
-    color1 = '#F39C12'; color2 = '#b87200'; colorLight = 'rgba(243,156,18,0.2)'; label = 'Attention';
+    color1 = '#F39C12'; color2 = '#b87200'; colorLight = 'rgba(243,156,18,0.2)'; label = '⚠️ Ratio Tendue';
   } else {
-    color1 = '#E74C3C'; color2 = '#c0392b'; colorLight = 'rgba(231,76,60,0.2)'; label = 'Élevé';
+    color1 = '#E74C3C'; color2 = '#c0392b'; colorLight = 'rgba(231,76,60,0.2)'; label = '⚠️🚫 Ratio Élevé';
   }
 
   // Conversion % → angle SVG
