@@ -7,7 +7,7 @@ module.exports = async function handler(req, res) {
 
   const dettes = parseFloat(total_dettes.replace(/\s/g, '').replace(',', '.'));
   const revenus = parseFloat(total_revenus.replace(/\s/g, '').replace(',', '.'));
-  const pct = Math.min(95, Math.round((dettes / revenus) * 100));
+  const pct = Math.min(99, Math.round((dettes / revenus) * 100));
 
   let color1, color2, colorLight, label;
   if (pct <= 30) {
