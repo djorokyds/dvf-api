@@ -87,7 +87,7 @@ module.exports = async function handler(req, res) {
     * { box-sizing: border-box; margin: 0; padding: 0; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #1a1a1a;
+      background: #171717;
       display: flex;
       flex-direction: column;
       align-items: center;
@@ -160,7 +160,7 @@ module.exports = async function handler(req, res) {
     </text>
 
     <!-- Revenus en bas -->
-    <text x="${cx}" y="305" text-anchor="middle" font-size="11" fill="#555" font-family="-apple-system, sans-serif">
+    <text x="${cx}" y="400" text-anchor="middle" font-size="11" fill="#555" font-family="-apple-system, sans-serif">
       Revenus : ${revenus.toLocaleString('fr-FR')} €
     </text>
 
