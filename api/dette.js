@@ -145,7 +145,7 @@ module.exports = async function handler(req, res) {
       text-anchor="middle"
       font-size="18"
       font-weight="700"
-      fill="${color1}"
+      fill="#eaeaea"
       font-family="-apple-system, sans-serif"
     >${pct_reel}%</text>
     ` : ''}
