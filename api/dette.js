@@ -7,7 +7,9 @@ module.exports = async function handler(req, res) {
 
   const dettes = parseFloat(total_dettes.replace(/\s/g, '').replace(',', '.'));
   const revenus = parseFloat(total_revenus.replace(/\s/g, '').replace(',', '.'));
-  const pct = Math.min(99, Math.round((dettes / revenus) * 100));
+  const pct = Math.min(99.99, Math.round((dettes / revenus) * 100));
+
+  const pct_reel = Math.round((dettes / revenus) * 100);
 
   let color1, color2, colorLight, label;
   if (pct <= 30) {
@@ -145,7 +147,7 @@ module.exports = async function handler(req, res) {
       font-weight="700"
       fill="${color1}"
       font-family="-apple-system, sans-serif"
-    >${pct}%</text>
+    >${pct_reel}%</text>
     ` : ''}
 
     <!-- Label centre -->
