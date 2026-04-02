@@ -19,7 +19,6 @@ module.exports = async function handler(req, res) {
   }
 
   const pctAngle = (pct / 100) * 360;
-  const midAngle = pctAngle / 2;
 
   function polarToXY(cx, cy, r, angleDeg) {
     const rad = ((angleDeg - 90) * Math.PI) / 180;
@@ -57,16 +56,11 @@ module.exports = async function handler(req, res) {
   const topSep = polarToXY(cx, cy, rOuterBig + 6, 0);
   const botSep = polarToXY(cx, cy, rInner - 6, 0);
 
-  // Label avec ligne coudée
-  const labelLineStart = polarToXY(cx, cy, rOuterBig + 12, midAngle);
-  const isRight = labelLineStart.x > cx;
-  const labelLineCorner = {
-    x: labelLineStart.x + (isRight ? 25 : -25),
-    y: labelLineStart.y - 35
-  };
-  const lineEndX = isRight ? labelLineCorner.x + 50 : labelLineCorner.x - 50;
-  const textAnchor = isRight ? 'start' : 'end';
-  const textX = isRight ? labelLineCorner.x + 4 : labelLineCorner.x - 4;
+  // Tout fixe — haut gauche
+  const pointX = 95, pointY = 62;
+  const cornerX = 60, cornerY = 45;
+  const lineEndX = 130;
+  const textX = 62;
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -119,27 +113,25 @@ module.exports = async function handler(req, res) {
       stroke="#1a1a1a" stroke-width="3"
     />
 
-    <!-- Point + ligne coudée + label % -->
-    ${pct > 2 ? `
-      <circle cx="${labelLineStart.x.toFixed(2)}" cy="${labelLineStart.y.toFixed(2)}" r="4" fill="${color1}"/>
-      <polyline
-        points="${labelLineStart.x.toFixed(2)},${labelLineStart.y.toFixed(2)} ${labelLineCorner.x.toFixed(2)},${labelLineCorner.y.toFixed(2)} ${lineEndX.toFixed(2)},${labelLineCorner.y.toFixed(2)}"
-        fill="none" stroke="${color1}" stroke-width="1.5"
-      />
-      <text
-        x="${textX.toFixed(2)}" y="${(labelLineCorner.y - 6).toFixed(2)}"
-        text-anchor="${textAnchor}"
-        font-size="22" font-weight="800" fill="#eaeaea"
-        font-family="-apple-system, sans-serif"
-      >${pct}%</text>
-      <text
-        x="${textX.toFixed(2)}" y="${(labelLineCorner.y + 10).toFixed(2)}"
-        text-anchor="${textAnchor}"
-        font-size="10" fill="${color1}"
-        font-family="-apple-system, sans-serif"
-        font-weight="600"
-      >${label} · ${dettes.toLocaleString('fr-FR')} €</text>
-    ` : ''}
+    <!-- Point fixe + ligne coudée fixe + label -->
+    <circle cx="${pointX}" cy="${pointY}" r="4" fill="${color1}"/>
+    <polyline
+      points="${pointX},${pointY} ${cornerX},${cornerY} ${lineEndX},${cornerY}"
+      fill="none" stroke="${color1}" stroke-width="1.5"
+    />
+    <text
+      x="${textX}" y="${cornerY - 6}"
+      text-anchor="start"
+      font-size="22" font-weight="800" fill="#eaeaea"
+      font-family="-apple-system, sans-serif"
+    >${pct}%</text>
+    <text
+      x="${textX}" y="${cornerY + 10}"
+      text-anchor="start"
+      font-size="10" fill="${color1}"
+      font-family="-apple-system, sans-serif"
+      font-weight="600"
+    >${label} · ${dettes.toLocaleString('fr-FR')} €</text>
 
     <!-- Centre -->
     <text x="${cx}" y="${cy - 8}" text-anchor="middle" font-size="11" fill="#555" font-family="-apple-system, sans-serif">REVENUS</text>
