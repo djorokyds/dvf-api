@@ -1,16 +1,81 @@
 module.exports = async function handler(req, res) {
-  const { pct_dette } = req.query;
+  const { total_dettes, total_revenus } = req.query;
 
-  if (!pct_dette) {
-    return res.status(400).json({ error: "Paramètre manquant (pct_dette)" });
+  if (!total_dettes || !total_revenus) {
+    return res.status(400).json({ error: "Paramètres manquants (total_dettes, total_revenus)" });
   }
 
-  const pct = Math.min(100, Math.max(0, parseFloat(pct_dette.replace(',', '.'))));
+  const dettes = parseFloat(total_dettes.replace(/\s/g, '').replace(',', '.'));
+  const revenus = parseFloat(total_revenus.replace(/\s/g, '').replace(',', '.'));
+  const pct = Math.min(100, Math.round((dettes / revenus) * 100));
 
-  let color1, color2;
-  if (pct <= 30) { color1 = '#27AE60'; color2 = '#1a7a43'; }
-  else if (pct <= 50) { color1 = '#F39C12'; color2 = '#b87200'; }
-  else { color1 = '#E05555'; color2 = '#b83030'; }
+  let color1, color2, colorLight, label;
+  if (pct <= 30) {
+    color1 = '#27AE60'; color2 = '#1a7a43'; colorLight = 'rgba(39,174,96,0.2)'; label = 'Sain';
+  } else if (pct <= 50) {
+    color1 = '#F39C12'; color2 = '#b87200'; colorLight = 'rgba(243,156,18,0.2)'; label = 'Attention';
+  } else {
+    color1 = '#9B59B6'; color2 = '#6c3483'; colorLight = 'rgba(155,89,182,0.2)'; label = 'Élevé';
+  }
+
+  // Conversion % → angle SVG
+  // Cercle commence à -90° (haut), sens horaire
+  // pct% = pct/100 * 360°
+  const pctAngle = (pct / 100) * 360;
+
+  function polarToXY(cx, cy, r, angleDeg) {
+    const rad = ((angleDeg - 90) * Math.PI) / 180;
+    return {
+      x: cx + r * Math.cos(rad),
+      y: cy + r * Math.sin(rad)
+    };
+  }
+
+  function describeArc(cx, cy, r, startAngle, endAngle) {
+    const start = polarToXY(cx, cy, r, startAngle);
+    const end = polarToXY(cx, cy, r, endAngle);
+    const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+    return `M ${start.x.toFixed(2)} ${start.y.toFixed(2)} A ${r} ${r} 0 ${largeArc} 1 ${end.x.toFixed(2)} ${end.y.toFixed(2)}`;
+  }
+
+  function describeDonut(cx, cy, rOuter, rInner, startAngle, endAngle) {
+    const s1 = polarToXY(cx, cy, rOuter, startAngle);
+    const e1 = polarToXY(cx, cy, rOuter, endAngle);
+    const s2 = polarToXY(cx, cy, rInner, endAngle);
+    const e2 = polarToXY(cx, cy, rInner, startAngle);
+    const largeArc = endAngle - startAngle > 180 ? 1 : 0;
+    return [
+      `M ${s1.x.toFixed(2)} ${s1.y.toFixed(2)}`,
+      `A ${rOuter} ${rOuter} 0 ${largeArc} 1 ${e1.x.toFixed(2)} ${e1.y.toFixed(2)}`,
+      `L ${s2.x.toFixed(2)} ${s2.y.toFixed(2)}`,
+      `A ${rInner} ${rInner} 0 ${largeArc} 0 ${e2.x.toFixed(2)} ${e2.y.toFixed(2)}`,
+      'Z'
+    ].join(' ');
+  }
+
+  const cx = 160, cy = 160;
+  const rOuter = 130, rInner = 85, rOuterBig = 145;
+
+  // Arc de fond (gris) — 360°
+  const bgPath = describeDonut(cx, cy, rOuter, rInner, 0.5, 359.5);
+
+  // Arc dette (coloré) — de 0 à pctAngle
+  const debtePath = pctAngle > 0 ? describeDonut(cx, cy, rOuterBig, rInner, 0, pctAngle) : '';
+
+  // Zone triangulaire light (fond clair du secteur)
+  const midAngle = pctAngle / 2;
+  const tipX = cx, tipY = cy;
+  const arcLightStart = polarToXY(cx, cy, rOuter, 0);
+  const arcLightEnd = polarToXY(cx, cy, rOuter, pctAngle);
+  const lightLargeArc = pctAngle > 180 ? 1 : 0;
+  const lightPath = pctAngle > 0 ? `M ${tipX} ${tipY} L ${arcLightStart.x.toFixed(2)} ${arcLightStart.y.toFixed(2)} A ${rOuter} ${rOuter} 0 ${lightLargeArc} 1 ${arcLightEnd.x.toFixed(2)} ${arcLightEnd.y.toFixed(2)} Z` : '';
+
+  // Label position (milieu de l'arc)
+  const labelPos = polarToXY(cx, cy, (rOuter + rInner) / 2 + 10, midAngle);
+
+  // Ligne séparatrice verticale
+  const topSep = polarToXY(cx, cy, rOuterBig + 6, 0);
+  const botSep = polarToXY(cx, cy, rInner - 6, 0);
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -20,120 +85,87 @@ module.exports = async function handler(req, res) {
   <title>Dette - Fi-One</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body {
-      width: 100%;
-      height: 100%;
-      overflow: hidden;
-    }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #ffffff;
+      background: #1a1a1a;
       display: flex;
+      flex-direction: column;
       align-items: center;
       justify-content: center;
-      height: 160px;
+      min-height: 100vh;
     }
-    .container {
-      width: 88%;
-      position: relative;
-    }
-
-    /* Barre de fond */
-    .bar-bg {
-      width: 100%;
-      height: 44px;
-      background: #f0f0f0;
-      border-radius: 22px;
-      border: 2px solid #e0e0e0;
-      position: relative;
-      overflow: visible;
-    }
-
-    /* Barre remplie */
-    .bar-fill {
-      position: absolute;
-      left: 0; top: 0;
-      width: ${pct}%;
-      height: 100%;
-      border-radius: 22px;
-      background: repeating-linear-gradient(
-        -45deg,
-        ${color1},
-        ${color1} 10px,
-        ${color2} 10px,
-        ${color2} 20px
-      );
-      background-size: 28px 28px;
-      animation: slide 1s linear infinite;
-    }
-
-    @keyframes slide {
-      from { background-position: 0 0; }
-      to { background-position: 28px 0; }
-    }
-
-    /* Ligne pointillée verticale */
-    .dashed-line {
-      position: absolute;
-      top: 0;
-      left: ${pct}%;
-      transform: translateX(-50%);
-      width: 1px;
-      height: 44px;
-      background: repeating-linear-gradient(
-        to bottom,
-        #1f2d5a,
-        #1f2d5a 4px,
-        transparent 4px,
-        transparent 8px
-      );
-      z-index: 2;
-    }
-
-    /* Extension ligne vers le bas */
-    .dashed-ext {
-      position: absolute;
-      top: 44px;
-      left: ${pct}%;
-      transform: translateX(-50%);
-      width: 1px;
-      height: 28px;
-      background: repeating-linear-gradient(
-        to bottom,
-        #1f2d5a,
-        #1f2d5a 3px,
-        transparent 3px,
-        transparent 6px
-      );
-      z-index: 2;
-    }
-
-    /* Label % */
-    .pct-label {
-      position: absolute;
-      top: 80px;
-      left: ${pct}%;
-      transform: translateX(-50%);
-      font-size: 22px;
-      font-weight: 800;
-      color: #1f2d5a;
-      white-space: nowrap;
-      letter-spacing: -0.5px;
-    }
+    svg { overflow: visible; }
   </style>
 </head>
 <body>
-  <div class="container">
 
-    <div class="bar-bg">
-      <div class="bar-fill"></div>
-      <div class="dashed-line"></div>
-    </div>
+  <svg viewBox="0 0 320 320" width="320" height="320" xmlns="http://www.w3.org/2000/svg">
+    <defs>
+      <!-- Gradient arc dette -->
+      <linearGradient id="debtGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <stop offset="0%" stop-color="${color1}" stop-opacity="0.9"/>
+        <stop offset="100%" stop-color="${color2}" stop-opacity="1"/>
+      </linearGradient>
 
-    <div class="dashed-ext"></div>
-    <div class="pct-label">${pct}%</div>
+      <!-- Gradient glow extérieur -->
+      <filter id="glow">
+        <feGaussianBlur stdDeviation="4" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
 
-  </div>
+      <!-- Shadow donut bg -->
+      <filter id="shadow">
+        <feDropShadow dx="0" dy="2" stdDeviation="3" flood-color="#000" flood-opacity="0.3"/>
+      </filter>
+    </defs>
+
+    <!-- Arc de fond gris -->
+    <path d="${bgPath}" fill="#2a2a2a" filter="url(#shadow)"/>
+
+    <!-- Zone claire secteur dette -->
+    ${lightPath ? `<path d="${lightPath}" fill="${colorLight}"/>` : ''}
+
+    <!-- Arc dette coloré (plus grand rayon) -->
+    ${debtePath ? `<path d="${debtePath}" fill="url(#debtGrad)" filter="url(#glow)"/>` : ''}
+
+    <!-- Ligne séparatrice -->
+    <line
+      x1="${topSep.x.toFixed(2)}" y1="${topSep.y.toFixed(2)}"
+      x2="${botSep.x.toFixed(2)}" y2="${botSep.y.toFixed(2)}"
+      stroke="#1a1a1a" stroke-width="3"
+    />
+
+    <!-- Label % dans l'arc -->
+    ${pct > 5 ? `
+    <text
+      x="${labelPos.x.toFixed(2)}"
+      y="${(labelPos.y + 6).toFixed(2)}"
+      text-anchor="middle"
+      font-size="18"
+      font-weight="700"
+      fill="${color1}"
+      font-family="-apple-system, sans-serif"
+    >${pct}%</text>
+    ` : ''}
+
+    <!-- Label centre -->
+    <text x="${cx}" y="${cy - 12}" text-anchor="middle" font-size="13" font-weight="700" fill="#eaeaea" font-family="-apple-system, sans-serif">
+      ${dettes.toLocaleString('fr-FR')} €
+    </text>
+    <text x="${cx}" y="${cy + 8}" text-anchor="middle" font-size="10" fill="#666" font-family="-apple-system, sans-serif">
+      DETTES
+    </text>
+    <text x="${cx}" y="${cy + 26}" text-anchor="middle" font-size="10" font-weight="700" fill="${color1}" font-family="-apple-system, sans-serif">
+      ${label}
+    </text>
+
+    <!-- Revenus en bas -->
+    <text x="${cx}" y="305" text-anchor="middle" font-size="11" fill="#555" font-family="-apple-system, sans-serif">
+      Revenus : ${revenus.toLocaleString('fr-FR')} €
+    </text>
+
+  </svg>
+
 </body>
 </html>`;
 
