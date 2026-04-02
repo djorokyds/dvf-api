@@ -152,7 +152,7 @@ module.exports = async function handler(req, res) {
     <text x="${cx}" y="${cy - 12}" text-anchor="middle" font-size="13" font-weight="700" fill="#eaeaea" font-family="-apple-system, sans-serif">
       ${dettes.toLocaleString('fr-FR')} €
     </text>
-    <text x="${cx}" y="${cy + 8}" text-anchor="middle" font-size="10" fill="#666" font-family="-apple-system, sans-serif">
+    <text x="${cx}" y="${cy + 8}" text-anchor="middle" font-size="10" fill="#eaeaea" font-family="-apple-system, sans-serif">
       DETTES
     </text>
     <text x="${cx}" y="${cy + 26}" text-anchor="middle" font-size="10" font-weight="700" fill="${color1}" font-family="-apple-system, sans-serif">
@@ -160,7 +160,7 @@ module.exports = async function handler(req, res) {
     </text>
 
     <!-- Revenus en bas -->
-    <text x="${cx}" y="400" text-anchor="middle" font-size="11" fill="#555" font-family="-apple-system, sans-serif">
+    <text x="${cx}" y="350" text-anchor="middle" font-size="11" fill="#555" font-family="-apple-system, sans-serif">
       Revenus : ${revenus.toLocaleString('fr-FR')} €
     </text>
 
