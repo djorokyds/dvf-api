@@ -7,7 +7,7 @@ module.exports = async function handler(req, res) {
 
   const dettes = parseFloat(total_dettes.replace(/\s/g, '').replace(',', '.'));
   const revenus = parseFloat(total_revenus.replace(/\s/g, '').replace(',', '.'));
-  const pct = Math.min(100, Math.round((dettes / revenus) * 100));
+  const pct = Math.min(95, Math.round((dettes / revenus) * 100));
 
   let color1, color2, colorLight, label;
   if (pct <= 30) {
@@ -21,7 +21,7 @@ module.exports = async function handler(req, res) {
   // Conversion % → angle SVG
   // Cercle commence à -90° (haut), sens horaire
   // pct% = pct/100 * 360°
-  const pctAngle = (pct / 95) * 360;
+  const pctAngle = (pct / 100) * 360;
 
   function polarToXY(cx, cy, r, angleDeg) {
     const rad = ((angleDeg - 90) * Math.PI) / 180;
