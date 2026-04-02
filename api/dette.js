@@ -15,7 +15,7 @@ module.exports = async function handler(req, res) {
   } else if (pct <= 50) {
     color1 = '#F39C12'; color2 = '#b87200'; colorLight = 'rgba(243,156,18,0.2)'; label = 'Attention';
   } else {
-    color1 = '#9B59B6'; color2 = '#6c3483'; colorLight = 'rgba(155,89,182,0.2)'; label = 'Élevé';
+    color1 = '#E74C3C'; color2 = '#c0392b'; colorLight = 'rgba(231,76,60,0.2)'; label = 'Élevé';
   }
 
   // Conversion % → angle SVG
