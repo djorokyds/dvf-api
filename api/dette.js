@@ -21,7 +21,7 @@ module.exports = async function handler(req, res) {
   // Conversion % → angle SVG
   // Cercle commence à -90° (haut), sens horaire
   // pct% = pct/100 * 360°
-  const pctAngle = (pct / 100) * 360;
+  const pctAngle = (pct / 95) * 360;
 
   function polarToXY(cx, cy, r, angleDeg) {
     const rad = ((angleDeg - 90) * Math.PI) / 180;
