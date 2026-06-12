@@ -22,27 +22,29 @@ module.exports = async function handler(req, res) {
   <title>Épargne - Fi-One</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
+    html, body {
+      width: 100%;
+      height: 100%;
+    }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #1a1a1a;
       color: #eaeaea;
-      padding: 16px;
-      min-height: 100vh;
       display: flex;
       flex-direction: column;
-      gap: 10px;
-      justify-content: center;
+      gap: 2px;
     }
 
-    /* Cards */
     .card {
       background: #242424;
-      border-radius: 16px;
+      border-radius: 0;
       padding: 16px 18px;
       display: flex;
       align-items: center;
       gap: 14px;
-      border: 1px solid #2e2e2e;
+      border: none;
+      border-bottom: 1px solid #2a2a2a;
+      width: 100%;
     }
     .card-icon {
       width: 46px;
@@ -55,7 +57,7 @@ module.exports = async function handler(req, res) {
       flex-shrink: 0;
     }
     .card-icon.orange { background: rgba(195,143,90,0.15); }
-    .card-icon.green  { background: rgba(39,174,96,0.15); }
+    .card-icon.green  { background: rgba(39,174,96,0.25); }
     .card-info { flex: 1; }
     .card-label {
       font-size: 13px;
@@ -69,12 +71,12 @@ module.exports = async function handler(req, res) {
     .card-value.orange { color: #C38F5A; }
     .card-value.green  { color: #27AE60; }
 
-    /* Barre */
     .bar-card {
       background: #242424;
-      border-radius: 16px;
+      border-radius: 0;
       padding: 16px 18px;
-      border: 1px solid #2e2e2e;
+      border: none;
+      width: 100%;
     }
     .bar-wrap {
       position: relative;
@@ -90,7 +92,6 @@ module.exports = async function handler(req, res) {
       width: ${pctEpargne}%;
       background: linear-gradient(90deg, #27AE60, #2ecc71);
       border-radius: 7px 0 0 7px;
-      transition: width 1s ease;
     }
     .bar-dette {
       position: absolute;
@@ -129,7 +130,6 @@ module.exports = async function handler(req, res) {
 </head>
 <body>
 
-  <!-- Épargne bloquée -->
   <div class="card">
     <div class="card-icon orange">🔒</div>
     <div class="card-info">
@@ -138,16 +138,14 @@ module.exports = async function handler(req, res) {
     </div>
   </div>
 
-  <!-- Épargne nette disponible -->
   <div class="card">
-    <div class="card-icon green">✅</div>
+    <div class="card-icon green">🟢</div>
     <div class="card-info">
       <div class="card-label">Épargne nette disponible</div>
       <div class="card-value green">${dispo.toLocaleString('fr-FR')} €</div>
     </div>
   </div>
 
-  <!-- Barre épargne brut vs dette -->
   <div class="bar-card">
     <div class="bar-wrap">
       <div class="bar-epargne"></div>
