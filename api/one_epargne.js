@@ -57,6 +57,17 @@ module.exports = async function handler(req, res) {
       font-size: 20px;
       flex-shrink: 0;
     }
+    .card-icon.orange {
+      background: transparent;
+      border: 1px solid rgba(195, 143, 90, 0.35);
+      color: #C38F5A;
+    }
+    
+    .card-icon.green {
+      background: transparent;
+      border: 1px solid rgba(39, 174, 96, 0.35);
+      color: #27AE60;
+    }
     .card-info { flex: 1; }
     .card-label {
       font-size: 17px;
