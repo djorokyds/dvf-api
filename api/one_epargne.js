@@ -24,7 +24,7 @@ module.exports = async function handler(req, res) {
     * { box-sizing: border-box; margin: 0; padding: 0; }
     html, body {
       width: 100%;
-      height: 100%;
+      height: auto;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -33,6 +33,7 @@ module.exports = async function handler(req, res) {
       display: flex;
       flex-direction: column;
       gap: 2px;
+      height: auto;
     }
 
     .card {
