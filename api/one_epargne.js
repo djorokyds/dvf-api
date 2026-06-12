@@ -28,7 +28,7 @@ module.exports = async function handler(req, res) {
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #1a1a1a;
+      background: #171717;
       color: #eaeaea;
       display: flex;
       flex-direction: column;
