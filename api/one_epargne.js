@@ -57,11 +57,9 @@ module.exports = async function handler(req, res) {
       font-size: 20px;
       flex-shrink: 0;
     }
-    .card-icon.orange { background: rgba(195,143,90,0.15); }
-    .card-icon.green  { background: rgba(39,174,96,0.25); }
     .card-info { flex: 1; }
     .card-label {
-      font-size: 20px;
+      font-size: 17px;
       color: #888;
       margin-bottom: 3px;
     }
@@ -140,7 +138,7 @@ module.exports = async function handler(req, res) {
   </div>
 
   <div class="card">
-    <div class="card-icon green">💰</div>
+    <div class="card-icon green">🟢</div>
     <div class="card-info">
       <div class="card-label">Épargne nette disponible</div>
       <div class="card-value green">${dispo.toLocaleString('fr-FR')} €</div>
