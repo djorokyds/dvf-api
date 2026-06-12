@@ -8,11 +8,13 @@ module.exports = async function handler(req, res) {
   const dispo = parseFloat(montant_dispo.replace(/\s/g, '').replace(',', '.'));
   const objectif = parseFloat(cible.replace(/\s/g, '').replace(',', '.'));
 
-  const ratio = objectif > 0 ? dispo / objectif : 0;
-  const score = Math.min(Math.round(ratio * 100), 100);
-  const manque = Math.max(objectif - dispo, 0);
+  const atteint = dispo >= objectif;
+  const statut = atteint ? "Atteint" : "En cours";
 
-  const angle = -90 + (score / 100) * 180;
+  const ratio = objectif > 0 ? dispo / objectif : 0;
+  const pct = Math.min(ratio, 1);
+
+  const angle = -75 + (pct * 150);
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -33,189 +35,147 @@ module.exports = async function handler(req, res) {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #1f1f1f;
       color: #eaeaea;
-      padding: 18px;
     }
 
-    .security-card {
-      background: #242424;
-      border-radius: 18px;
-      padding: 20px;
-      border: 1px solid #2f2f2f;
-    }
-
-    .title {
-      font-size: 22px;
-      font-weight: 800;
-      margin-bottom: 18px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .content {
+    .security-widget {
+      width: 100%;
+      height: 155px;
+      background: #1f1f1f;
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: 18px;
+      padding: 16px 22px;
+      overflow: hidden;
     }
 
-    .score-block {
-      flex: 1;
+    .left {
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
     }
 
-    .label {
-      font-size: 14px;
-      color: #888;
-      margin-bottom: 6px;
+    .status {
+      font-size: 22px;
+      color: #bdbdbd;
+      font-weight: 500;
+      margin-bottom: 12px;
     }
 
-    .score {
-      font-size: 58px;
-      font-weight: 900;
-      line-height: 1;
-      color: #9CFF7A;
-      letter-spacing: -2px;
-    }
-
-    .score span {
-      font-size: 24px;
-      color: #eaeaea;
-      font-weight: 600;
-      letter-spacing: 0;
+    .amount-line {
+      display: flex;
+      align-items: baseline;
+      gap: 10px;
     }
 
     .amount {
-      margin-top: 14px;
-      font-size: 15px;
-      color: #aaa;
-      line-height: 1.4;
+      font-size: 68px;
+      line-height: 1;
+      font-weight: 300;
+      letter-spacing: -3px;
+      color: #b7ff7a;
     }
 
-    .amount strong {
-      color: #fff;
+    .target {
+      font-size: 32px;
+      font-weight: 300;
+      color: #ffffff;
     }
 
     .gauge {
       position: relative;
-      width: 150px;
-      height: 85px;
+      width: 190px;
+      height: 105px;
+      flex-shrink: 0;
     }
 
-    .arc {
+    .segment {
       position: absolute;
-      width: 150px;
-      height: 75px;
-      border-radius: 150px 150px 0 0;
-      overflow: hidden;
-      bottom: 0;
+      width: 58px;
+      height: 24px;
+      border-radius: 20px;
+      top: 46px;
+      background: #333;
     }
 
-    .arc::before {
-      content: "";
-      position: absolute;
-      inset: 0;
-      background: conic-gradient(
-        from 270deg at 50% 100%,
-        #3a3a3a 0deg,
-        #3a3a3a 55deg,
-        #9CFF7A 55deg,
-        #9CFF7A 125deg,
-        #4F6B3F 125deg,
-        #4F6B3F 180deg,
-        transparent 180deg
-      );
+    .seg-left {
+      left: 4px;
+      transform: rotate(-48deg);
+      background: #333;
+      border: 2px solid #3f3f3f;
     }
 
-    .arc::after {
-      content: "";
-      position: absolute;
-      left: 18px;
-      right: 18px;
-      bottom: 0;
-      height: 57px;
-      background: #242424;
-      border-radius: 120px 120px 0 0;
+    .seg-mid {
+      left: 60px;
+      top: 22px;
+      width: 86px;
+      background: #b7ff7a;
+      transform: rotate(0deg);
+    }
+
+    .seg-right {
+      right: 5px;
+      transform: rotate(48deg);
+      background: #5f7b49;
     }
 
     .needle {
       position: absolute;
       left: 50%;
-      bottom: 8px;
-      width: 4px;
-      height: 68px;
-      background: #ffffff;
-      border-radius: 4px;
+      bottom: 18px;
+      width: 8px;
+      height: 88px;
+      background: #000;
+      border-radius: 6px;
       transform-origin: bottom center;
       transform: translateX(-50%) rotate(${angle}deg);
-      z-index: 3;
+      z-index: 5;
     }
 
-    .needle::after {
+    .needle::before {
       content: "";
       position: absolute;
       left: 50%;
-      bottom: -9px;
-      width: 22px;
-      height: 22px;
-      background: #242424;
-      border: 5px solid #fff;
+      top: 4px;
+      width: 4px;
+      height: 76px;
+      background: #b7ff7a;
+      transform: translateX(-50%);
+      border-radius: 4px;
+    }
+
+    .pivot {
+      position: absolute;
+      left: 50%;
+      bottom: 5px;
+      width: 32px;
+      height: 32px;
+      background: #111;
+      border: 7px solid #fff;
       border-radius: 50%;
       transform: translateX(-50%);
-    }
-
-    .status {
-      margin-top: 18px;
-      background: rgba(39, 174, 96, 0.12);
-      border: 1px solid rgba(39, 174, 96, 0.25);
-      color: #7DFFB0;
-      border-radius: 14px;
-      padding: 13px 15px;
-      font-size: 15px;
-      font-weight: 600;
-      line-height: 1.4;
-    }
-
-    .info {
-      margin-top: 12px;
-      color: #888;
-      font-size: 12px;
-      line-height: 1.5;
+      z-index: 6;
     }
   </style>
 </head>
 
 <body>
-  <div class="security-card">
-    <div class="title">🛡️ Matelas de sécurité</div>
+  <div class="security-widget">
+    <div class="left">
+      <div class="status">${statut}</div>
 
-    <div class="content">
-      <div class="score-block">
-        <div class="label">Niveau de couverture</div>
-        <div class="score">${score}<span> /100</span></div>
-
-        <div class="amount">
-          <strong>${dispo.toLocaleString('fr-FR')} €</strong> disponibles<br>
-          Objectif : ${objectif.toLocaleString('fr-FR')} €
-        </div>
-      </div>
-
-      <div class="gauge">
-        <div class="arc"></div>
-        <div class="needle"></div>
+      <div class="amount-line">
+        <div class="amount">${dispo.toLocaleString('fr-FR')}</div>
+        <div class="target">/${objectif.toLocaleString('fr-FR')}</div>
       </div>
     </div>
 
-    <div class="status">
-      ${
-        score >= 100
-          ? `✅ Objectif atteint : votre sécurité financière est assurée.`
-          : `🟠 Il manque ${manque.toLocaleString('fr-FR')} € pour atteindre votre cible.`
-      }
+    <div class="gauge">
+      <div class="segment seg-left"></div>
+      <div class="segment seg-mid"></div>
+      <div class="segment seg-right"></div>
+      <div class="needle"></div>
+      <div class="pivot"></div>
     </div>
-
-    <p class="info">
-      ℹ️ Le matelas de sécurité correspond à l’épargne disponible pour faire face aux imprévus.
-    </p>
   </div>
 </body>
 </html>`;
