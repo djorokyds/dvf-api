@@ -174,7 +174,7 @@ module.exports = async function handler(req, res) {
     </div>
   </div>
   <p style="margin:12px 18px;color:#888;font-size:12px;line-height:1.5;">
-  ℹ️ L'épargne disponible est l'épargne mobilisable à tout moment pour vos projets, investissements ou besoins imprévus.
+  ℹ️ L'épargne disponible correspond aux supports mobilisables à court terme pour vos projets ou besoins imprévus.
 </p>
 </body>
 </html>`;
