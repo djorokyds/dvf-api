@@ -140,7 +140,7 @@ module.exports = async function handler(req, res) {
       background: #242424;
       padding: 14px 18px 18px;
       color: #bdbdbd;
-      font-size: 14px;
+      font-size: 10px;
       line-height: 1.5;
       border-top: 1px solid #2a2a2a;
     }
@@ -180,10 +180,11 @@ module.exports = async function handler(req, res) {
         Dette (${dette.toLocaleString('fr-FR')} €)
       </div>
     </div>
+    <div class="info-text">
+      🟢 L'épargne disponible est mobilisable à tout moment pour vos projets, investissements ou besoins imprévus.
+    </div>
   </div>
-  <div class="info-text">
-  🟢 Épargne mobilisable à tout moment pour vos projets, investissements ou besoins imprévus.
-</div>
+
 </body>
 </html>`;
 
