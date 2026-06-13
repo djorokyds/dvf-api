@@ -15,17 +15,17 @@ module.exports = async function handler(req, res) {
 
   let barColor1, barColor2, statusLabel;
   if (pct >= 100) {
-    barColor1 = '#27AE60'; barColor2 = '#2ecc71'; statusLabel = '✓ Matelas atteint';
+    barColor1 = '#27AE60'; barColor2 = '#2ecc71'; statusLabel = '✅ Matelas atteint';
   } else if (pct >= 50) {
-    barColor1 = '#C8B400'; barColor2 = '#f0d000'; statusLabel = 'En cours de constitution';
+    barColor1 = '#C8B400'; barColor2 = '#f0d000'; statusLabel = '⌛ En cours de constitution';
   } else {
-    barColor1 = '#E74C3C'; barColor2 = '#ff6b6b'; statusLabel = 'Matelas insuffisant';
+    barColor1 = '#E74C3C'; barColor2 = '#ff6b6b'; statusLabel = '❌ Matelas insuffisant';
   }
 
   let couvertureColor, couvertureLabel;
-  if (tauxCouverture >= 6) { couvertureColor = '#27AE60'; couvertureLabel = '✓ Solide'; }
-  else if (tauxCouverture >= 3) { couvertureColor = '#F39C12'; couvertureLabel = '⚠ Partiel'; }
-  else { couvertureColor = '#E74C3C'; couvertureLabel = '✗ Fragile (< 3 mois)'; }
+  if (tauxCouverture >= 6) { couvertureColor = '#27AE60'; couvertureLabel = '✅ Solide'; }
+  else if (tauxCouverture >= 3) { couvertureColor = '#F39C12'; couvertureLabel = '⚠️ Partiel'; }
+  else { couvertureColor = '#E74C3C'; couvertureLabel = '❌ Fragile (< 3 mois)'; }
 
   const totalBars = 40;
   const activeBars = Math.round((pct / 100) * totalBars);
@@ -47,7 +47,7 @@ module.exports = async function handler(req, res) {
     html, body { width: 100%; height: auto; overflow: hidden; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #111;
+      background: #1f1f1f;
       color: #eaeaea;
       padding: 12px 14px 14px;
       display: flex;
@@ -100,13 +100,13 @@ module.exports = async function handler(req, res) {
       padding: 0 4px;
     }
     .amount-main {
-      font-size: 38px;
+      font-size: 25px;
       font-weight: 700;
       color: #eaeaea;
       letter-spacing: -1px;
       line-height: 1;
     }
-    .amount-euro { font-size: 26px; font-weight: 400; color: #888; }
+    .amount-euro { font-size: 20px; font-weight: 400; color: #888; }
     .amount-right { display: flex; flex-direction: column; gap: 1px; }
     .amount-label { font-size: 11px; color: #666; line-height: 1.3; }
     .amount-cible { font-size: 12px; font-weight: 600; color: #555; }
