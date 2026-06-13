@@ -23,9 +23,9 @@ module.exports = async function handler(req, res) {
   }
 
   let couvertureColor, couvertureLabel;
-  if (tauxCouverture >= 6) { couvertureColor = '#888'; couvertureLabel = '✅ Solide'; }
-  else if (tauxCouverture >= 3) { couvertureColor = '#888'; couvertureLabel = '⚠️ Partiel'; }
-  else { couvertureColor = '#888'; couvertureLabel = '❌ Fragile (< 3 mois)'; }
+  if (tauxCouverture >= 6) { couvertureColor = '#27AE60'; couvertureLabel = '✅ Solide'; }
+  else if (tauxCouverture >= 3) { couvertureColor = '#C8B400'; couvertureLabel = '⚠️ Partiel'; }
+  else { couvertureColor = '#E74C3C'; couvertureLabel = '❌ Fragile (< 3 mois)'; }
 
   const totalBars = 40;
   const activeBars = Math.round((pct / 100) * totalBars);
@@ -108,11 +108,11 @@ module.exports = async function handler(req, res) {
     }
     .amount-euro { font-size: 20px; font-weight: 400; color: #888; }
     .amount-right { display: flex; flex-direction: column; gap: 1px; }
-    .amount-label { font-size: 16px; color: #666; line-height: 1.3; }
-    .amount-cible { font-size: 17px; font-weight: 600; color: #555; }
+    .amount-label { font-size: 15px; color: #666; line-height: 1.3; }
+    .amount-cible { font-size: 15px; font-weight: 600; color: #555; }
     .status {
       margin-top: 6px;
-      font-size: 17px;
+      font-size: 15px;
       font-weight: 600;
       color: ${barColor2};
       width: 100%;
@@ -149,7 +149,7 @@ module.exports = async function handler(req, res) {
       line-height: 1.2;
     }
     .ind-sub {
-      font-size: 10px;
+      font-size: 13px;
       font-weight: 700;
       margin-top: 4px;
     }
@@ -190,13 +190,13 @@ module.exports = async function handler(req, res) {
     <div class="indicator-card" style="border-color:${couvertureColor}33">
       <div class="ind-label">Taux de couverture</div>
       <div class="ind-value" style="color:${couvertureColor}">${tauxCouverture} mois de revenus</div>
-      <div class="ind-sub" style="color:${couvertureColor}">${couvertureLabel}</div>
+      <div class="ind-sub" style="color:'#888'">${couvertureLabel}</div>
     </div>
 
     <div class="indicator-card" style="border-color:${dispoInvest > 0 ? '#27AE6033' : '#33333399'}">
       <div class="ind-label">Dispo. investissement</div>
       <div class="ind-value" style="color:${dispoInvest > 0 ? '#27AE60' : '#555'}">${dispoInvest > 0 ? '+' : ''}${dispoInvest.toLocaleString('fr-FR')} €</div>
-      <div class="ind-sub" style="color:${dispoInvest > 0 ? '#27AE60' : '#E74C3C'}">${dispoInvest > 0 ? '' : 'Complète ton matelas d\'abord'}</div>
+      <div class="ind-sub" style="color:${dispoInvest > 0 ? '#27AE60' : '#ff6b6b'}">${dispoInvest > 0 ? '' : 'Complète ton matelas d\'abord'}</div>
     </div>
 
   </div>
