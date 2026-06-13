@@ -1,13 +1,17 @@
 module.exports = async function handler(req, res) {
-  const { epargne_securite, cible_securite } = req.query;
+  const { epargne_disponible, matelas, revenu_moyen } = req.query;
 
-  if (!epargne_securite || !cible_securite) {
-    return res.status(400).json({ error: "Paramètres manquants (epargne_securite, cible_securite)" });
+  if (!epargne_disponible || !matelas || !revenu_moyen) {
+    return res.status(400).json({ error: "Paramètres manquants (epargne_disponible, matelas, revenu_moyen)" });
   }
 
-  const epargne = parseFloat(epargne_securite.replace(/\s/g, '').replace(',', '.'));
-  const cible = parseFloat(cible_securite.replace(/\s/g, '').replace(',', '.'));
+  const epargne = parseFloat(epargne_disponible.replace(/\s/g, '').replace(',', '.'));
+  const cible = parseFloat(matelas.replace(/\s/g, '').replace(',', '.'));
+  const revenu = parseFloat(revenu_moyen.replace(/\s/g, '').replace(',', '.'));
+
   const pct = Math.min(100, Math.round((epargne / cible) * 100));
+  const tauxCouverture = Math.round((epargne / revenu) * 10) / 10; // en mois
+  const dispoInvest = Math.max(0, epargne - cible);
 
   let barColor1, barColor2, statusLabel;
   if (pct >= 100) {
@@ -18,25 +22,20 @@ module.exports = async function handler(req, res) {
     barColor1 = '#E74C3C'; barColor2 = '#ff6b6b'; statusLabel = 'Matelas insuffisant';
   }
 
-  // 40 barreaux
   const totalBars = 40;
   const activeBars = Math.round((pct / 100) * totalBars);
-
-  const bars = Array.from({ length: totalBars }, (_, i) => {
-    const active = i < activeBars;
-    return { active, index: i };
-  });
-
-  const barsHTML = bars.map(b => {
-    if (b.active) {
-      return `<div class="bar active" style="
-        background: linear-gradient(180deg, ${barColor2}, ${barColor1});
-        box-shadow: 0 0 6px ${barColor2}88, 0 0 12px ${barColor1}44;
-      "></div>`;
-    } else {
-      return `<div class="bar inactive"></div>`;
+  const barsHTML = Array.from({ length: totalBars }, (_, i) => {
+    if (i < activeBars) {
+      return `<div class="bar active" style="background:linear-gradient(180deg,${barColor2},${barColor1});box-shadow:0 0 6px ${barColor2}88,0 0 12px ${barColor1}44;"></div>`;
     }
+    return `<div class="bar inactive"></div>`;
   }).join('');
+
+  // Taux couverture couleur
+  let couvertureColor;
+  if (tauxCouverture >= 6) couvertureColor = '#27AE60';
+  else if (tauxCouverture >= 3) couvertureColor = '#F39C12';
+  else couvertureColor = '#E74C3C';
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -58,7 +57,6 @@ module.exports = async function handler(req, res) {
       gap: 0;
     }
 
-    /* Marqueurs */
     .markers {
       display: flex;
       justify-content: space-between;
@@ -66,13 +64,8 @@ module.exports = async function handler(req, res) {
       padding: 0 2px;
       margin-bottom: 6px;
     }
-    .marker {
-      font-size: 11px;
-      color: #555;
-      font-weight: 500;
-    }
+    .marker { font-size: 11px; color: #555; font-weight: 500; }
 
-    /* Barreaux */
     .bars-wrap {
       display: flex;
       align-items: flex-end;
@@ -80,21 +73,29 @@ module.exports = async function handler(req, res) {
       width: 100%;
       height: 60px;
       padding: 0 2px;
+      position: relative;
     }
-    .bar {
-      flex: 1;
-      border-radius: 3px 3px 2px 2px;
+    .bar { flex: 1; border-radius: 3px 3px 2px 2px; }
+    .bar.active { height: 100%; }
+    .bar.inactive { height: 85%; background: #2a2a2a; }
+
+    .pct-line {
+      position: absolute;
+      left: calc(${pct}% - 1px);
+      top: 0; bottom: 0;
+      width: 1px;
+      background: rgba(255,255,255,0.15);
     }
-    .bar.active {
-      height: 100%;
-    }
-    .bar.inactive {
-      height: 85%;
-      background: #2a2a2a;
-      border-radius: 3px 3px 2px 2px;
+    .pct-dot {
+      position: absolute;
+      left: calc(${pct}% - 4px);
+      top: -6px;
+      width: 8px; height: 8px;
+      border-radius: 50%;
+      background: white;
+      opacity: 0.6;
     }
 
-    /* Valeur */
     .amount-section {
       margin-top: 20px;
       display: flex;
@@ -110,30 +111,13 @@ module.exports = async function handler(req, res) {
       letter-spacing: -2px;
       line-height: 1;
     }
-    .amount-euro {
-      font-size: 36px;
-      font-weight: 400;
-      color: #888;
-    }
-    .amount-right {
-      display: flex;
-      flex-direction: column;
-      gap: 2px;
-    }
-    .amount-label {
-      font-size: 12px;
-      color: #666;
-      line-height: 1.3;
-    }
-    .amount-cible {
-      font-size: 13px;
-      font-weight: 600;
-      color: #555;
-    }
+    .amount-euro { font-size: 36px; font-weight: 400; color: #888; }
+    .amount-right { display: flex; flex-direction: column; gap: 2px; }
+    .amount-label { font-size: 12px; color: #666; line-height: 1.3; }
+    .amount-cible { font-size: 13px; font-weight: 600; color: #555; }
 
-    /* Status */
     .status {
-      margin-top: 10px;
+      margin-top: 8px;
       font-size: 12px;
       color: ${barColor2};
       font-weight: 500;
@@ -141,36 +125,48 @@ module.exports = async function handler(req, res) {
       padding: 0 4px;
     }
 
-    /* Pct indicator */
-    .pct-indicator {
-      position: relative;
+    /* Séparateur */
+    .sep {
       width: 100%;
-      margin-top: 4px;
+      height: 1px;
+      background: #2a2a2a;
+      margin: 16px 0;
     }
-    .pct-line {
-      position: absolute;
-      left: calc(${pct}% - 1px);
-      top: -68px;
-      width: 1px;
-      height: 60px;
-      background: rgba(255,255,255,0.15);
-      pointer-events: none;
+
+    /* Indicateurs bas */
+    .indicators {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      width: 100%;
     }
-    .pct-dot {
-      position: absolute;
-      left: calc(${pct}% - 4px);
-      top: -72px;
-      width: 8px;
-      height: 8px;
-      border-radius: 50%;
-      background: white;
-      opacity: 0.6;
+    .indicator-card {
+      background: #1a1a1a;
+      border-radius: 12px;
+      padding: 12px 14px;
+      border: 1px solid #2a2a2a;
+    }
+    .ind-label {
+      font-size: 10px;
+      color: #555;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 5px;
+    }
+    .ind-value {
+      font-size: 22px;
+      font-weight: 700;
+      line-height: 1;
+    }
+    .ind-sub {
+      font-size: 10px;
+      color: #444;
+      margin-top: 3px;
     }
   </style>
 </head>
 <body>
 
-  <!-- Marqueurs 0 25 50 75 100 -->
   <div class="markers">
     <span class="marker">0</span>
     <span class="marker">25</span>
@@ -179,15 +175,12 @@ module.exports = async function handler(req, res) {
     <span class="marker">100</span>
   </div>
 
-  <!-- Barreaux -->
-  <div class="bars-wrap" style="position:relative">
+  <div class="bars-wrap">
     ${barsHTML}
-    <!-- Indicateur position actuelle -->
     <div class="pct-line"></div>
     <div class="pct-dot"></div>
   </div>
 
-  <!-- Montant -->
   <div class="amount-section">
     <div class="amount-main">
       <span class="amount-euro">€</span>${epargne.toLocaleString('fr-FR')}
@@ -199,6 +192,32 @@ module.exports = async function handler(req, res) {
   </div>
 
   <div class="status">${pct}% · ${statusLabel}</div>
+
+  <div class="sep"></div>
+
+  <div class="indicators">
+
+    <!-- Taux de couverture -->
+    <div class="indicator-card" style="border-color:${couvertureColor}33">
+      <div class="ind-label">Taux de couverture</div>
+      <div class="ind-value" style="color:${couvertureColor}">${tauxCouverture} mois</div>
+      <div class="ind-sub">
+        ${tauxCouverture >= 6 ? '✓ Solide (6 mois recommandés)' : tauxCouverture >= 3 ? '⚠ Partiel (3-6 mois)' : '✗ Fragile (< 3 mois)'}
+      </div>
+    </div>
+
+    <!-- Disponible pour investir -->
+    <div class="indicator-card" style="border-color:${dispoInvest > 0 ? '#27AE6033' : '#33333399'}">
+      <div class="ind-label">Dispo. investissement</div>
+      <div class="ind-value" style="color:${dispoInvest > 0 ? '#27AE60' : '#555'}">
+        ${dispoInvest > 0 ? '+' : ''}${dispoInvest.toLocaleString('fr-FR')} €
+      </div>
+      <div class="ind-sub">
+        ${dispoInvest > 0 ? 'Matelas couvert — tu peux investir' : 'Complète ton matelas d\'abord'}
+      </div>
+    </div>
+
+  </div>
 
 </body>
 </html>`;
