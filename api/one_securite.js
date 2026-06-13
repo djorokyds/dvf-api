@@ -194,7 +194,7 @@ module.exports = async function handler(req, res) {
     </div>
 
     <div class="indicator-card" style="border-color:${dispoInvest > 0 ? '#27AE6033' : '#E74C3C33'}">
-      <div class="ind-label">Dispo. poour projet</div>
+      <div class="ind-label">Dispo. pour projet</div>
       <div class="ind-value" style="color:${dispoInvest > 0 ? '#27AE60' : '#555'}">${dispoInvest > 0 ? '+' : ''}${dispoInvest.toLocaleString('fr-FR')} €</div>
       <div class="ind-sub" style="color:${dispoInvest > 0 ? '#27AE60' : '#E74C3C'}">${dispoInvest > 0 ? '' : 'Complète ton matelas d\'abord'}</div>
     </div>
