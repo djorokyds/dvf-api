@@ -22,10 +22,10 @@ module.exports = async function handler(req, res) {
     barColor1 = '#E74C3C'; barColor2 = '#ff6b6b'; statusLabel = 'Matelas insuffisant';
   }
 
-  let couvertureColor;
-  if (tauxCouverture >= 6) couvertureColor = '#27AE60';
-  else if (tauxCouverture >= 3) couvertureColor = '#F39C12';
-  else couvertureColor = '#E74C3C';
+  let couvertureColor, couvertureLabel;
+  if (tauxCouverture >= 6) { couvertureColor = '#27AE60'; couvertureLabel = '✓ Solide'; }
+  else if (tauxCouverture >= 3) { couvertureColor = '#F39C12'; couvertureLabel = '⚠ Partiel'; }
+  else { couvertureColor = '#E74C3C'; couvertureLabel = '✗ Fragile (< 3 mois)'; }
 
   const totalBars = 40;
   const activeBars = Math.round((pct / 100) * totalBars);
@@ -55,7 +55,6 @@ module.exports = async function handler(req, res) {
       align-items: center;
       gap: 0;
     }
-
     .markers {
       display: flex;
       justify-content: space-between;
@@ -64,7 +63,6 @@ module.exports = async function handler(req, res) {
       margin-bottom: 5px;
     }
     .marker { font-size: 10px; color: #555; font-weight: 500; }
-
     .bars-wrap {
       display: flex;
       align-items: flex-end;
@@ -77,7 +75,6 @@ module.exports = async function handler(req, res) {
     .bar { flex: 1; border-radius: 2px 2px 1px 1px; }
     .bar.active { height: 100%; }
     .bar.inactive { height: 80%; background: #2a2a2a; }
-
     .pct-line {
       position: absolute;
       left: calc(${pct}% - 1px);
@@ -94,7 +91,6 @@ module.exports = async function handler(req, res) {
       background: white;
       opacity: 0.55;
     }
-
     .amount-section {
       margin-top: 14px;
       display: flex;
@@ -114,7 +110,6 @@ module.exports = async function handler(req, res) {
     .amount-right { display: flex; flex-direction: column; gap: 1px; }
     .amount-label { font-size: 11px; color: #666; line-height: 1.3; }
     .amount-cible { font-size: 12px; font-weight: 600; color: #555; }
-
     .status {
       margin-top: 6px;
       font-size: 12px;
@@ -123,14 +118,12 @@ module.exports = async function handler(req, res) {
       width: 100%;
       padding: 0 4px;
     }
-
     .sep {
       width: 100%;
       height: 1px;
       background: #2a2a2a;
       margin: 10px 0;
     }
-
     .indicators {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -151,14 +144,14 @@ module.exports = async function handler(req, res) {
       margin-bottom: 4px;
     }
     .ind-value {
-      font-size: 18px;
+      font-size: 16px;
       font-weight: 700;
-      line-height: 1;
+      line-height: 1.2;
     }
     .ind-sub {
-      font-size: 9px;
-      color: #444;
-      margin-top: 3px;
+      font-size: 10px;
+      font-weight: 700;
+      margin-top: 4px;
     }
   </style>
 </head>
@@ -193,16 +186,19 @@ module.exports = async function handler(req, res) {
   <div class="sep"></div>
 
   <div class="indicators">
+
     <div class="indicator-card" style="border-color:${couvertureColor}33">
       <div class="ind-label">Taux de couverture</div>
-      <div class="ind-value" style="color:${couvertureColor}">${tauxCouverture} mois</div>
-      <div class="ind-sub">${tauxCouverture >= 6 ? '✓ Solide' : tauxCouverture >= 3 ? '⚠ Partiel' : '✗ Fragile (< 3 mois)'}</div>
+      <div class="ind-value" style="color:${couvertureColor}">${tauxCouverture} mois de revenus</div>
+      <div class="ind-sub" style="color:${couvertureColor}">${couvertureLabel}</div>
     </div>
+
     <div class="indicator-card" style="border-color:${dispoInvest > 0 ? '#27AE6033' : '#33333399'}">
       <div class="ind-label">Dispo. investissement</div>
       <div class="ind-value" style="color:${dispoInvest > 0 ? '#27AE60' : '#555'}">${dispoInvest > 0 ? '+' : ''}${dispoInvest.toLocaleString('fr-FR')} €</div>
-      <div class="ind-sub">${dispoInvest > 0 ? 'Matelas couvert ✓' : 'Complète ton matelas d\'abord'}</div>
+      <div class="ind-sub" style="color:${dispoInvest > 0 ? '#27AE60' : '#666'}">${dispoInvest > 0 ? 'Matelas couvert ✓' : 'Complète ton matelas d\'abord'}</div>
     </div>
+
   </div>
 
 </body>
