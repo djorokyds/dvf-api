@@ -190,13 +190,13 @@ module.exports = async function handler(req, res) {
     <div class="indicator-card" style="border-color:${couvertureColor}33">
       <div class="ind-label">Taux de couverture</div>
       <div class="ind-value" style="color:${couvertureColor}">${tauxCouverture} mois de revenus</div>
-      <div class="ind-sub" style="color:'#555'">${couvertureLabel}</div>
+      <div class="ind-sub" style="color:#555">${couvertureLabel}</div>
     </div>
 
     <div class="indicator-card" style="border-color:${dispoInvest > 0 ? '#27AE6033' : '#33333399'}">
       <div class="ind-label">Dispo. investissement</div>
       <div class="ind-value" style="color:${dispoInvest > 0 ? '#27AE60' : '#555'}">${dispoInvest > 0 ? '+' : ''}${dispoInvest.toLocaleString('fr-FR')} €</div>
-      <div class="ind-sub" style="color:${dispoInvest > 0 ? '#27AE60' : '#ff6b6b'}">${dispoInvest > 0 ? '' : 'Complète ton matelas d\'abord'}</div>
+      <div class="ind-sub" style="color:${dispoInvest > 0 ? '#27AE60' : '#E74C3C'}">${dispoInvest > 0 ? '' : 'Complète ton matelas d\'abord'}</div>
     </div>
 
   </div>
