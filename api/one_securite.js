@@ -144,12 +144,12 @@ module.exports = async function handler(req, res) {
       margin-bottom: 4px;
     }
     .ind-value {
-      font-size: 16px;
+      font-size: 15px;
       font-weight: 700;
       line-height: 1.2;
     }
     .ind-sub {
-      font-size: 13px;
+      font-size: 12px;
       font-weight: 700;
       margin-top: 4px;
     }
@@ -190,7 +190,7 @@ module.exports = async function handler(req, res) {
     <div class="indicator-card" style="border-color:${couvertureColor}33">
       <div class="ind-label">Taux de couverture</div>
       <div class="ind-value" style="color:${couvertureColor}">${tauxCouverture} mois de revenus</div>
-      <div class="ind-sub" style="color:'#888'">${couvertureLabel}</div>
+      <div class="ind-sub" style="color:'#555'">${couvertureLabel}</div>
     </div>
 
     <div class="indicator-card" style="border-color:${dispoInvest > 0 ? '#27AE6033' : '#33333399'}">
