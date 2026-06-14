@@ -176,8 +176,8 @@ module.exports = async function handler(req, res) {
       <span class="amount-euro">€ </span>${epargne.toLocaleString('fr-FR')}
     </div>
     <div class="amount-right">
-      <div class="amount-label">constitué sur</div>
-      <div class="amount-cible">${cible.toLocaleString('fr-FR')} € visés</div>
+      <div class="amount-label">constitué.s sur</div>
+      <div class="amount-cible">${cible.toLocaleString('fr-FR')} € visé.s</div>
     </div>
   </div>
 
