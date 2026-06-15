@@ -9,7 +9,7 @@ module.exports = async function handler(req, res) {
 
   // Parse categories : "offrande+2000/resto+2500/..."
   const items = categories.split('/').map(item => {
-    const parts = item.trim().split('+');
+    const parts = item.trim().split('|');  // ← | au lieu de +
     const label = parts[0].trim();
     const montant = parseFloat(parts[1]);
     const ratio = Math.round((montant / total) * 100);
