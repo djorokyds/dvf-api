@@ -27,7 +27,7 @@ module.exports = async function handler(req, res) {
     html, body { width: 100%; height: auto; overflow: hidden; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #1a1a2e;
+      background: #1f1f1f;
       color: #eaeaea;
       padding: 16px 12px 12px;
     }
