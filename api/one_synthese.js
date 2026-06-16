@@ -17,31 +17,36 @@ module.exports = async function handler(req, res) {
     return { label, montant, ratio };
   }).filter(i => i && i.label && !isNaN(i.montant) && i.montant > 0);
 
-  // Option A — regrouper les < 3% en "Autres"
   const mainItems = rawItems.filter(i => i.ratio >= 3);
   const autresItems = rawItems.filter(i => i.ratio < 3);
   const autresMontant = autresItems.reduce((s, i) => s + i.montant, 0);
   const autresRatio = Math.round((autresMontant / total) * 100);
 
   const items = autresMontant > 0
-    ? [...mainItems, { label: 'Autres', montant: autresMontant, ratio: autresRatio }]
+    ? [...mainItems, { label: 'Autres', montant: autresMontant, ratio: autresRatio, isAutres: true }]
     : mainItems;
 
   if (items.length === 0) {
-    return res.status(400).json({ error: "Aucune catégorie valide", raw: categories });
+    return res.status(400).json({ error: "Aucune catégorie valide" });
   }
 
   const n = items.length;
   const cx = 240, cy = 240;
   const innerR = 50;
-  const maxR = 200;  // agrandi
+  const maxR = 200;
   const segAngle = 360 / n;
   const gapAngle = 1.5;
 
-  const baseColors = [
+  // Dégradé bleu → or selon position
+  // mainItems = bleus, Autres = or/marron
+  const blueColors = [
     '#1e4d8c', '#2260ad', '#2673ce', '#3a87d4',
     '#4f9bda', '#64afe0', '#3d5a9e', '#5270b8',
     '#6786d2', '#79c3e6', '#1a3a6b', '#7c9cec',
+  ];
+  const goldColors = [
+    '#C38F5A', '#A8742A', '#D4A86A', '#B8944A',
+    '#E8C27A', '#8B5E2A', '#C8A050', '#D4B87E',
   ];
 
   const maxMontant = Math.max(...items.map(i => i.montant));
@@ -50,12 +55,15 @@ module.exports = async function handler(req, res) {
     const startAngle = -90 + i * segAngle;
     const endAngle = startAngle + segAngle - gapAngle;
     const outerR = innerR + ((item.montant / maxMontant) * (maxR - innerR));
+    const color = item.isAutres
+      ? goldColors[0]
+      : blueColors[i % blueColors.length];
     return {
       ...item,
       startAngle,
       endAngle,
       outerR,
-      color: baseColors[i % baseColors.length],
+      color,
       midAngle: startAngle + (segAngle - gapAngle) / 2,
     };
   });
@@ -80,7 +88,6 @@ module.exports = async function handler(req, res) {
     ].join(' ');
   }
 
-  // Grille
   const gridCircles = [0.25, 0.5, 0.75, 1.0].map(pct => {
     const r = innerR + pct * (maxR - innerR);
     return `<circle cx="${cx}" cy="${cy}" r="${r.toFixed(1)}" fill="none" stroke="#ffffff" stroke-width="0.5" opacity="0.06"/>`;
@@ -92,11 +99,16 @@ module.exports = async function handler(req, res) {
     return `
       <path d="${bgPath}" fill="${seg.color}" opacity="0.06"/>
       <path d="${path}" fill="${seg.color}" opacity="0.88"
-        class="seg" data-idx="${i}" style="cursor:pointer;"/>
+        class="seg" data-idx="${i}" data-autres="${seg.isAutres ? '1' : '0'}"
+        style="cursor:pointer;"/>
     `;
   }).join('');
 
-  const viewSize = 480;
+  // Données "Autres" détaillées pour le tooltip
+  const autresDetail = autresItems
+    .sort((a, b) => b.montant - a.montant)
+    .map(i => `${i.label} : ${i.montant.toLocaleString('fr-FR')} € (${i.ratio}%)`)
+    .join('\n');
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -114,19 +126,20 @@ module.exports = async function handler(req, res) {
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 8px 0 8px;
+      padding: 8px 0;
     }
     svg { overflow: visible; width: 100%; max-width: 480px; }
     .seg { transition: opacity 0.15s, filter 0.15s; }
     .seg:hover { opacity: 0.7 !important; filter: brightness(1.3); }
     .seg.active { filter: brightness(1.4); opacity: 1 !important; }
 
-    /* Tooltip centré dans le SVG */
+    .svg-wrap { position: relative; width: 100%; max-width: 480px; }
+
     .tooltip-overlay {
       position: absolute;
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
-      background: rgba(15,15,25,0.95);
+      background: rgba(13,13,20,0.97);
       border: 1px solid #2a2a5a;
       border-radius: 14px;
       padding: 14px 18px;
@@ -134,40 +147,54 @@ module.exports = async function handler(req, res) {
       opacity: 0;
       transition: opacity 0.2s;
       z-index: 100;
-      min-width: 160px;
+      min-width: 180px;
+      max-width: 220px;
       text-align: center;
-      box-shadow: 0 4px 24px rgba(0,0,0,0.7);
+      box-shadow: 0 4px 24px rgba(0,0,0,0.8);
     }
     .tooltip-overlay.visible { opacity: 1; }
     .tt-label { font-size: 12px; color: #888; margin-bottom: 6px; }
-    .tt-amount { font-size: 26px; font-weight: 800; margin-bottom: 4px; }
-    .tt-ratio { font-size: 12px; color: #555; }
-
-    .svg-wrap { position: relative; width: 100%; max-width: 480px; }
+    .tt-amount { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
+    .tt-ratio { font-size: 11px; color: #555; margin-bottom: 8px; }
+    .tt-detail {
+      font-size: 10px;
+      color: #666;
+      text-align: left;
+      line-height: 1.8;
+      border-top: 1px solid #222;
+      padding-top: 8px;
+      margin-top: 4px;
+      white-space: pre-line;
+    }
+    .tt-detail-item {
+      display: flex;
+      justify-content: space-between;
+      gap: 8px;
+      font-size: 10px;
+      color: #666;
+      line-height: 1.8;
+    }
   </style>
 </head>
 <body>
-
   <div class="svg-wrap">
-    <svg viewBox="0 0 ${viewSize} ${viewSize}">
+    <svg viewBox="0 0 480 480">
       <defs>
         <filter id="centerGlow">
           <feGaussianBlur stdDeviation="8" result="blur"/>
           <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
+        <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+          <stop offset="0%" stop-color="#E8C27A"/>
+          <stop offset="100%" stop-color="#8B5E2A"/>
+        </linearGradient>
       </defs>
 
-      <!-- Grille -->
       ${gridCircles}
-
-      <!-- Segments -->
       ${segmentsSVG}
 
-      <!-- Cercle centre -->
       <circle cx="${cx}" cy="${cy}" r="${innerR + 2}" fill="#0d0d14" filter="url(#centerGlow)"/>
       <circle cx="${cx}" cy="${cy}" r="${innerR}" fill="#111118"/>
-
-      <!-- Texte centre -->
       <text x="${cx}" y="${cy - 10}" text-anchor="middle" font-size="10" fill="#444"
         font-family="-apple-system, sans-serif" letter-spacing="1.5">TOTAL</text>
       <text x="${cx}" y="${cy + 12}" text-anchor="middle" font-size="15" font-weight="700"
@@ -175,21 +202,25 @@ module.exports = async function handler(req, res) {
       >${total.toLocaleString('fr-FR')} €</text>
     </svg>
 
-    <!-- Tooltip centré -->
     <div class="tooltip-overlay" id="tooltip">
       <div class="tt-label" id="tt-label"></div>
       <div class="tt-amount" id="tt-amount"></div>
       <div class="tt-ratio" id="tt-ratio"></div>
+      <div id="tt-detail"></div>
     </div>
   </div>
 
   <script>
     const data = ${JSON.stringify(segments.map(s => ({
-      label: s.label, montant: s.montant, ratio: s.ratio, color: s.color
+      label: s.label,
+      montant: s.montant,
+      ratio: s.ratio,
+      color: s.color,
+      isAutres: s.isAutres || false
     })))};
 
+    const autresItems = ${JSON.stringify(autresItems)};
     const tooltip = document.getElementById('tooltip');
-    let activeIdx = null;
 
     document.querySelectorAll('.seg').forEach(seg => {
       seg.addEventListener('click', e => {
@@ -197,33 +228,44 @@ module.exports = async function handler(req, res) {
         const idx = parseInt(seg.dataset.idx);
         const d = data[idx];
 
-        // Reset autres
         document.querySelectorAll('.seg').forEach(s => s.classList.remove('active'));
         seg.classList.add('active');
-        activeIdx = idx;
 
         document.getElementById('tt-label').textContent = d.label;
         document.getElementById('tt-amount').textContent = d.montant.toLocaleString('fr-FR') + ' €';
         document.getElementById('tt-amount').style.color = d.color;
         document.getElementById('tt-ratio').textContent = d.ratio + '% des dépenses';
-        tooltip.classList.add('visible');
 
+        // Si "Autres" → afficher le détail
+        const detailEl = document.getElementById('tt-detail');
+        if (d.isAutres && autresItems.length > 0) {
+          const sorted = [...autresItems].sort((a, b) => b.montant - a.montant);
+          detailEl.innerHTML = '<div style="border-top:1px solid #222;padding-top:8px;margin-top:6px">' +
+            sorted.map(i =>
+              '<div style="display:flex;justify-content:space-between;gap:12px;font-size:10px;color:#888;line-height:1.8">' +
+              '<span>' + i.label + '</span>' +
+              '<span style="color:#C38F5A;font-weight:600">' + i.montant.toLocaleString('fr-FR') + ' €</span>' +
+              '</div>'
+            ).join('') +
+          '</div>';
+        } else {
+          detailEl.innerHTML = '';
+        }
+
+        tooltip.classList.add('visible');
         clearTimeout(window._tt);
         window._tt = setTimeout(() => {
           tooltip.classList.remove('visible');
           document.querySelectorAll('.seg').forEach(s => s.classList.remove('active'));
-          activeIdx = null;
-        }, 3000);
+        }, 4000);
       });
     });
 
     document.addEventListener('click', () => {
       tooltip.classList.remove('visible');
       document.querySelectorAll('.seg').forEach(s => s.classList.remove('active'));
-      activeIdx = null;
     });
   </script>
-
 </body>
 </html>`;
 
