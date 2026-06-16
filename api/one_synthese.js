@@ -206,9 +206,9 @@ module.exports = async function handler(req, res) {
 
       <circle cx="${cx}" cy="${cy}" r="${innerR + 2}" fill="#0d0d14" filter="url(#centerGlow)"/>
       <circle cx="${cx}" cy="${cy}" r="${innerR}" fill="#111118"/>
-      <text x="${cx}" y="${cy - 10}" text-anchor="middle" font-size="10" fill="#444"
+      <text x="${cx}" y="${cy - 10}" text-anchor="middle" font-size="16" fill="#888"
         font-family="-apple-system, sans-serif" letter-spacing="1.5">TOTAL</text>
-      <text x="${cx}" y="${cy + 12}" text-anchor="middle" font-size="15" font-weight="700"
+      <text x="${cx}" y="${cy + 12}" text-anchor="middle" font-size="17" font-weight="700"
         fill="#eaeaea" font-family="-apple-system, sans-serif"
       >${total.toLocaleString('fr-FR')} €</text>
     </svg>
