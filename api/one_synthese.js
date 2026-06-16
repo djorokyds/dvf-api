@@ -88,30 +88,76 @@ module.exports = async function handler(req, res) {
     `;
   }).join('');
 
-  const labelsSVG = segments.map((seg, i) => {
-    const { p1, p3, lineEndX, isRight } = getLabelLine(seg);
-    const textX = isRight ? lineEndX + 6 : lineEndX - 6;
-    const anchor = isRight ? 'start' : 'end';
-    const label = seg.label.length > 16 ? seg.label.substring(0, 15) + '…' : seg.label;
-    return `
-      <line x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}"
-            x2="${p3.x.toFixed(1)}" y2="${p3.y.toFixed(1)}"
-            stroke="${seg.color}" stroke-width="1.2" opacity="0.6"/>
-      <line x1="${p3.x.toFixed(1)}" y1="${p3.y.toFixed(1)}"
-            x2="${lineEndX.toFixed(1)}" y2="${p3.y.toFixed(1)}"
-            stroke="${seg.color}" stroke-width="1.2" opacity="0.6"/>
-      <text x="${textX.toFixed(1)}" y="${(p3.y - 7).toFixed(1)}"
-        text-anchor="${anchor}" font-size="13" font-weight="800"
-        fill="${seg.color}" font-family="-apple-system, sans-serif"
-      >${seg.ratio}%</text>
-      <text x="${textX.toFixed(1)}" y="${(p3.y + 10).toFixed(1)}"
-        text-anchor="${anchor}" font-size="11" font-weight="600"
-        fill="#999" font-family="-apple-system, sans-serif"
-      >${label}</text>
-    `;
-  }).join('');
+ function getLabelLine(seg) {
+  const midAngle = (seg.startAngle + seg.endAngle) / 2;
+  const p1 = polarToXY(cx, cy, seg.outerR + 6, midAngle);
+  const p2 = polarToXY(cx, cy, seg.outerR + 95, midAngle);
 
-  const html = `<!DOCTYPE html>
+  const isRight = p2.x >= cx;
+  const lineEndX = isRight ? 470 : -70;
+
+  return { p1, p2, lineEndX, isRight, midAngle };
+}
+
+// Préparation des labels
+const labelData = segments.map(seg => {
+  const l = getLabelLine(seg);
+  return { seg, ...l, y: l.p2.y };
+});
+
+// Séparer gauche / droite
+const leftLabels = labelData.filter(l => !l.isRight).sort((a, b) => a.y - b.y);
+const rightLabels = labelData.filter(l => l.isRight).sort((a, b) => a.y - b.y);
+
+// Fonction anti-chevauchement
+function spreadLabels(labels, minGap = 38, minY = 35, maxY = 335) {
+  labels.forEach((l, i) => {
+    if (i === 0) {
+      l.y = Math.max(l.y, minY);
+    } else {
+      l.y = Math.max(l.y, labels[i - 1].y + minGap);
+    }
+  });
+
+  for (let i = labels.length - 1; i >= 0; i--) {
+    if (labels[i].y > maxY) labels[i].y = maxY;
+    if (i < labels.length - 1) {
+      labels[i].y = Math.min(labels[i].y, labels[i + 1].y - minGap);
+    }
+  }
+
+  return labels;
+}
+
+spreadLabels(leftLabels);
+spreadLabels(rightLabels);
+
+const labelsSVG = [...leftLabels, ...rightLabels].map(({ seg, p1, p2, lineEndX, isRight, y }) => {
+  const textX = isRight ? lineEndX + 16 : lineEndX - 16;
+  const anchor = isRight ? 'start' : 'end';
+  const label = seg.label.length > 20 ? seg.label.substring(0, 19) + '…' : seg.label;
+
+  return `
+    <line x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}"
+          x2="${p2.x.toFixed(1)}" y2="${y.toFixed(1)}"
+          stroke="${seg.color}" stroke-width="1.2" opacity="0.6"/>
+
+    <line x1="${p2.x.toFixed(1)}" y1="${y.toFixed(1)}"
+          x2="${lineEndX.toFixed(1)}" y2="${y.toFixed(1)}"
+          stroke="${seg.color}" stroke-width="1.2" opacity="0.6"/>
+
+    <text x="${textX.toFixed(1)}" y="${(y - 7).toFixed(1)}"
+      text-anchor="${anchor}" font-size="13" font-weight="800"
+      fill="${seg.color}" font-family="-apple-system, sans-serif"
+    >${seg.ratio}%</text>
+
+    <text x="${textX.toFixed(1)}" y="${(y + 10).toFixed(1)}"
+      text-anchor="${anchor}" font-size="11" font-weight="600"
+      fill="#999" font-family="-apple-system, sans-serif"
+    >${label}</text>
+  `;
+}).join('');
+const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
