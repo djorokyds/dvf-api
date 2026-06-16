@@ -5,15 +5,23 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: "Paramètres manquants (categories, depenses_total)" });
   }
 
-  const total = parseFloat(depenses_total.replace(/\s/g, '').replace(',', '.'));
+  // Nettoyage robuste
+  const total = parseFloat(depenses_total.replace(/[€\s\u00a0]/g, '').replace(',', '.'));
 
   const items = categories.split('/').map(item => {
-    const parts = item.trim().split('|');
-    const label = parts[0].trim();
-    const montant = parseFloat(parts[1]);
+    // Trouver le dernier | comme séparateur label|montant
+    const lastPipe = item.lastIndexOf('|');
+    if (lastPipe === -1) return null;
+    const label = item.substring(0, lastPipe).trim();
+    const montantRaw = item.substring(lastPipe + 1).replace(/[€\s\u00a0]/g, '').replace(',', '.');
+    const montant = parseFloat(montantRaw);
     const ratio = Math.round((montant / total) * 100);
     return { label, montant, ratio };
-  }).filter(i => i.label && !isNaN(i.montant));
+  }).filter(i => i && i.label && !isNaN(i.montant) && i.montant > 0);
+
+  if (items.length === 0) {
+    return res.status(400).json({ error: "Aucune catégorie valide trouvée", raw: categories });
+  }
 
   const colors = [
     '#7B5EA7', '#4A90D9', '#3DBFA0', '#5B8DD9',
@@ -65,13 +73,11 @@ module.exports = async function handler(req, res) {
   function getLabelLine(seg) {
     const midAngle = (seg.startAngle + seg.endAngle) / 2;
     const p1 = polarToXY(cx, cy, seg.outerR + 4, midAngle);
-    const p3 = polarToXY(cx, cy, seg.outerR + 80, midAngle);  // +80 au lieu de +45
+    const p3 = polarToXY(cx, cy, seg.outerR + 80, midAngle);
     const isRight = p3.x >= cx;
-    const lineEndX = isRight ? p3.x + 40 : p3.x - 40;  // +40 au lieu de +25
-    return { p1, p3, lineEndX, isRight, midAngle };
+    const lineEndX = isRight ? p3.x + 40 : p3.x - 40;
+    return { p1, p3, lineEndX, isRight };
   }
-
-  const W = 360, H = 360;
 
   const segmentsSVG = segments.map((seg, i) => {
     const path = describeSegment(cx, cy, innerR, seg.outerR, seg.startAngle, seg.endAngle);
@@ -86,22 +92,18 @@ module.exports = async function handler(req, res) {
     const { p1, p3, lineEndX, isRight } = getLabelLine(seg);
     const textX = isRight ? lineEndX + 6 : lineEndX - 6;
     const anchor = isRight ? 'start' : 'end';
-    const label = seg.label.length > 14 ? seg.label.substring(0, 13) + '…' : seg.label;
+    const label = seg.label.length > 16 ? seg.label.substring(0, 15) + '…' : seg.label;
     return `
-      <!-- Ligne depuis bord arc -->
       <line x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}"
             x2="${p3.x.toFixed(1)}" y2="${p3.y.toFixed(1)}"
             stroke="${seg.color}" stroke-width="1.2" opacity="0.6"/>
-      <!-- Ligne horizontale -->
       <line x1="${p3.x.toFixed(1)}" y1="${p3.y.toFixed(1)}"
             x2="${lineEndX.toFixed(1)}" y2="${p3.y.toFixed(1)}"
             stroke="${seg.color}" stroke-width="1.2" opacity="0.6"/>
-      <!-- % -->
       <text x="${textX.toFixed(1)}" y="${(p3.y - 7).toFixed(1)}"
         text-anchor="${anchor}" font-size="13" font-weight="800"
         fill="${seg.color}" font-family="-apple-system, sans-serif"
       >${seg.ratio}%</text>
-      <!-- Label -->
       <text x="${textX.toFixed(1)}" y="${(p3.y + 10).toFixed(1)}"
         text-anchor="${anchor}" font-size="11" font-weight="600"
         fill="#999" font-family="-apple-system, sans-serif"
@@ -130,14 +132,12 @@ module.exports = async function handler(req, res) {
     svg { overflow: visible; }
     .seg { cursor: pointer; transition: opacity 0.2s; }
     .seg:hover { opacity: 1 !important; filter: brightness(1.25); }
-
     .tooltip {
       position: fixed;
       background: #1e1e2e;
       border: 1px solid #333355;
       border-radius: 10px;
       padding: 10px 14px;
-      font-size: 13px;
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.2s;
@@ -152,24 +152,15 @@ module.exports = async function handler(req, res) {
   </style>
 </head>
 <body>
-
   <svg viewBox="-100 -20 560 400" width="100%" style="max-width:520px">
-
-    <!-- Segments -->
     ${segmentsSVG}
-
-    <!-- Cercle intérieur -->
     <circle cx="${cx}" cy="${cy}" r="${innerR}" fill="#1a1a28"/>
     <circle cx="${cx}" cy="${cy}" r="${innerR - 2}" fill="#111118"/>
-
-    <!-- Texte centre -->
     <text x="${cx}" y="${cy - 10}" text-anchor="middle" font-size="11" fill="#555"
       font-family="-apple-system, sans-serif">TOTAL</text>
-    <text x="${cx}" y="${cy + 12}" text-anchor="middle" font-size="16" font-weight="700"
+    <text x="${cx}" y="${cy + 12}" text-anchor="middle" font-size="15" font-weight="700"
       fill="#eaeaea" font-family="-apple-system, sans-serif"
     >${total.toLocaleString('fr-FR')} €</text>
-
-    <!-- Labels -->
     ${labelsSVG}
   </svg>
 
@@ -203,7 +194,6 @@ module.exports = async function handler(req, res) {
       if (!e.target.closest('.seg')) tooltip.classList.remove('visible');
     });
   </script>
-
 </body>
 </html>`;
 
