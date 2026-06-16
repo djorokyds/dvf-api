@@ -44,7 +44,7 @@ module.exports = async function handler(req, res) {
       startAngle: currentAngle,
       endAngle: currentAngle + segAngle,
       color: colors[i % colors.length],
-      outerR: innerR + ((item.ratio / Math.max(...items.map(x => x.ratio))) * (maxR - innerR)),
+      outerR: maxR,
     };
     currentAngle += segAngle + gapAngle;
     return seg;
