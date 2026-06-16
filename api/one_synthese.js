@@ -7,7 +7,7 @@ module.exports = async function handler(req, res) {
 
   const total = parseFloat(depenses_total.replace(/[€\s\u00a0]/g, '').replace(',', '.'));
 
-  const items = categories.split('/').map(item => {
+  const rawItems = categories.split('/').map(item => {
     const lastPipe = item.lastIndexOf('|');
     if (lastPipe === -1) return null;
     const label = item.substring(0, lastPipe).trim();
@@ -17,22 +17,31 @@ module.exports = async function handler(req, res) {
     return { label, montant, ratio };
   }).filter(i => i && i.label && !isNaN(i.montant) && i.montant > 0);
 
+  // Option A — regrouper les < 3% en "Autres"
+  const mainItems = rawItems.filter(i => i.ratio >= 3);
+  const autresItems = rawItems.filter(i => i.ratio < 3);
+  const autresMontant = autresItems.reduce((s, i) => s + i.montant, 0);
+  const autresRatio = Math.round((autresMontant / total) * 100);
+
+  const items = autresMontant > 0
+    ? [...mainItems, { label: 'Autres', montant: autresMontant, ratio: autresRatio }]
+    : mainItems;
+
   if (items.length === 0) {
     return res.status(400).json({ error: "Aucune catégorie valide", raw: categories });
   }
 
   const n = items.length;
-  const cx = 200, cy = 200;
-  const innerR = 35;
-  const maxR = 150;
+  const cx = 240, cy = 240;
+  const innerR = 50;
+  const maxR = 200;  // agrandi
   const segAngle = 360 / n;
-  const gapAngle = 2;
+  const gapAngle = 1.5;
 
-  // Dégradé de bleus/violets comme l'image
   const baseColors = [
-    '#1a3a6b', '#1e4d8c', '#2260ad', '#2673ce',
-    '#3a87d4', '#4f9bda', '#64afe0', '#79c3e6',
-    '#3d5a9e', '#5270b8', '#6786d2', '#7c9cec',
+    '#1e4d8c', '#2260ad', '#2673ce', '#3a87d4',
+    '#4f9bda', '#64afe0', '#3d5a9e', '#5270b8',
+    '#6786d2', '#79c3e6', '#1a3a6b', '#7c9cec',
   ];
 
   const maxMontant = Math.max(...items.map(i => i.montant));
@@ -71,50 +80,23 @@ module.exports = async function handler(req, res) {
     ].join(' ');
   }
 
-  const segmentsSVG = segments.map((seg, i) => {
-    const path = describeSegment(cx, cy, innerR, seg.outerR, seg.startAngle, seg.endAngle);
-    // Fond gris clair jusqu'au maxR
-    const bgPath = describeSegment(cx, cy, innerR, maxR + 5, seg.startAngle, seg.endAngle);
-    return `
-      <path d="${bgPath}" fill="${seg.color}" opacity="0.08"/>
-      <path d="${path}" fill="${seg.color}" opacity="0.9" class="seg" data-idx="${i}"
-        style="cursor:pointer; transition: opacity 0.2s;"/>
-    `;
-  }).join('');
-
-  // Cercles de grille
+  // Grille
   const gridCircles = [0.25, 0.5, 0.75, 1.0].map(pct => {
     const r = innerR + pct * (maxR - innerR);
-    return `<circle cx="${cx}" cy="${cy}" r="${r.toFixed(1)}" fill="none" stroke="#ffffff" stroke-width="0.4" opacity="0.08"/>`;
+    return `<circle cx="${cx}" cy="${cy}" r="${r.toFixed(1)}" fill="none" stroke="#ffffff" stroke-width="0.5" opacity="0.06"/>`;
   }).join('');
 
-  // Labels externes
-  const labelsSVG = segments.map((seg, i) => {
-    const labelR = maxR + 22;
-    const pos = polarToXY(cx, cy, labelR, seg.midAngle);
-    const isRight = Math.cos(seg.midAngle * Math.PI / 180) >= 0;
-    const anchor = isRight ? 'start' : 'end';
-
-    // Ligne du bord du segment au label
-    const lineStart = polarToXY(cx, cy, seg.outerR + 4, seg.midAngle);
-    const lineEnd = polarToXY(cx, cy, maxR + 14, seg.midAngle);
-
-    const shortLabel = seg.label.length > 14 ? seg.label.substring(0, 13) + '…' : seg.label;
-
+  const segmentsSVG = segments.map((seg, i) => {
+    const path = describeSegment(cx, cy, innerR, seg.outerR, seg.startAngle, seg.endAngle);
+    const bgPath = describeSegment(cx, cy, innerR, maxR + 5, seg.startAngle, seg.endAngle);
     return `
-      <line x1="${lineStart.x.toFixed(1)}" y1="${lineStart.y.toFixed(1)}"
-            x2="${lineEnd.x.toFixed(1)}" y2="${lineEnd.y.toFixed(1)}"
-            stroke="${seg.color}" stroke-width="1" opacity="0.5"/>
-      <text x="${pos.x.toFixed(1)}" y="${(pos.y - 5).toFixed(1)}"
-        text-anchor="${anchor}" font-size="11" font-weight="800"
-        fill="${seg.color}" font-family="-apple-system, sans-serif"
-      >${seg.montant.toLocaleString('fr-FR')} €</text>
-      <text x="${pos.x.toFixed(1)}" y="${(pos.y + 8).toFixed(1)}"
-        text-anchor="${anchor}" font-size="9" font-weight="500"
-        fill="#888" font-family="-apple-system, sans-serif"
-      >${shortLabel} · ${seg.ratio}%</text>
+      <path d="${bgPath}" fill="${seg.color}" opacity="0.06"/>
+      <path d="${path}" fill="${seg.color}" opacity="0.88"
+        class="seg" data-idx="${i}" style="cursor:pointer;"/>
     `;
   }).join('');
+
+  const viewSize = 480;
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -132,91 +114,113 @@ module.exports = async function handler(req, res) {
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 8px 0 12px;
+      padding: 8px 0 8px;
     }
-    svg { overflow: visible; }
-    .seg:hover { opacity: 0.7 !important; }
+    svg { overflow: visible; width: 100%; max-width: 480px; }
+    .seg { transition: opacity 0.15s, filter 0.15s; }
+    .seg:hover { opacity: 0.7 !important; filter: brightness(1.3); }
+    .seg.active { filter: brightness(1.4); opacity: 1 !important; }
 
-    .tooltip {
-      position: fixed;
-      background: #1a1a2e;
-      border: 1px solid #2a2a4a;
-      border-radius: 10px;
-      padding: 10px 14px;
+    /* Tooltip centré dans le SVG */
+    .tooltip-overlay {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      background: rgba(15,15,25,0.95);
+      border: 1px solid #2a2a5a;
+      border-radius: 14px;
+      padding: 14px 18px;
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.2s;
       z-index: 100;
-      min-width: 150px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
+      min-width: 160px;
+      text-align: center;
+      box-shadow: 0 4px 24px rgba(0,0,0,0.7);
     }
-    .tooltip.visible { opacity: 1; }
-    .tt-label { font-size: 11px; color: #666; margin-bottom: 4px; }
-    .tt-amount { font-size: 20px; font-weight: 700; margin-bottom: 2px; }
-    .tt-ratio { font-size: 11px; color: #555; }
+    .tooltip-overlay.visible { opacity: 1; }
+    .tt-label { font-size: 12px; color: #888; margin-bottom: 6px; }
+    .tt-amount { font-size: 26px; font-weight: 800; margin-bottom: 4px; }
+    .tt-ratio { font-size: 12px; color: #555; }
+
+    .svg-wrap { position: relative; width: 100%; max-width: 480px; }
   </style>
 </head>
 <body>
 
-  <svg viewBox="-80 -80 560 560" width="100%" style="max-width:460px">
-    <defs>
-      <filter id="centerGlow">
-        <feGaussianBlur stdDeviation="6" result="blur"/>
-        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-      </filter>
-    </defs>
+  <div class="svg-wrap">
+    <svg viewBox="0 0 ${viewSize} ${viewSize}">
+      <defs>
+        <filter id="centerGlow">
+          <feGaussianBlur stdDeviation="8" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+      </defs>
 
-    <!-- Grille -->
-    ${gridCircles}
+      <!-- Grille -->
+      ${gridCircles}
 
-    <!-- Segments -->
-    ${segmentsSVG}
+      <!-- Segments -->
+      ${segmentsSVG}
 
-    <!-- Cercle centre -->
-    <circle cx="${cx}" cy="${cy}" r="${innerR}" fill="#0d0d14" filter="url(#centerGlow)"/>
-    <circle cx="${cx}" cy="${cy}" r="${innerR - 3}" fill="#111118"/>
+      <!-- Cercle centre -->
+      <circle cx="${cx}" cy="${cy}" r="${innerR + 2}" fill="#0d0d14" filter="url(#centerGlow)"/>
+      <circle cx="${cx}" cy="${cy}" r="${innerR}" fill="#111118"/>
 
-    <!-- Texte centre -->
-    <text x="${cx}" y="${cy - 8}" text-anchor="middle" font-size="9" fill="#444"
-      font-family="-apple-system, sans-serif" letter-spacing="1">TOTAL</text>
-    <text x="${cx}" y="${cy + 10}" text-anchor="middle" font-size="13" font-weight="700"
-      fill="#eaeaea" font-family="-apple-system, sans-serif"
-    >${total.toLocaleString('fr-FR')} €</text>
+      <!-- Texte centre -->
+      <text x="${cx}" y="${cy - 10}" text-anchor="middle" font-size="10" fill="#444"
+        font-family="-apple-system, sans-serif" letter-spacing="1.5">TOTAL</text>
+      <text x="${cx}" y="${cy + 12}" text-anchor="middle" font-size="15" font-weight="700"
+        fill="#eaeaea" font-family="-apple-system, sans-serif"
+      >${total.toLocaleString('fr-FR')} €</text>
+    </svg>
 
-    <!-- Labels -->
-    ${labelsSVG}
-  </svg>
-
-  <div class="tooltip" id="tooltip">
-    <div class="tt-label" id="tt-label"></div>
-    <div class="tt-amount" id="tt-amount"></div>
-    <div class="tt-ratio" id="tt-ratio"></div>
+    <!-- Tooltip centré -->
+    <div class="tooltip-overlay" id="tooltip">
+      <div class="tt-label" id="tt-label"></div>
+      <div class="tt-amount" id="tt-amount"></div>
+      <div class="tt-ratio" id="tt-ratio"></div>
+    </div>
   </div>
 
   <script>
     const data = ${JSON.stringify(segments.map(s => ({
       label: s.label, montant: s.montant, ratio: s.ratio, color: s.color
     })))};
+
     const tooltip = document.getElementById('tooltip');
+    let activeIdx = null;
 
     document.querySelectorAll('.seg').forEach(seg => {
       seg.addEventListener('click', e => {
+        e.stopPropagation();
         const idx = parseInt(seg.dataset.idx);
         const d = data[idx];
+
+        // Reset autres
+        document.querySelectorAll('.seg').forEach(s => s.classList.remove('active'));
+        seg.classList.add('active');
+        activeIdx = idx;
+
         document.getElementById('tt-label').textContent = d.label;
         document.getElementById('tt-amount').textContent = d.montant.toLocaleString('fr-FR') + ' €';
         document.getElementById('tt-amount').style.color = d.color;
         document.getElementById('tt-ratio').textContent = d.ratio + '% des dépenses';
-        tooltip.style.left = Math.min(e.clientX + 12, window.innerWidth - 170) + 'px';
-        tooltip.style.top = Math.max(e.clientY - 60, 8) + 'px';
         tooltip.classList.add('visible');
+
         clearTimeout(window._tt);
-        window._tt = setTimeout(() => tooltip.classList.remove('visible'), 3000);
+        window._tt = setTimeout(() => {
+          tooltip.classList.remove('visible');
+          document.querySelectorAll('.seg').forEach(s => s.classList.remove('active'));
+          activeIdx = null;
+        }, 3000);
       });
     });
 
-    document.addEventListener('click', e => {
-      if (!e.target.closest('.seg')) tooltip.classList.remove('visible');
+    document.addEventListener('click', () => {
+      tooltip.classList.remove('visible');
+      document.querySelectorAll('.seg').forEach(s => s.classList.remove('active'));
+      activeIdx = null;
     });
   </script>
 
