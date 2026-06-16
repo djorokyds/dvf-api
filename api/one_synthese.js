@@ -37,16 +37,31 @@ module.exports = async function handler(req, res) {
   const segAngle = 360 / n;
   const gapAngle = 1.5;
 
-  // Dégradé bleu → or selon position
-  // mainItems = bleus, Autres = or/marron
+  // Dégradé orange / marron basé sur la couleur principale C38F5A
   const blueColors = [
-    '#1e4d8c', '#2260ad', '#2673ce', '#3a87d4',
-    '#4f9bda', '#64afe0', '#3d5a9e', '#5270b8',
-    '#6786d2', '#79c3e6', '#1a3a6b', '#7c9cec',
+    '#6B3E1F',
+    '#7A4723',
+    '#895127',
+    '#985A2B',
+    '#A76430',
+    '#B66E35',
+    '#C38F5A',
+    '#C99763',
+    '#D0A06C',
+    '#D7AA76',
+    '#DDB37F',
+    '#E4BD89',
   ];
+  
   const goldColors = [
-    '#C38F5A', '#A8742A', '#D4A86A', '#B8944A',
-    '#E8C27A', '#8B5E2A', '#C8A050', '#D4B87E',
+    '#C38F5A',
+    '#B17E4A',
+    '#9F6D3A',
+    '#8D5C2B',
+    '#D4A86A',
+    '#E0B77D',
+    '#C99763',
+    '#A8742A',
   ];
 
   const maxMontant = Math.max(...items.map(i => i.montant));
