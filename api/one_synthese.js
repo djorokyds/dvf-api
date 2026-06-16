@@ -7,82 +7,53 @@ module.exports = async function handler(req, res) {
 
   const total = parseFloat(depenses_total.replace(/[€\s\u00a0]/g, '').replace(',', '.'));
 
-  let items = categories.split('/').map(item => {
+  const items = categories.split('/').map(item => {
     const lastPipe = item.lastIndexOf('|');
     if (lastPipe === -1) return null;
-
     const label = item.substring(0, lastPipe).trim();
-    const montant = parseFloat(
-      item.substring(lastPipe + 1).replace(/[€\s\u00a0]/g, '').replace(',', '.')
-    );
-
+    const montantRaw = item.substring(lastPipe + 1).replace(/[€\s\u00a0]/g, '').replace(',', '.');
+    const montant = parseFloat(montantRaw);
     const ratio = Math.round((montant / total) * 100);
-
     return { label, montant, ratio };
   }).filter(i => i && i.label && !isNaN(i.montant) && i.montant > 0);
 
   if (items.length === 0) {
-    return res.status(400).json({ error: "Aucune catégorie valide trouvée", raw: categories });
+    return res.status(400).json({ error: "Aucune catégorie valide", raw: categories });
   }
-
-  const sortedItems = [...items].sort((a, b) => b.ratio - a.ratio);
-  const reorderedItems = [];
-
-  let left = 0;
-  let right = sortedItems.length - 1;
-
-  while (left <= right) {
-    if (left === right) reorderedItems.push(sortedItems[left]);
-    else {
-      reorderedItems.push(sortedItems[left]);
-      reorderedItems.push(sortedItems[right]);
-    }
-    left++;
-    right--;
-  }
-
-  items = reorderedItems;
-
-  const colors = [
-    '#7B5EA7', '#4A90D9', '#3DBFA0', '#5B8DD9',
-    '#A07BC4', '#2E9E8A', '#6B7FD4', '#4ABFBF',
-  ];
 
   const n = items.length;
-  const cx = 180;
-  const cy = 180;
-  const innerR = 55;
-  const maxR = 145;
+  const cx = 200, cy = 200;
+  const innerR = 35;
+  const maxR = 150;
+  const segAngle = 360 / n;
   const gapAngle = 2;
-  const totalAngle = 360 - n * gapAngle;
-  const startAngle = -40;
 
-  const sumMontants = items.reduce((sum, item) => sum + item.montant, 0);
-  const maxMontant = Math.max(...items.map(x => x.montant));
+  // Dégradé de bleus/violets comme l'image
+  const baseColors = [
+    '#1a3a6b', '#1e4d8c', '#2260ad', '#2673ce',
+    '#3a87d4', '#4f9bda', '#64afe0', '#79c3e6',
+    '#3d5a9e', '#5270b8', '#6786d2', '#7c9cec',
+  ];
 
-  let currentAngle = startAngle;
+  const maxMontant = Math.max(...items.map(i => i.montant));
 
   const segments = items.map((item, i) => {
-    const segAngle = (item.montant / sumMontants) * totalAngle;
-
-    const seg = {
+    const startAngle = -90 + i * segAngle;
+    const endAngle = startAngle + segAngle - gapAngle;
+    const outerR = innerR + ((item.montant / maxMontant) * (maxR - innerR));
+    return {
       ...item,
-      startAngle: currentAngle,
-      endAngle: currentAngle + segAngle,
-      color: colors[i % colors.length],
-      outerR: innerR + ((item.montant / maxMontant) * (maxR - innerR)),
+      startAngle,
+      endAngle,
+      outerR,
+      color: baseColors[i % baseColors.length],
+      midAngle: startAngle + (segAngle - gapAngle) / 2,
     };
-
-    currentAngle += segAngle + gapAngle;
-    return seg;
   });
 
   function polarToXY(cx, cy, r, angleDeg) {
     const rad = (angleDeg * Math.PI) / 180;
-    return {
-      x: cx + r * Math.cos(rad),
-      y: cy + r * Math.sin(rad),
-    };
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
   }
 
   function describeSegment(cx, cy, rInner, rOuter, startAngle, endAngle) {
@@ -91,88 +62,57 @@ module.exports = async function handler(req, res) {
     const s2 = polarToXY(cx, cy, rInner, endAngle);
     const e2 = polarToXY(cx, cy, rInner, startAngle);
     const la = Math.abs(endAngle - startAngle) > 180 ? 1 : 0;
-
     return [
       `M ${s1.x.toFixed(2)} ${s1.y.toFixed(2)}`,
       `A ${rOuter} ${rOuter} 0 ${la} 1 ${e1.x.toFixed(2)} ${e1.y.toFixed(2)}`,
       `L ${s2.x.toFixed(2)} ${s2.y.toFixed(2)}`,
       `A ${rInner} ${rInner} 0 ${la} 0 ${e2.x.toFixed(2)} ${e2.y.toFixed(2)}`,
-      'Z',
+      'Z'
     ].join(' ');
   }
 
-  function getLabelLine(seg) {
-    const midAngle = (seg.startAngle + seg.endAngle) / 2;
-    const p1 = polarToXY(cx, cy, seg.outerR + 6, midAngle);
-    const p2 = polarToXY(cx, cy, seg.outerR + 95, midAngle);
-    const isRight = p2.x >= cx;
-
-    return {
-      seg,
-      p1,
-      p2,
-      isRight,
-      y: p2.y,
-      lineEndX: isRight ? 455 : -95,
-    };
-  }
-
-  function spreadLabels(labels, minGap = 38, minY = 10, maxY = 360) {
-    labels.sort((a, b) => a.y - b.y);
-
-    labels.forEach((label, i) => {
-      if (i === 0) label.y = Math.max(label.y, minY);
-      else label.y = Math.max(label.y, labels[i - 1].y + minGap);
-    });
-
-    for (let i = labels.length - 1; i >= 0; i--) {
-      if (labels[i].y > maxY) labels[i].y = maxY;
-
-      if (i < labels.length - 1) {
-        labels[i].y = Math.min(labels[i].y, labels[i + 1].y - minGap);
-      }
-    }
-
-    return labels;
-  }
-
-  const labelData = segments.map(getLabelLine);
-  const leftLabels = spreadLabels(labelData.filter(l => !l.isRight));
-  const rightLabels = spreadLabels(labelData.filter(l => l.isRight));
-
   const segmentsSVG = segments.map((seg, i) => {
     const path = describeSegment(cx, cy, innerR, seg.outerR, seg.startAngle, seg.endAngle);
-    const bgPath = describeSegment(cx, cy, innerR, maxR, seg.startAngle, seg.endAngle);
-
+    // Fond gris clair jusqu'au maxR
+    const bgPath = describeSegment(cx, cy, innerR, maxR + 5, seg.startAngle, seg.endAngle);
     return `
-      <path d="${bgPath}" fill="${seg.color}" opacity="0.12"/>
-      <path d="${path}" fill="${seg.color}" opacity="0.85" class="seg" data-idx="${i}"/>
+      <path d="${bgPath}" fill="${seg.color}" opacity="0.08"/>
+      <path d="${path}" fill="${seg.color}" opacity="0.9" class="seg" data-idx="${i}"
+        style="cursor:pointer; transition: opacity 0.2s;"/>
     `;
   }).join('');
 
-  const labelsSVG = [...leftLabels, ...rightLabels].map(({ seg, p1, p2, lineEndX, isRight, y }) => {
-    const textX = isRight ? lineEndX + 14 : lineEndX - 14;
+  // Cercles de grille
+  const gridCircles = [0.25, 0.5, 0.75, 1.0].map(pct => {
+    const r = innerR + pct * (maxR - innerR);
+    return `<circle cx="${cx}" cy="${cy}" r="${r.toFixed(1)}" fill="none" stroke="#ffffff" stroke-width="0.4" opacity="0.08"/>`;
+  }).join('');
+
+  // Labels externes
+  const labelsSVG = segments.map((seg, i) => {
+    const labelR = maxR + 22;
+    const pos = polarToXY(cx, cy, labelR, seg.midAngle);
+    const isRight = Math.cos(seg.midAngle * Math.PI / 180) >= 0;
     const anchor = isRight ? 'start' : 'end';
-    const label = seg.label.length > 18 ? seg.label.substring(0, 17) + '…' : seg.label;
+
+    // Ligne du bord du segment au label
+    const lineStart = polarToXY(cx, cy, seg.outerR + 4, seg.midAngle);
+    const lineEnd = polarToXY(cx, cy, maxR + 14, seg.midAngle);
+
+    const shortLabel = seg.label.length > 14 ? seg.label.substring(0, 13) + '…' : seg.label;
 
     return `
-      <line x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}"
-            x2="${p2.x.toFixed(1)}" y2="${y.toFixed(1)}"
-            stroke="${seg.color}" stroke-width="1.2" opacity="0.6"/>
-
-      <line x1="${p2.x.toFixed(1)}" y1="${y.toFixed(1)}"
-            x2="${lineEndX.toFixed(1)}" y2="${y.toFixed(1)}"
-            stroke="${seg.color}" stroke-width="1.2" opacity="0.6"/>
-
-      <text x="${textX.toFixed(1)}" y="${(y - 7).toFixed(1)}"
-        text-anchor="${anchor}" font-size="13" font-weight="800"
+      <line x1="${lineStart.x.toFixed(1)}" y1="${lineStart.y.toFixed(1)}"
+            x2="${lineEnd.x.toFixed(1)}" y2="${lineEnd.y.toFixed(1)}"
+            stroke="${seg.color}" stroke-width="1" opacity="0.5"/>
+      <text x="${pos.x.toFixed(1)}" y="${(pos.y - 5).toFixed(1)}"
+        text-anchor="${anchor}" font-size="11" font-weight="800"
         fill="${seg.color}" font-family="-apple-system, sans-serif"
-      >${seg.ratio}%</text>
-
-      <text x="${textX.toFixed(1)}" y="${(y + 10).toFixed(1)}"
-        text-anchor="${anchor}" font-size="11" font-weight="600"
-        fill="#999" font-family="-apple-system, sans-serif"
-      >${label}</text>
+      >${seg.montant.toLocaleString('fr-FR')} €</text>
+      <text x="${pos.x.toFixed(1)}" y="${(pos.y + 8).toFixed(1)}"
+        text-anchor="${anchor}" font-size="9" font-weight="500"
+        fill="#888" font-family="-apple-system, sans-serif"
+      >${shortLabel} · ${seg.ratio}%</text>
     `;
   }).join('');
 
@@ -184,70 +124,66 @@ module.exports = async function handler(req, res) {
   <title>Synthèse - Fi-One</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-
-    html, body {
-      width: 100%;
-      height: auto;
-      overflow: hidden;
-    }
-
+    html, body { width: 100%; height: auto; overflow: hidden; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #111118;
+      background: #0d0d14;
       color: #eaeaea;
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 12px 0 16px;
+      padding: 8px 0 12px;
     }
-
     svg { overflow: visible; }
-
-    .seg {
-      cursor: pointer;
-      transition: opacity 0.2s, filter 0.2s;
-    }
-
-    .seg:hover {
-      opacity: 1 !important;
-      filter: brightness(1.25);
-    }
+    .seg:hover { opacity: 0.7 !important; }
 
     .tooltip {
       position: fixed;
-      background: #1e1e2e;
-      border: 1px solid #333355;
+      background: #1a1a2e;
+      border: 1px solid #2a2a4a;
       border-radius: 10px;
       padding: 10px 14px;
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.2s;
       z-index: 100;
-      min-width: 140px;
-      box-shadow: 0 4px 20px rgba(0,0,0,0.5);
+      min-width: 150px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.6);
     }
-
     .tooltip.visible { opacity: 1; }
-    .tt-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+    .tt-label { font-size: 11px; color: #666; margin-bottom: 4px; }
     .tt-amount { font-size: 20px; font-weight: 700; margin-bottom: 2px; }
     .tt-ratio { font-size: 11px; color: #555; }
   </style>
 </head>
-
 <body>
-  <svg viewBox="-220 -60 820 500" width="100%" style="max-width:760px">
+
+  <svg viewBox="-80 -80 560 560" width="100%" style="max-width:460px">
+    <defs>
+      <filter id="centerGlow">
+        <feGaussianBlur stdDeviation="6" result="blur"/>
+        <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+      </filter>
+    </defs>
+
+    <!-- Grille -->
+    ${gridCircles}
+
+    <!-- Segments -->
     ${segmentsSVG}
 
-    <circle cx="${cx}" cy="${cy}" r="${innerR}" fill="#1a1a28"/>
-    <circle cx="${cx}" cy="${cy}" r="${innerR - 2}" fill="#111118"/>
+    <!-- Cercle centre -->
+    <circle cx="${cx}" cy="${cy}" r="${innerR}" fill="#0d0d14" filter="url(#centerGlow)"/>
+    <circle cx="${cx}" cy="${cy}" r="${innerR - 3}" fill="#111118"/>
 
-    <text x="${cx}" y="${cy - 10}" text-anchor="middle" font-size="11" fill="#555"
-      font-family="-apple-system, sans-serif">TOTAL</text>
-
-    <text x="${cx}" y="${cy + 12}" text-anchor="middle" font-size="15" font-weight="700"
+    <!-- Texte centre -->
+    <text x="${cx}" y="${cy - 8}" text-anchor="middle" font-size="9" fill="#444"
+      font-family="-apple-system, sans-serif" letter-spacing="1">TOTAL</text>
+    <text x="${cx}" y="${cy + 10}" text-anchor="middle" font-size="13" font-weight="700"
       fill="#eaeaea" font-family="-apple-system, sans-serif"
-    >${Math.round(total)} €</text>
+    >${total.toLocaleString('fr-FR')} €</text>
 
+    <!-- Labels -->
     ${labelsSVG}
   </svg>
 
@@ -259,28 +195,21 @@ module.exports = async function handler(req, res) {
 
   <script>
     const data = ${JSON.stringify(segments.map(s => ({
-      label: s.label,
-      montant: s.montant,
-      ratio: s.ratio,
-      color: s.color,
+      label: s.label, montant: s.montant, ratio: s.ratio, color: s.color
     })))};
-
     const tooltip = document.getElementById('tooltip');
 
     document.querySelectorAll('.seg').forEach(seg => {
       seg.addEventListener('click', e => {
         const idx = parseInt(seg.dataset.idx);
         const d = data[idx];
-
         document.getElementById('tt-label').textContent = d.label;
-        document.getElementById('tt-amount').textContent = Math.round(d.montant) + ' €';
+        document.getElementById('tt-amount').textContent = d.montant.toLocaleString('fr-FR') + ' €';
         document.getElementById('tt-amount').style.color = d.color;
         document.getElementById('tt-ratio').textContent = d.ratio + '% des dépenses';
-
-        tooltip.style.left = Math.min(e.clientX + 12, window.innerWidth - 160) + 'px';
+        tooltip.style.left = Math.min(e.clientX + 12, window.innerWidth - 170) + 'px';
         tooltip.style.top = Math.max(e.clientY - 60, 8) + 'px';
         tooltip.classList.add('visible');
-
         clearTimeout(window._tt);
         window._tt = setTimeout(() => tooltip.classList.remove('visible'), 3000);
       });
@@ -290,6 +219,7 @@ module.exports = async function handler(req, res) {
       if (!e.target.closest('.seg')) tooltip.classList.remove('visible');
     });
   </script>
+
 </body>
 </html>`;
 
