@@ -24,11 +24,10 @@ module.exports = async function handler(req, res) {
   const cx = 180, cy = 180;
   const innerR = 55;
   const maxR = 145;
-  const gapAngle = 3; // degrés entre segments
+  const gapAngle = 3;
   const totalAngle = 360 - n * gapAngle;
   const startAngle = -90;
 
-  // Calcul des angles par segment
   let currentAngle = startAngle;
   const segments = items.map((item, i) => {
     const segAngle = (item.ratio / 100) * totalAngle;
@@ -37,7 +36,6 @@ module.exports = async function handler(req, res) {
       startAngle: currentAngle,
       endAngle: currentAngle + segAngle,
       color: colors[i % colors.length],
-      // Rayon externe proportionnel au ratio
       outerR: innerR + ((item.ratio / Math.max(...items.map(x => x.ratio))) * (maxR - innerR)),
     };
     currentAngle += segAngle + gapAngle;
@@ -64,25 +62,19 @@ module.exports = async function handler(req, res) {
     ].join(' ');
   }
 
-  // Ligne de label depuis le milieu de l'arc
   function getLabelLine(seg) {
     const midAngle = (seg.startAngle + seg.endAngle) / 2;
-    const labelR = seg.outerR + 20;
-    const extR = seg.outerR + 45;
     const p1 = polarToXY(cx, cy, seg.outerR + 4, midAngle);
-    const p2 = polarToXY(cx, cy, labelR, midAngle);
-    const p3 = polarToXY(cx, cy, extR, midAngle);
+    const p3 = polarToXY(cx, cy, seg.outerR + 80, midAngle);  // +80 au lieu de +45
     const isRight = p3.x >= cx;
-    const lineEndX = isRight ? p3.x + 25 : p3.x - 25;
-    return { p1, p2, p3, lineEndX, isRight, midAngle };
+    const lineEndX = isRight ? p3.x + 40 : p3.x - 40;  // +40 au lieu de +25
+    return { p1, p3, lineEndX, isRight, midAngle };
   }
 
   const W = 360, H = 360;
 
-  // Segments SVG
   const segmentsSVG = segments.map((seg, i) => {
     const path = describeSegment(cx, cy, innerR, seg.outerR, seg.startAngle, seg.endAngle);
-    // Anneau de fond (gris clair)
     const bgPath = describeSegment(cx, cy, innerR, maxR, seg.startAngle, seg.endAngle);
     return `
       <path d="${bgPath}" fill="${seg.color}" opacity="0.12"/>
@@ -90,24 +82,29 @@ module.exports = async function handler(req, res) {
     `;
   }).join('');
 
-  // Labels externes
   const labelsSVG = segments.map((seg, i) => {
-    const { p1, p2, p3, lineEndX, isRight } = getLabelLine(seg);
-    const textX = isRight ? lineEndX + 4 : lineEndX - 4;
+    const { p1, p3, lineEndX, isRight } = getLabelLine(seg);
+    const textX = isRight ? lineEndX + 6 : lineEndX - 6;
     const anchor = isRight ? 'start' : 'end';
-    const label = seg.label.length > 12 ? seg.label.substring(0, 11) + '…' : seg.label;
+    const label = seg.label.length > 14 ? seg.label.substring(0, 13) + '…' : seg.label;
     return `
-      <line x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}" x2="${p3.x.toFixed(1)}" y2="${p3.y.toFixed(1)}"
-        stroke="${seg.color}" stroke-width="1" opacity="0.6"/>
-      <line x1="${p3.x.toFixed(1)}" y1="${p3.y.toFixed(1)}" x2="${lineEndX.toFixed(1)}" y2="${p3.y.toFixed(1)}"
-        stroke="${seg.color}" stroke-width="1" opacity="0.6"/>
-      <text x="${textX.toFixed(1)}" y="${(p3.y - 5).toFixed(1)}"
-        text-anchor="${anchor}" font-size="11" font-weight="700"
+      <!-- Ligne depuis bord arc -->
+      <line x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}"
+            x2="${p3.x.toFixed(1)}" y2="${p3.y.toFixed(1)}"
+            stroke="${seg.color}" stroke-width="1.2" opacity="0.6"/>
+      <!-- Ligne horizontale -->
+      <line x1="${p3.x.toFixed(1)}" y1="${p3.y.toFixed(1)}"
+            x2="${lineEndX.toFixed(1)}" y2="${p3.y.toFixed(1)}"
+            stroke="${seg.color}" stroke-width="1.2" opacity="0.6"/>
+      <!-- % -->
+      <text x="${textX.toFixed(1)}" y="${(p3.y - 7).toFixed(1)}"
+        text-anchor="${anchor}" font-size="13" font-weight="800"
         fill="${seg.color}" font-family="-apple-system, sans-serif"
       >${seg.ratio}%</text>
-      <text x="${textX.toFixed(1)}" y="${(p3.y + 8).toFixed(1)}"
-        text-anchor="${anchor}" font-size="9"
-        fill="#666" font-family="-apple-system, sans-serif"
+      <!-- Label -->
+      <text x="${textX.toFixed(1)}" y="${(p3.y + 10).toFixed(1)}"
+        text-anchor="${anchor}" font-size="11" font-weight="600"
+        fill="#999" font-family="-apple-system, sans-serif"
       >${label}</text>
     `;
   }).join('');
@@ -132,7 +129,7 @@ module.exports = async function handler(req, res) {
     }
     svg { overflow: visible; }
     .seg { cursor: pointer; transition: opacity 0.2s; }
-    .seg:hover { opacity: 1 !important; filter: brightness(1.2); }
+    .seg:hover { opacity: 1 !important; filter: brightness(1.25); }
 
     .tooltip {
       position: fixed;
@@ -152,27 +149,11 @@ module.exports = async function handler(req, res) {
     .tt-label { font-size: 11px; color: #888; margin-bottom: 4px; }
     .tt-amount { font-size: 20px; font-weight: 700; margin-bottom: 2px; }
     .tt-ratio { font-size: 11px; color: #555; }
-
-    .center-label {
-      position: absolute;
-      top: 50%; left: 50%;
-      transform: translate(-50%, -50%);
-      text-align: center;
-      pointer-events: none;
-    }
   </style>
 </head>
 <body>
 
-  <svg viewBox="-80 0 520 ${H}" width="100%" style="max-width:500px">
-    <defs>
-      ${segments.map((seg, i) => `
-        <filter id="glow${i}">
-          <feGaussianBlur stdDeviation="4" result="blur"/>
-          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
-        </filter>
-      `).join('')}
-    </defs>
+  <svg viewBox="-100 -20 560 400" width="100%" style="max-width:520px">
 
     <!-- Segments -->
     ${segmentsSVG}
@@ -182,11 +163,11 @@ module.exports = async function handler(req, res) {
     <circle cx="${cx}" cy="${cy}" r="${innerR - 2}" fill="#111118"/>
 
     <!-- Texte centre -->
-    <text x="${cx}" y="${cy - 8}" text-anchor="middle" font-size="10" fill="#555"
-      font-family="-apple-system, sans-serif" text-transform="uppercase">TOTAL</text>
-    <text x="${cx}" y="${cy + 10}" text-anchor="middle" font-size="14" font-weight="700"
+    <text x="${cx}" y="${cy - 10}" text-anchor="middle" font-size="11" fill="#555"
+      font-family="-apple-system, sans-serif">TOTAL</text>
+    <text x="${cx}" y="${cy + 12}" text-anchor="middle" font-size="16" font-weight="700"
       fill="#eaeaea" font-family="-apple-system, sans-serif"
-    >${(total/1000).toFixed(1)}k €</text>
+    >${total.toLocaleString('fr-FR')} €</text>
 
     <!-- Labels -->
     ${labelsSVG}
