@@ -28,29 +28,25 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: "Aucune catégorie valide trouvée", raw: categories });
   }
 
-  // Réorganisation des éléments pour éviter que les petits arcs soient tous regroupés
-  const sortedItems = [...items].sort((a, b) => b.ratio - a.ratio);
-  const reorderedItems = [];
+  // Petits arcs d'abord : ils seront placés en haut
+  items = [...items].sort((a, b) => a.ratio - b.ratio);
 
-  let left = 0;
-  let right = sortedItems.length - 1;
+  const smallColors = [
+    '#FFB86B',
+    '#FF6B9A',
+    '#FFD166',
+    '#4DD4AC',
+    '#7CE7FF',
+    '#C084FC',
+  ];
 
-  while (left <= right) {
-    if (left === right) {
-      reorderedItems.push(sortedItems[left]);
-    } else {
-      reorderedItems.push(sortedItems[left]);
-      reorderedItems.push(sortedItems[right]);
-    }
-    left++;
-    right--;
-  }
-
-  items = reorderedItems;
-
-  const colors = [
-    '#7B5EA7', '#4A90D9', '#3DBFA0', '#5B8DD9',
-    '#A07BC4', '#2E9E8A', '#6B7FD4', '#4ABFBF',
+  const largeColors = [
+    '#2563EB',
+    '#5B21B6',
+    '#047857',
+    '#0F766E',
+    '#1E40AF',
+    '#6D28D9',
   ];
 
   const n = items.length;
@@ -61,8 +57,8 @@ module.exports = async function handler(req, res) {
   const gapAngle = 2;
   const totalAngle = 360 - n * gapAngle;
 
-  // Rotation plus équilibrée
-  const startAngle = -40;
+  // Démarrage à gauche-haut pour placer les petits arcs sur la partie haute
+  const startAngle = -170;
 
   const maxRatio = Math.max(...items.map(x => x.ratio));
 
@@ -71,11 +67,16 @@ module.exports = async function handler(req, res) {
   const segments = items.map((item, i) => {
     const segAngle = Math.max((item.ratio / 100) * totalAngle, 4);
 
+    const isSmall = item.ratio <= 10;
+    const color = isSmall
+      ? smallColors[i % smallColors.length]
+      : largeColors[i % largeColors.length];
+
     const seg = {
       ...item,
       startAngle: currentAngle,
       endAngle: currentAngle + segAngle,
-      color: colors[i % colors.length],
+      color,
       outerR: innerR + ((item.ratio / maxRatio) * (maxR - innerR)),
     };
 
@@ -111,7 +112,7 @@ module.exports = async function handler(req, res) {
     const midAngle = (seg.startAngle + seg.endAngle) / 2;
 
     const p1 = polarToXY(cx, cy, seg.outerR + 6, midAngle);
-    const p2 = polarToXY(cx, cy, seg.outerR + 90, midAngle);
+    const p2 = polarToXY(cx, cy, seg.outerR + 95, midAngle);
 
     const isRight = p2.x >= cx;
     const lineEndX = isRight ? p2.x + 70 : p2.x - 70;
@@ -124,8 +125,8 @@ module.exports = async function handler(req, res) {
     const bgPath = describeSegment(cx, cy, innerR, maxR, seg.startAngle, seg.endAngle);
 
     return `
-      <path d="${bgPath}" fill="${seg.color}" opacity="0.12"/>
-      <path d="${path}" fill="${seg.color}" opacity="0.85" class="seg" data-idx="${i}"/>
+      <path d="${bgPath}" fill="${seg.color}" opacity="0.14"/>
+      <path d="${path}" fill="${seg.color}" opacity="0.9" class="seg" data-idx="${i}"/>
     `;
   }).join('');
 
@@ -139,11 +140,11 @@ module.exports = async function handler(req, res) {
     return `
       <line x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}"
             x2="${p2.x.toFixed(1)}" y2="${p2.y.toFixed(1)}"
-            stroke="${seg.color}" stroke-width="1.2" opacity="0.6"/>
+            stroke="${seg.color}" stroke-width="1.3" opacity="0.75"/>
 
       <line x1="${p2.x.toFixed(1)}" y1="${p2.y.toFixed(1)}"
             x2="${lineEndX.toFixed(1)}" y2="${p2.y.toFixed(1)}"
-            stroke="${seg.color}" stroke-width="1.2" opacity="0.6"/>
+            stroke="${seg.color}" stroke-width="1.3" opacity="0.75"/>
 
       <text x="${textX.toFixed(1)}" y="${(p2.y - 7).toFixed(1)}"
         text-anchor="${anchor}" font-size="13" font-weight="800"
@@ -152,7 +153,7 @@ module.exports = async function handler(req, res) {
 
       <text x="${textX.toFixed(1)}" y="${(p2.y + 10).toFixed(1)}"
         text-anchor="${anchor}" font-size="11" font-weight="600"
-        fill="#999" font-family="-apple-system, sans-serif"
+        fill="#aaa" font-family="-apple-system, sans-serif"
       >${label}</text>
     `;
   }).join('');
@@ -188,7 +189,8 @@ module.exports = async function handler(req, res) {
 
     .seg {
       cursor: pointer;
-      transition: opacity 0.2s, filter 0.2s;
+      transition: opacity 0.2s, filter 0.2s, transform 0.2s;
+      transform-origin: center;
     }
 
     .seg:hover {
@@ -234,7 +236,7 @@ module.exports = async function handler(req, res) {
 </head>
 
 <body>
-  <svg viewBox="-170 -50 700 460" width="100%" style="max-width:640px">
+  <svg viewBox="-170 -60 700 480" width="100%" style="max-width:640px">
     ${segmentsSVG}
 
     <circle cx="${cx}" cy="${cy}" r="${innerR}" fill="#1a1a28"/>
