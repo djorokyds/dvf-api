@@ -166,7 +166,7 @@ module.exports = async function handler(req, res) {
     .tooltip-overlay.visible { opacity: 1; }
     .tt-label { font-size: 12px; color: #888; margin-bottom: 6px; }
     .tt-amount { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
-    .tt-ratio { font-size: 12px; color: #888; margin-bottom: 8px; }
+    .tt-ratio { font-size: 12px; color: #888; font-weight: 800; margin-bottom: 8px; }
     .tt-detail {
       font-size: 10px;
       color: #666;
