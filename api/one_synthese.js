@@ -5,20 +5,17 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: "Paramètres manquants (categories, depenses_total)" });
   }
 
-  const total = parseFloat(
-    depenses_total.replace(/[€\s\u00a0]/g, '').replace(',', '.')
-  );
+  const total = parseFloat(depenses_total.replace(/[€\s\u00a0]/g, '').replace(',', '.'));
 
   let items = categories.split('/').map(item => {
     const lastPipe = item.lastIndexOf('|');
     if (lastPipe === -1) return null;
 
     const label = item.substring(0, lastPipe).trim();
-    const montantRaw = item.substring(lastPipe + 1)
-      .replace(/[€\s\u00a0]/g, '')
-      .replace(',', '.');
+    const montant = parseFloat(
+      item.substring(lastPipe + 1).replace(/[€\s\u00a0]/g, '').replace(',', '.')
+    );
 
-    const montant = parseFloat(montantRaw);
     const ratio = Math.round((montant / total) * 100);
 
     return { label, montant, ratio };
@@ -28,7 +25,6 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: "Aucune catégorie valide trouvée", raw: categories });
   }
 
-  // Réorganisation des éléments pour éviter que les petits arcs soient tous regroupés
   const sortedItems = [...items].sort((a, b) => b.ratio - a.ratio);
   const reorderedItems = [];
 
@@ -36,9 +32,8 @@ module.exports = async function handler(req, res) {
   let right = sortedItems.length - 1;
 
   while (left <= right) {
-    if (left === right) {
-      reorderedItems.push(sortedItems[left]);
-    } else {
+    if (left === right) reorderedItems.push(sortedItems[left]);
+    else {
       reorderedItems.push(sortedItems[left]);
       reorderedItems.push(sortedItems[right]);
     }
@@ -60,23 +55,22 @@ module.exports = async function handler(req, res) {
   const maxR = 145;
   const gapAngle = 2;
   const totalAngle = 360 - n * gapAngle;
-
-  // Rotation plus équilibrée
   const startAngle = -40;
 
-  const maxRatio = Math.max(...items.map(x => x.ratio));
+  const sumMontants = items.reduce((sum, item) => sum + item.montant, 0);
+  const maxMontant = Math.max(...items.map(x => x.montant));
 
   let currentAngle = startAngle;
 
   const segments = items.map((item, i) => {
-    const segAngle = Math.max((item.ratio / 100) * totalAngle, 4);
+    const segAngle = (item.montant / sumMontants) * totalAngle;
 
     const seg = {
       ...item,
       startAngle: currentAngle,
       endAngle: currentAngle + segAngle,
       color: colors[i % colors.length],
-      outerR: innerR + ((item.ratio / maxRatio) * (maxR - innerR)),
+      outerR: innerR + ((item.montant / maxMontant) * (maxR - innerR)),
     };
 
     currentAngle += segAngle + gapAngle;
@@ -109,15 +103,42 @@ module.exports = async function handler(req, res) {
 
   function getLabelLine(seg) {
     const midAngle = (seg.startAngle + seg.endAngle) / 2;
-
     const p1 = polarToXY(cx, cy, seg.outerR + 6, midAngle);
-    const p2 = polarToXY(cx, cy, seg.outerR + 90, midAngle);
-
+    const p2 = polarToXY(cx, cy, seg.outerR + 95, midAngle);
     const isRight = p2.x >= cx;
-    const lineEndX = isRight ? p2.x + 70 : p2.x - 70;
 
-    return { p1, p2, lineEndX, isRight };
+    return {
+      seg,
+      p1,
+      p2,
+      isRight,
+      y: p2.y,
+      lineEndX: isRight ? 455 : -95,
+    };
   }
+
+  function spreadLabels(labels, minGap = 38, minY = 10, maxY = 360) {
+    labels.sort((a, b) => a.y - b.y);
+
+    labels.forEach((label, i) => {
+      if (i === 0) label.y = Math.max(label.y, minY);
+      else label.y = Math.max(label.y, labels[i - 1].y + minGap);
+    });
+
+    for (let i = labels.length - 1; i >= 0; i--) {
+      if (labels[i].y > maxY) labels[i].y = maxY;
+
+      if (i < labels.length - 1) {
+        labels[i].y = Math.min(labels[i].y, labels[i + 1].y - minGap);
+      }
+    }
+
+    return labels;
+  }
+
+  const labelData = segments.map(getLabelLine);
+  const leftLabels = spreadLabels(labelData.filter(l => !l.isRight));
+  const rightLabels = spreadLabels(labelData.filter(l => l.isRight));
 
   const segmentsSVG = segments.map((seg, i) => {
     const path = describeSegment(cx, cy, innerR, seg.outerR, seg.startAngle, seg.endAngle);
@@ -129,28 +150,26 @@ module.exports = async function handler(req, res) {
     `;
   }).join('');
 
-  const labelsSVG = segments.map(seg => {
-    const { p1, p2, lineEndX, isRight } = getLabelLine(seg);
-
+  const labelsSVG = [...leftLabels, ...rightLabels].map(({ seg, p1, p2, lineEndX, isRight, y }) => {
     const textX = isRight ? lineEndX + 14 : lineEndX - 14;
     const anchor = isRight ? 'start' : 'end';
     const label = seg.label.length > 18 ? seg.label.substring(0, 17) + '…' : seg.label;
 
     return `
       <line x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}"
-            x2="${p2.x.toFixed(1)}" y2="${p2.y.toFixed(1)}"
+            x2="${p2.x.toFixed(1)}" y2="${y.toFixed(1)}"
             stroke="${seg.color}" stroke-width="1.2" opacity="0.6"/>
 
-      <line x1="${p2.x.toFixed(1)}" y1="${p2.y.toFixed(1)}"
-            x2="${lineEndX.toFixed(1)}" y2="${p2.y.toFixed(1)}"
+      <line x1="${p2.x.toFixed(1)}" y1="${y.toFixed(1)}"
+            x2="${lineEndX.toFixed(1)}" y2="${y.toFixed(1)}"
             stroke="${seg.color}" stroke-width="1.2" opacity="0.6"/>
 
-      <text x="${textX.toFixed(1)}" y="${(p2.y - 7).toFixed(1)}"
+      <text x="${textX.toFixed(1)}" y="${(y - 7).toFixed(1)}"
         text-anchor="${anchor}" font-size="13" font-weight="800"
         fill="${seg.color}" font-family="-apple-system, sans-serif"
       >${seg.ratio}%</text>
 
-      <text x="${textX.toFixed(1)}" y="${(p2.y + 10).toFixed(1)}"
+      <text x="${textX.toFixed(1)}" y="${(y + 10).toFixed(1)}"
         text-anchor="${anchor}" font-size="11" font-weight="600"
         fill="#999" font-family="-apple-system, sans-serif"
       >${label}</text>
@@ -182,9 +201,7 @@ module.exports = async function handler(req, res) {
       padding: 12px 0 16px;
     }
 
-    svg {
-      overflow: visible;
-    }
+    svg { overflow: visible; }
 
     .seg {
       cursor: pointer;
@@ -210,31 +227,15 @@ module.exports = async function handler(req, res) {
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
 
-    .tooltip.visible {
-      opacity: 1;
-    }
-
-    .tt-label {
-      font-size: 11px;
-      color: #888;
-      margin-bottom: 4px;
-    }
-
-    .tt-amount {
-      font-size: 20px;
-      font-weight: 700;
-      margin-bottom: 2px;
-    }
-
-    .tt-ratio {
-      font-size: 11px;
-      color: #555;
-    }
+    .tooltip.visible { opacity: 1; }
+    .tt-label { font-size: 11px; color: #888; margin-bottom: 4px; }
+    .tt-amount { font-size: 20px; font-weight: 700; margin-bottom: 2px; }
+    .tt-ratio { font-size: 11px; color: #555; }
   </style>
 </head>
 
 <body>
-  <svg viewBox="-170 -50 700 460" width="100%" style="max-width:640px">
+  <svg viewBox="-220 -60 820 500" width="100%" style="max-width:760px">
     ${segmentsSVG}
 
     <circle cx="${cx}" cy="${cy}" r="${innerR}" fill="#1a1a28"/>
@@ -257,14 +258,12 @@ module.exports = async function handler(req, res) {
   </div>
 
   <script>
-    const data = ${JSON.stringify(
-      segments.map(s => ({
-        label: s.label,
-        montant: s.montant,
-        ratio: s.ratio,
-        color: s.color,
-      }))
-    )};
+    const data = ${JSON.stringify(segments.map(s => ({
+      label: s.label,
+      montant: s.montant,
+      ratio: s.ratio,
+      color: s.color,
+    })))};
 
     const tooltip = document.getElementById('tooltip');
 
@@ -288,9 +287,7 @@ module.exports = async function handler(req, res) {
     });
 
     document.addEventListener('click', e => {
-      if (!e.target.closest('.seg')) {
-        tooltip.classList.remove('visible');
-      }
+      if (!e.target.closest('.seg')) tooltip.classList.remove('visible');
     });
   </script>
 </body>
