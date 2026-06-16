@@ -108,7 +108,7 @@ module.exports = async function handler(req, res) {
     const path = describeSegment(cx, cy, innerR, seg.outerR, seg.startAngle, seg.endAngle);
     const bgPath = describeSegment(cx, cy, innerR, maxR + 5, seg.startAngle, seg.endAngle);
     return `
-      <path d="${bgPath}" fill="#919191" opacity="0.5"/>
+      <path d="${bgPath}" fill="#919191" opacity="0.2"/>
       <path d="${path}" fill="${seg.color}" opacity="0.88"
         class="seg" data-idx="${i}" data-autres="${seg.isAutres ? '1' : '0'}"
         style="cursor:pointer;"/>
