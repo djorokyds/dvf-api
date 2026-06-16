@@ -7,92 +7,110 @@ module.exports = async function handler(req, res) {
 
   const total = parseFloat(depenses_total.replace(/\s/g, '').replace(',', '.'));
 
-  // Parse categories : "offrande+2000/resto+2500/..."
   const items = categories.split('/').map(item => {
-    const parts = item.trim().split('|');  // ← | au lieu de +
+    const parts = item.trim().split('|');
     const label = parts[0].trim();
     const montant = parseFloat(parts[1]);
     const ratio = Math.round((montant / total) * 100);
     return { label, montant, ratio };
   }).filter(i => i.label && !isNaN(i.montant));
 
-  // Couleurs sobres dark
   const colors = [
-    { bg: '#2D4A6B', glow: '#4A7FAA', text: '#7EB8E8' },
-    { bg: '#2D5A3D', glow: '#4A9A60', text: '#7ED4A0' },
-    { bg: '#5A2D4A', glow: '#9A4A7A', text: '#D47EB8' },
-    { bg: '#5A4A2D', glow: '#9A7A4A', text: '#D4B87E' },
-    { bg: '#2D3D5A', glow: '#4A6A9A', text: '#7EA8D4' },
-    { bg: '#5A2D2D', glow: '#9A4A4A', text: '#D47E7E' },
-    { bg: '#3D5A2D', glow: '#6A9A4A', text: '#A8D47E' },
-    { bg: '#4A2D5A', glow: '#7A4A9A', text: '#B87ED4' },
+    '#7B5EA7', '#4A90D9', '#3DBFA0', '#5B8DD9',
+    '#A07BC4', '#2E9E8A', '#6B7FD4', '#4ABFBF',
   ];
 
-  // Taille bulle : min 60px, max 130px selon ratio
-  const minR = 40, maxR = 90;
-  const maxRatio = Math.max(...items.map(i => i.ratio));
+  const n = items.length;
+  const cx = 180, cy = 180;
+  const innerR = 55;
+  const maxR = 145;
+  const gapAngle = 3; // degrés entre segments
+  const totalAngle = 360 - n * gapAngle;
+  const startAngle = -90;
 
-  const itemsWithSize = items.map((item, idx) => ({
-    ...item,
-    r: Math.round(minR + (item.ratio / maxRatio) * (maxR - minR)),
-    color: colors[idx % colors.length],
-  }));
+  // Calcul des angles par segment
+  let currentAngle = startAngle;
+  const segments = items.map((item, i) => {
+    const segAngle = (item.ratio / 100) * totalAngle;
+    const seg = {
+      ...item,
+      startAngle: currentAngle,
+      endAngle: currentAngle + segAngle,
+      color: colors[i % colors.length],
+      // Rayon externe proportionnel au ratio
+      outerR: innerR + ((item.ratio / Math.max(...items.map(x => x.ratio))) * (maxR - innerR)),
+    };
+    currentAngle += segAngle + gapAngle;
+    return seg;
+  });
 
-  // Pack circles — algorithme simple de placement
-  function packCircles(circles, W, H) {
-    const placed = [];
-    const cx = W / 2, cy = H / 2;
-
-    for (let i = 0; i < circles.length; i++) {
-      const c = circles[i];
-      let bestX = cx, bestY = cy;
-      let placed_flag = false;
-
-      if (placed.length === 0) {
-        bestX = cx; bestY = cy;
-        placed_flag = true;
-      } else {
-        // Essayer autour des cercles déjà placés
-        for (let attempts = 0; attempts < 300; attempts++) {
-          const angle = Math.random() * Math.PI * 2;
-          const ref = placed[Math.floor(Math.random() * placed.length)];
-          const dist = ref.r + c.r + 8 + Math.random() * 20;
-          const tx = ref.x + Math.cos(angle) * dist;
-          const ty = ref.y + Math.sin(angle) * dist;
-
-          // Vérifier pas de collision
-          let collision = false;
-          for (const p of placed) {
-            const d = Math.sqrt((tx - p.x) ** 2 + (ty - p.y) ** 2);
-            if (d < p.r + c.r + 6) { collision = true; break; }
-          }
-
-          // Dans les limites
-          if (!collision && tx - c.r > 4 && tx + c.r < W - 4 && ty - c.r > 4 && ty + c.r < H - 4) {
-            bestX = tx; bestY = ty;
-            placed_flag = true;
-            break;
-          }
-        }
-
-        if (!placed_flag) {
-          // Fallback — forcer une position
-          const angle = (i / circles.length) * Math.PI * 2;
-          bestX = Math.max(c.r + 4, Math.min(W - c.r - 4, cx + Math.cos(angle) * (maxR + 20)));
-          bestY = Math.max(c.r + 4, Math.min(H - c.r - 4, cy + Math.sin(angle) * (maxR + 20)));
-        }
-      }
-
-      placed.push({ ...c, x: bestX, y: bestY });
-    }
-
-    return placed;
+  function polarToXY(cx, cy, r, angleDeg) {
+    const rad = (angleDeg * Math.PI) / 180;
+    return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
   }
 
-  const W = 360, H = 420;
-  // Trier par taille décroissante pour meilleur packing
-  const sorted = [...itemsWithSize].sort((a, b) => b.r - a.r);
-  const packed = packCircles(sorted, W, H);
+  function describeSegment(cx, cy, rInner, rOuter, startAngle, endAngle) {
+    const s1 = polarToXY(cx, cy, rOuter, startAngle);
+    const e1 = polarToXY(cx, cy, rOuter, endAngle);
+    const s2 = polarToXY(cx, cy, rInner, endAngle);
+    const e2 = polarToXY(cx, cy, rInner, startAngle);
+    const la = Math.abs(endAngle - startAngle) > 180 ? 1 : 0;
+    return [
+      `M ${s1.x.toFixed(2)} ${s1.y.toFixed(2)}`,
+      `A ${rOuter} ${rOuter} 0 ${la} 1 ${e1.x.toFixed(2)} ${e1.y.toFixed(2)}`,
+      `L ${s2.x.toFixed(2)} ${s2.y.toFixed(2)}`,
+      `A ${rInner} ${rInner} 0 ${la} 0 ${e2.x.toFixed(2)} ${e2.y.toFixed(2)}`,
+      'Z'
+    ].join(' ');
+  }
+
+  // Ligne de label depuis le milieu de l'arc
+  function getLabelLine(seg) {
+    const midAngle = (seg.startAngle + seg.endAngle) / 2;
+    const labelR = seg.outerR + 20;
+    const extR = seg.outerR + 45;
+    const p1 = polarToXY(cx, cy, seg.outerR + 4, midAngle);
+    const p2 = polarToXY(cx, cy, labelR, midAngle);
+    const p3 = polarToXY(cx, cy, extR, midAngle);
+    const isRight = p3.x >= cx;
+    const lineEndX = isRight ? p3.x + 25 : p3.x - 25;
+    return { p1, p2, p3, lineEndX, isRight, midAngle };
+  }
+
+  const W = 360, H = 360;
+
+  // Segments SVG
+  const segmentsSVG = segments.map((seg, i) => {
+    const path = describeSegment(cx, cy, innerR, seg.outerR, seg.startAngle, seg.endAngle);
+    // Anneau de fond (gris clair)
+    const bgPath = describeSegment(cx, cy, innerR, maxR, seg.startAngle, seg.endAngle);
+    return `
+      <path d="${bgPath}" fill="${seg.color}" opacity="0.12"/>
+      <path d="${path}" fill="${seg.color}" opacity="0.85" class="seg" data-idx="${i}"/>
+    `;
+  }).join('');
+
+  // Labels externes
+  const labelsSVG = segments.map((seg, i) => {
+    const { p1, p2, p3, lineEndX, isRight } = getLabelLine(seg);
+    const textX = isRight ? lineEndX + 4 : lineEndX - 4;
+    const anchor = isRight ? 'start' : 'end';
+    const label = seg.label.length > 12 ? seg.label.substring(0, 11) + '…' : seg.label;
+    return `
+      <line x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}" x2="${p3.x.toFixed(1)}" y2="${p3.y.toFixed(1)}"
+        stroke="${seg.color}" stroke-width="1" opacity="0.6"/>
+      <line x1="${p3.x.toFixed(1)}" y1="${p3.y.toFixed(1)}" x2="${lineEndX.toFixed(1)}" y2="${p3.y.toFixed(1)}"
+        stroke="${seg.color}" stroke-width="1" opacity="0.6"/>
+      <text x="${textX.toFixed(1)}" y="${(p3.y - 5).toFixed(1)}"
+        text-anchor="${anchor}" font-size="11" font-weight="700"
+        fill="${seg.color}" font-family="-apple-system, sans-serif"
+      >${seg.ratio}%</text>
+      <text x="${textX.toFixed(1)}" y="${(p3.y + 8).toFixed(1)}"
+        text-anchor="${anchor}" font-size="9"
+        fill="#666" font-family="-apple-system, sans-serif"
+      >${label}</text>
+    `;
+  }).join('');
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -110,98 +128,68 @@ module.exports = async function handler(req, res) {
       display: flex;
       flex-direction: column;
       align-items: center;
-      padding: 8px 0 12px;
+      padding: 12px 0 16px;
     }
+    svg { overflow: visible; }
+    .seg { cursor: pointer; transition: opacity 0.2s; }
+    .seg:hover { opacity: 1 !important; filter: brightness(1.2); }
 
-    .total-label {
-      font-size: 11px;
-      color: #444;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      margin-bottom: 4px;
-    }
-    .total-value {
-      font-size: 22px;
-      font-weight: 700;
-      color: #eaeaea;
-      margin-bottom: 10px;
-    }
-
-    svg { overflow: visible; cursor: pointer; }
-
-    /* Tooltip */
     .tooltip {
       position: fixed;
       background: #1e1e2e;
       border: 1px solid #333355;
-      border-radius: 12px;
+      border-radius: 10px;
       padding: 10px 14px;
       font-size: 13px;
       pointer-events: none;
       opacity: 0;
       transition: opacity 0.2s;
       z-index: 100;
-      min-width: 130px;
+      min-width: 140px;
       box-shadow: 0 4px 20px rgba(0,0,0,0.5);
     }
     .tooltip.visible { opacity: 1; }
-    .tt-label { font-size: 12px; color: #888; margin-bottom: 4px; }
+    .tt-label { font-size: 11px; color: #888; margin-bottom: 4px; }
     .tt-amount { font-size: 20px; font-weight: 700; margin-bottom: 2px; }
-    .tt-ratio { font-size: 11px; color: #666; }
+    .tt-ratio { font-size: 11px; color: #555; }
+
+    .center-label {
+      position: absolute;
+      top: 50%; left: 50%;
+      transform: translate(-50%, -50%);
+      text-align: center;
+      pointer-events: none;
+    }
   </style>
 </head>
 <body>
 
-  <div class="total-label">Total dépenses</div>
-  <div class="total-value">${total.toLocaleString('fr-FR')} €</div>
-
-  <svg id="svg" viewBox="0 0 ${W} ${H}" width="${W}" height="${H}">
+  <svg viewBox="-80 0 520 ${H}" width="100%" style="max-width:500px">
     <defs>
-      ${packed.map((c, i) => `
-        <radialGradient id="grad${i}" cx="38%" cy="35%" r="65%">
-          <stop offset="0%" stop-color="${c.color.glow}" stop-opacity="0.9"/>
-          <stop offset="100%" stop-color="${c.color.bg}" stop-opacity="1"/>
-        </radialGradient>
-        <radialGradient id="glow${i}" cx="50%" cy="50%" r="50%">
-          <stop offset="0%" stop-color="${c.color.glow}" stop-opacity="0.3"/>
-          <stop offset="100%" stop-color="${c.color.glow}" stop-opacity="0"/>
-        </radialGradient>
-        <filter id="blur${i}">
-          <feGaussianBlur stdDeviation="8"/>
+      ${segments.map((seg, i) => `
+        <filter id="glow${i}">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
       `).join('')}
     </defs>
 
-    ${packed.map((c, i) => `
-      <g class="bubble" data-label="${c.label}" data-montant="${c.montant}" data-ratio="${c.ratio}" data-color="${c.color.text}" style="cursor:pointer">
-        <!-- Lueur externe -->
-        <circle cx="${c.x}" cy="${c.y}" r="${c.r + 12}" fill="url(#glow${i})" filter="url(#blur${i})"/>
-        <!-- Corps bulle -->
-        <circle cx="${c.x}" cy="${c.y}" r="${c.r}" fill="url(#grad${i})"/>
-        <!-- Reflet haut -->
-        <ellipse cx="${c.x - c.r * 0.2}" cy="${c.y - c.r * 0.35}" rx="${c.r * 0.35}" ry="${c.r * 0.18}" fill="white" opacity="0.08"/>
-        <!-- Label -->
-        <text
-          x="${c.x}" y="${c.y - (c.r > 55 ? 8 : 4)}"
-          text-anchor="middle"
-          font-size="${c.r > 70 ? 13 : c.r > 50 ? 11 : 9}"
-          font-weight="600"
-          fill="${c.color.text}"
-          font-family="-apple-system, sans-serif"
-        >${c.label.length > 10 ? c.label.substring(0, 9) + '…' : c.label}</text>
-        ${c.r > 45 ? `
-        <text
-          x="${c.x}" y="${c.y + (c.r > 55 ? 10 : 8)}"
-          text-anchor="middle"
-          font-size="${c.r > 70 ? 12 : 10}"
-          font-weight="700"
-          fill="white"
-          opacity="0.7"
-          font-family="-apple-system, sans-serif"
-        >${c.ratio}%</text>
-        ` : ''}
-      </g>
-    `).join('')}
+    <!-- Segments -->
+    ${segmentsSVG}
+
+    <!-- Cercle intérieur -->
+    <circle cx="${cx}" cy="${cy}" r="${innerR}" fill="#1a1a28"/>
+    <circle cx="${cx}" cy="${cy}" r="${innerR - 2}" fill="#111118"/>
+
+    <!-- Texte centre -->
+    <text x="${cx}" y="${cy - 8}" text-anchor="middle" font-size="10" fill="#555"
+      font-family="-apple-system, sans-serif" text-transform="uppercase">TOTAL</text>
+    <text x="${cx}" y="${cy + 10}" text-anchor="middle" font-size="14" font-weight="700"
+      fill="#eaeaea" font-family="-apple-system, sans-serif"
+    >${(total/1000).toFixed(1)}k €</text>
+
+    <!-- Labels -->
+    ${labelsSVG}
   </svg>
 
   <div class="tooltip" id="tooltip">
@@ -211,43 +199,27 @@ module.exports = async function handler(req, res) {
   </div>
 
   <script>
+    const data = ${JSON.stringify(segments.map(s => ({ label: s.label, montant: s.montant, ratio: s.ratio, color: s.color })))};
     const tooltip = document.getElementById('tooltip');
-    const ttLabel = document.getElementById('tt-label');
-    const ttAmount = document.getElementById('tt-amount');
-    const ttRatio = document.getElementById('tt-ratio');
 
-    document.querySelectorAll('.bubble').forEach(bubble => {
-      bubble.addEventListener('click', (e) => {
-        const label = bubble.dataset.label;
-        const montant = parseFloat(bubble.dataset.montant);
-        const ratio = bubble.dataset.ratio;
-        const color = bubble.dataset.color;
-
-        ttLabel.textContent = label;
-        ttAmount.textContent = montant.toLocaleString('fr-FR') + ' €';
-        ttAmount.style.color = color;
-        ttRatio.textContent = ratio + '% des dépenses totales';
-
-        // Position tooltip
-        const rect = e.target.closest('svg').getBoundingClientRect();
-        const x = e.clientX - rect.left;
-        const y = e.clientY - rect.top;
-
-        tooltip.style.left = Math.min(x + 12, window.innerWidth - 160) + 'px';
-        tooltip.style.top = Math.max(y - 70, 8) + 'px';
+    document.querySelectorAll('.seg').forEach(seg => {
+      seg.addEventListener('click', e => {
+        const idx = parseInt(seg.dataset.idx);
+        const d = data[idx];
+        document.getElementById('tt-label').textContent = d.label;
+        document.getElementById('tt-amount').textContent = d.montant.toLocaleString('fr-FR') + ' €';
+        document.getElementById('tt-amount').style.color = d.color;
+        document.getElementById('tt-ratio').textContent = d.ratio + '% des dépenses';
+        tooltip.style.left = Math.min(e.clientX + 12, window.innerWidth - 160) + 'px';
+        tooltip.style.top = Math.max(e.clientY - 60, 8) + 'px';
         tooltip.classList.add('visible');
-
-        // Fermer après 3s
-        clearTimeout(window._ttTimer);
-        window._ttTimer = setTimeout(() => tooltip.classList.remove('visible'), 3000);
+        clearTimeout(window._tt);
+        window._tt = setTimeout(() => tooltip.classList.remove('visible'), 3000);
       });
     });
 
-    // Fermer en cliquant ailleurs
     document.addEventListener('click', e => {
-      if (!e.target.closest('.bubble')) {
-        tooltip.classList.remove('visible');
-      }
+      if (!e.target.closest('.seg')) tooltip.classList.remove('visible');
     });
   </script>
 
