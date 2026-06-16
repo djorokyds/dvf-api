@@ -108,7 +108,7 @@ module.exports = async function handler(req, res) {
     const path = describeSegment(cx, cy, innerR, seg.outerR, seg.startAngle, seg.endAngle);
     const bgPath = describeSegment(cx, cy, innerR, maxR + 5, seg.startAngle, seg.endAngle);
     return `
-      <path d="${bgPath}" fill="#919191" opacity="0.2"/>
+      <path d="${bgPath}" fill="#919191" opacity="0.1"/>
       <path d="${path}" fill="${seg.color}" opacity="0.88"
         class="seg" data-idx="${i}" data-autres="${seg.isAutres ? '1' : '0'}"
         style="cursor:pointer;"/>
@@ -253,9 +253,10 @@ module.exports = async function handler(req, res) {
           const sorted = [...autresItems].sort((a, b) => b.montant - a.montant);
           detailEl.innerHTML = '<div style="border-top:1px solid #222;padding-top:8px;margin-top:6px">' +
             sorted.map(i =>
-              '<div style="display:flex;justify-content:space-between;gap:12px;font-size:10px;color:#888;line-height:1.8">' +
-              '<span>' + i.label + '</span>' +
-              '<span style="color:#C38F5A;font-weight:600">' + i.montant.toLocaleString('fr-FR') + ' €</span>' +
+              'display:flex;align-items:center;gap:8px;font-size:10px;color:#888;line-height:1.8;width:100%' +
+              '<span style="flex:1;text-align:left;white-space:nowrap;overflow:hidden;text-overflow:ellipsis">' + i.label + '</span>' +
+              '<span style="width:42px;text-align:right;color:#888;font-weight:600">' + i.ratio + '%</span>' +
+              '<span style="width:70px;text-align:right;color:#C38F5A;font-weight:700">' + i.montant.toLocaleString('fr-FR') + ' €</span>' +
               '</div>'
             ).join('') +
           '</div>';
