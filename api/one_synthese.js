@@ -28,32 +28,29 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: "Aucune catégorie valide trouvée", raw: categories });
   }
 
-  // Petits arcs d'abord pour les placer en haut
-  const smallItems = items
-    .filter(i => i.ratio <= 10)
-    .sort((a, b) => a.ratio - b.ratio);
+  // Réorganisation des éléments pour éviter que les petits arcs soient tous regroupés
+  const sortedItems = [...items].sort((a, b) => b.ratio - a.ratio);
+  const reorderedItems = [];
 
-  const largeItems = items
-    .filter(i => i.ratio > 10)
-    .sort((a, b) => b.ratio - a.ratio);
+  let left = 0;
+  let right = sortedItems.length - 1;
 
-  items = [...smallItems, ...largeItems];
+  while (left <= right) {
+    if (left === right) {
+      reorderedItems.push(sortedItems[left]);
+    } else {
+      reorderedItems.push(sortedItems[left]);
+      reorderedItems.push(sortedItems[right]);
+    }
+    left++;
+    right--;
+  }
 
-  const smallColors = [
-    '#FF6B9A',
-    '#FFB86B',
-    '#FFD166',
-    '#4DD4AC',
-    '#7CE7FF',
-    '#C084FC',
-  ];
+  items = reorderedItems;
 
-  const largeColors = [
-    '#6D28D9',
-    '#2563EB',
-    '#047857',
-    '#1E40AF',
-    '#5B21B6',
+  const colors = [
+    '#7B5EA7', '#4A90D9', '#3DBFA0', '#5B8DD9',
+    '#A07BC4', '#2E9E8A', '#6B7FD4', '#4ABFBF',
   ];
 
   const n = items.length;
@@ -64,25 +61,21 @@ module.exports = async function handler(req, res) {
   const gapAngle = 2;
   const totalAngle = 360 - n * gapAngle;
 
-  // Départ haut-gauche : les petits arcs occupent la zone supérieure
-  const startAngle = -135;
+  // Rotation plus équilibrée
+  const startAngle = -40;
 
   const maxRatio = Math.max(...items.map(x => x.ratio));
+
   let currentAngle = startAngle;
 
   const segments = items.map((item, i) => {
-    const segAngle = (item.ratio / 100) * totalAngle;
-
-    const isSmall = item.ratio <= 10;
-    const color = isSmall
-      ? smallColors[i % smallColors.length]
-      : largeColors[i % largeColors.length];
+    const segAngle = Math.max((item.ratio / 100) * totalAngle, 4);
 
     const seg = {
       ...item,
       startAngle: currentAngle,
       endAngle: currentAngle + segAngle,
-      color,
+      color: colors[i % colors.length],
       outerR: innerR + ((item.ratio / maxRatio) * (maxR - innerR)),
     };
 
@@ -116,8 +109,9 @@ module.exports = async function handler(req, res) {
 
   function getLabelLine(seg) {
     const midAngle = (seg.startAngle + seg.endAngle) / 2;
+
     const p1 = polarToXY(cx, cy, seg.outerR + 6, midAngle);
-    const p2 = polarToXY(cx, cy, seg.outerR + 95, midAngle);
+    const p2 = polarToXY(cx, cy, seg.outerR + 90, midAngle);
 
     const isRight = p2.x >= cx;
     const lineEndX = isRight ? p2.x + 70 : p2.x - 70;
@@ -130,8 +124,8 @@ module.exports = async function handler(req, res) {
     const bgPath = describeSegment(cx, cy, innerR, maxR, seg.startAngle, seg.endAngle);
 
     return `
-      <path d="${bgPath}" fill="${seg.color}" opacity="0.14"/>
-      <path d="${path}" fill="${seg.color}" opacity="0.9" class="seg" data-idx="${i}"/>
+      <path d="${bgPath}" fill="${seg.color}" opacity="0.12"/>
+      <path d="${path}" fill="${seg.color}" opacity="0.85" class="seg" data-idx="${i}"/>
     `;
   }).join('');
 
@@ -145,11 +139,11 @@ module.exports = async function handler(req, res) {
     return `
       <line x1="${p1.x.toFixed(1)}" y1="${p1.y.toFixed(1)}"
             x2="${p2.x.toFixed(1)}" y2="${p2.y.toFixed(1)}"
-            stroke="${seg.color}" stroke-width="1.3" opacity="0.75"/>
+            stroke="${seg.color}" stroke-width="1.2" opacity="0.6"/>
 
       <line x1="${p2.x.toFixed(1)}" y1="${p2.y.toFixed(1)}"
             x2="${lineEndX.toFixed(1)}" y2="${p2.y.toFixed(1)}"
-            stroke="${seg.color}" stroke-width="1.3" opacity="0.75"/>
+            stroke="${seg.color}" stroke-width="1.2" opacity="0.6"/>
 
       <text x="${textX.toFixed(1)}" y="${(p2.y - 7).toFixed(1)}"
         text-anchor="${anchor}" font-size="13" font-weight="800"
@@ -158,7 +152,7 @@ module.exports = async function handler(req, res) {
 
       <text x="${textX.toFixed(1)}" y="${(p2.y + 10).toFixed(1)}"
         text-anchor="${anchor}" font-size="11" font-weight="600"
-        fill="#aaa" font-family="-apple-system, sans-serif"
+        fill="#999" font-family="-apple-system, sans-serif"
       >${label}</text>
     `;
   }).join('');
@@ -167,6 +161,7 @@ module.exports = async function handler(req, res) {
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Synthèse - Fi-One</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -182,8 +177,8 @@ module.exports = async function handler(req, res) {
       background: #111118;
       color: #eaeaea;
       display: flex;
+      flex-direction: column;
       align-items: center;
-      justify-content: center;
       padding: 12px 0 16px;
     }
 
@@ -239,7 +234,7 @@ module.exports = async function handler(req, res) {
 </head>
 
 <body>
-  <svg viewBox="-170 -70 700 500" width="100%" style="max-width:660px">
+  <svg viewBox="-170 -50 700 460" width="100%" style="max-width:640px">
     ${segmentsSVG}
 
     <circle cx="${cx}" cy="${cy}" r="${innerR}" fill="#1a1a28"/>
