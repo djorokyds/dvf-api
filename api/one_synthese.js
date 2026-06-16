@@ -39,29 +39,25 @@ module.exports = async function handler(req, res) {
 
   // Dégradé orange / marron basé sur la couleur principale C38F5A
   const blueColors = [
-    '#6B3E1F',
-    '#7A4723',
-    '#895127',
-    '#985A2B',
-    '#A76430',
-    '#B66E35',
-    '#C38F5A',
-    '#C99763',
-    '#D0A06C',
-    '#D7AA76',
-    '#DDB37F',
-    '#E4BD89',
+    '#FF7A1A', // orange vif
+    '#F97316', // orange
+    '#E86A12',
+    '#D9600F',
+    '#C38F5A', // couleur principale
+    '#B57F4F',
+    '#A06F45',
+    '#8B5F3A',
+    '#754F30',
+    '#5F4027',
+    '#49311D',
+    '#342214'
   ];
   
   const goldColors = [
+    '#FF7A1A',
+    '#F59E0B',
     '#C38F5A',
-    '#B17E4A',
-    '#9F6D3A',
-    '#8D5C2B',
-    '#D4A86A',
-    '#E0B77D',
-    '#C99763',
-    '#A8742A',
+    '#8B5E2A',
   ];
 
   const maxMontant = Math.max(...items.map(i => i.montant));
