@@ -132,7 +132,7 @@ module.exports = async function handler(req, res) {
     html, body { width: 100%; height: auto; overflow: hidden; }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #0d0d14;
+      background: #1f1f1f;
       color: #eaeaea;
       display: flex;
       flex-direction: column;
@@ -151,7 +151,7 @@ module.exports = async function handler(req, res) {
       top: 50%; left: 50%;
       transform: translate(-50%, -50%);
       background: rgba(13,13,20,0.97);
-      border: 1px solid #2a2a5a;
+      border: 1px solid #D95F09;
       border-radius: 14px;
       padding: 14px 18px;
       pointer-events: none;
@@ -166,7 +166,7 @@ module.exports = async function handler(req, res) {
     .tooltip-overlay.visible { opacity: 1; }
     .tt-label { font-size: 12px; color: #888; margin-bottom: 6px; }
     .tt-amount { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
-    .tt-ratio { font-size: 11px; color: #555; margin-bottom: 8px; }
+    .tt-ratio { font-size: 12px; color: #888; margin-bottom: 8px; }
     .tt-detail {
       font-size: 10px;
       color: #666;
