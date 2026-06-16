@@ -28,12 +28,20 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: "Aucune catégorie valide trouvée", raw: categories });
   }
 
-  // Petits arcs d'abord : ils seront placés en haut
-  items = [...items].sort((a, b) => a.ratio - b.ratio);
+  // Petits arcs d'abord pour les placer en haut
+  const smallItems = items
+    .filter(i => i.ratio <= 10)
+    .sort((a, b) => a.ratio - b.ratio);
+
+  const largeItems = items
+    .filter(i => i.ratio > 10)
+    .sort((a, b) => b.ratio - a.ratio);
+
+  items = [...smallItems, ...largeItems];
 
   const smallColors = [
-    '#FFB86B',
     '#FF6B9A',
+    '#FFB86B',
     '#FFD166',
     '#4DD4AC',
     '#7CE7FF',
@@ -41,12 +49,11 @@ module.exports = async function handler(req, res) {
   ];
 
   const largeColors = [
-    '#2563EB',
-    '#5B21B6',
-    '#047857',
-    '#0F766E',
-    '#1E40AF',
     '#6D28D9',
+    '#2563EB',
+    '#047857',
+    '#1E40AF',
+    '#5B21B6',
   ];
 
   const n = items.length;
@@ -57,15 +64,14 @@ module.exports = async function handler(req, res) {
   const gapAngle = 2;
   const totalAngle = 360 - n * gapAngle;
 
-  // Démarrage à gauche-haut pour placer les petits arcs sur la partie haute
-  const startAngle = -170;
+  // Départ haut-gauche : les petits arcs occupent la zone supérieure
+  const startAngle = -135;
 
   const maxRatio = Math.max(...items.map(x => x.ratio));
-
   let currentAngle = startAngle;
 
   const segments = items.map((item, i) => {
-    const segAngle = Math.max((item.ratio / 100) * totalAngle, 4);
+    const segAngle = (item.ratio / 100) * totalAngle;
 
     const isSmall = item.ratio <= 10;
     const color = isSmall
@@ -110,7 +116,6 @@ module.exports = async function handler(req, res) {
 
   function getLabelLine(seg) {
     const midAngle = (seg.startAngle + seg.endAngle) / 2;
-
     const p1 = polarToXY(cx, cy, seg.outerR + 6, midAngle);
     const p2 = polarToXY(cx, cy, seg.outerR + 95, midAngle);
 
@@ -162,7 +167,6 @@ module.exports = async function handler(req, res) {
 <html lang="fr">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Synthèse - Fi-One</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -178,8 +182,8 @@ module.exports = async function handler(req, res) {
       background: #111118;
       color: #eaeaea;
       display: flex;
-      flex-direction: column;
       align-items: center;
+      justify-content: center;
       padding: 12px 0 16px;
     }
 
@@ -189,8 +193,7 @@ module.exports = async function handler(req, res) {
 
     .seg {
       cursor: pointer;
-      transition: opacity 0.2s, filter 0.2s, transform 0.2s;
-      transform-origin: center;
+      transition: opacity 0.2s, filter 0.2s;
     }
 
     .seg:hover {
@@ -236,7 +239,7 @@ module.exports = async function handler(req, res) {
 </head>
 
 <body>
-  <svg viewBox="-170 -60 700 480" width="100%" style="max-width:640px">
+  <svg viewBox="-170 -70 700 500" width="100%" style="max-width:660px">
     ${segmentsSVG}
 
     <circle cx="${cx}" cy="${cy}" r="${innerR}" fill="#1a1a28"/>
