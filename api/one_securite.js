@@ -23,9 +23,9 @@ module.exports = async function handler(req, res) {
   }
 
   let couvertureColor, couvertureLabel;
-  if (tauxCouverture >= 6) { couvertureColor = '#27AE60'; couvertureLabel = '✅ Solide'; }
-  else if (tauxCouverture >= 3) { couvertureColor = '#C8B400'; couvertureLabel = '⚠️ En bonne voie'; }
-  else { couvertureColor = '#E74C3C'; couvertureLabel = '❌ Fragile (< 3 mois)'; }
+  if (tauxCouverture >= 3) { couvertureColor = '#27AE60'; couvertureLabel = '✅ Solide'; }
+  else if (tauxCouverture >= 2) { couvertureColor = '#C8B400'; couvertureLabel = '⚠️ En bonne voie'; }
+  else { couvertureColor = '#E74C3C'; couvertureLabel = '❌ Fragile (< 2 mois)'; }
 
   const totalBars = 40;
   const activeBars = Math.round((pct / 100) * totalBars);
