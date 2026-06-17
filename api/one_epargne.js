@@ -6,11 +6,12 @@ module.exports = async function handler(req, res) {
   }
 
   function parseMoney(value) {
-    return parseFloat(
-      String(value)
-        .replace(/[€\s\u00a0\u202f]/g, '')
-        .replace(',', '.')
-    );
+    const cleaned = String(value)
+      .replace(/[€\s\u00a0\u202f]/g, '')
+      .replace(/,/g, '')
+      .replace(/\.(?=\d{3}$)/g, '');
+  
+    return parseFloat(cleaned);
   }
   
   const bloquee = parseMoney(epargne_bloquee);
