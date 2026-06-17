@@ -1,11 +1,12 @@
 module.exports = async function handler(req, res) {
-  const { categories, depenses_total } = req.query;
+  const { categories, depenses_total, revenu } = req.query;
 
-  if (!categories || !depenses_total) {
-    return res.status(400).json({ error: "Paramètres manquants (categories, depenses_total)" });
+  if (!categories || !depenses_total || !revenu) {
+    return res.status(400).json({ error: "Paramètres manquants (categories, depenses_total, revenu)" });
   }
 
   const total = parseFloat(depenses_total.replace(/[€\s\u00a0]/g, '').replace(',', '.'));
+  const revenuTotal = parseFloat(revenu.replace(/[€\s\u00a0]/g, '').replace(',', '.'));
 
   const rawItems = categories.split('/').map(item => {
     const lastPipe = item.lastIndexOf('|');
@@ -14,16 +15,18 @@ module.exports = async function handler(req, res) {
     const montantRaw = item.substring(lastPipe + 1).replace(/[€\s\u00a0]/g, '').replace(',', '.');
     const montant = parseFloat(montantRaw);
     const ratio = Math.round((montant / total) * 100);
-    return { label, montant, ratio };
+    const ratioRevenu = Math.round((montant / revenuTotal) * 100);
+    return { label, montant, ratio, ratioRevenu };
   }).filter(i => i && i.label && !isNaN(i.montant) && i.montant > 0);
 
   const mainItems = rawItems.filter(i => i.ratio >= 3);
   const autresItems = rawItems.filter(i => i.ratio < 3).sort((a, b) => b.montant - a.montant);
   const autresMontant = autresItems.reduce((s, i) => s + i.montant, 0);
   const autresRatio = Math.round((autresMontant / total) * 100);
+  const autresRatioRevenu = Math.round((autresMontant / revenuTotal) * 100);
 
   const items = autresMontant > 0
-    ? [...mainItems, { label: 'Autres', montant: autresMontant, ratio: autresRatio, isAutres: true }]
+    ? [...mainItems, { label: 'Autres', montant: autresMontant, ratio: autresRatio, ratioRevenu: autresRatioRevenu, isAutres: true }]
     : mainItems;
 
   if (items.length === 0) {
@@ -147,7 +150,8 @@ module.exports = async function handler(req, res) {
     }
     .tt-label { font-size: 12px; color: #888; margin-bottom: 6px; flex-shrink: 0; }
     .tt-amount { font-size: 24px; font-weight: 800; margin-bottom: 4px; flex-shrink: 0; }
-    .tt-ratio { font-size: 12px; color: #888; font-weight: 800; margin-bottom: 8px; flex-shrink: 0; }
+    .tt-ratio { font-size: 12px; color: #888; font-weight: 800; margin-bottom: 4px; flex-shrink: 0; }
+    .tt-revenu { font-size: 11px; color: #666; font-weight: 700; margin-bottom: 8px; flex-shrink: 0; }
 
     #tt-detail {
       flex: 1;
@@ -163,7 +167,6 @@ module.exports = async function handler(req, res) {
     #tt-detail::-webkit-scrollbar-thumb { background: #C38F5A; border-radius: 3px; }
     #tt-detail::-webkit-scrollbar-thumb:hover { background: #E8A87A; }
 
-    /* Fermer bouton */
     .tt-close {
       position: absolute;
       top: 8px; right: 10px;
@@ -203,6 +206,7 @@ module.exports = async function handler(req, res) {
       <div class="tt-label" id="tt-label"></div>
       <div class="tt-amount" id="tt-amount"></div>
       <div class="tt-ratio" id="tt-ratio"></div>
+      <div class="tt-revenu" id="tt-revenu"></div>
       <div id="tt-detail"></div>
     </div>
   </div>
@@ -212,6 +216,7 @@ module.exports = async function handler(req, res) {
       label: s.label,
       montant: s.montant,
       ratio: s.ratio,
+      ratioRevenu: s.ratioRevenu,
       color: s.color,
       isAutres: s.isAutres || false
     })))};
@@ -242,6 +247,7 @@ module.exports = async function handler(req, res) {
         document.getElementById('tt-amount').textContent = d.montant.toLocaleString('fr-FR') + ' €';
         document.getElementById('tt-amount').style.color = d.color;
         document.getElementById('tt-ratio').textContent = d.ratio + '% des dépenses';
+        document.getElementById('tt-revenu').textContent = '(' + d.ratioRevenu + '% des revenus)';
 
         const detailEl = document.getElementById('tt-detail');
         if (d.isAutres && autresItems.length > 0) {
@@ -261,14 +267,12 @@ module.exports = async function handler(req, res) {
 
         tooltip.classList.add('visible');
         clearTimeout(window._tt);
-        // Pas de fermeture automatique si "Autres" (pour permettre le scroll)
         if (!d.isAutres) {
           window._tt = setTimeout(closeTooltip, 4000);
         }
       });
     });
 
-    // Fermer en cliquant en dehors
     document.addEventListener('click', e => {
       if (!e.target.closest('.tooltip-overlay') && !e.target.closest('.seg')) {
         closeTooltip();
