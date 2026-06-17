@@ -18,7 +18,7 @@ module.exports = async function handler(req, res) {
   }).filter(i => i && i.label && !isNaN(i.montant) && i.montant > 0);
 
   const mainItems = rawItems.filter(i => i.ratio >= 3);
-  const autresItems = rawItems.filter(i => i.ratio < 3);
+  const autresItems = rawItems.filter(i => i.ratio < 3).sort((a, b) => b.montant - a.montant);
   const autresMontant = autresItems.reduce((s, i) => s + i.montant, 0);
   const autresRatio = Math.round((autresMontant / total) * 100);
 
@@ -37,28 +37,12 @@ module.exports = async function handler(req, res) {
   const segAngle = 360 / n;
   const gapAngle = 1.5;
 
-  // Dégradé orange / marron basé sur la couleur principale C38F5A
   const blueColors = [
-    '#FF7A1A', // orange vif
-    '#F97316', // orange
-    '#E86A12',
-    '#D9600F',
-    '#C38F5A', // couleur principale
-    '#B57F4F',
-    '#A06F45',
-    '#8B5F3A',
-    '#754F30',
-    '#5F4027',
-    '#49311D',
-    '#342214'
+    '#FF7A1A', '#F97316', '#E86A12', '#D9600F',
+    '#C38F5A', '#B57F4F', '#A06F45', '#8B5F3A',
+    '#754F30', '#5F4027', '#49311D', '#342214'
   ];
-  
-  const goldColors = [
-    '#FF7A1A',
-    '#F59E0B',
-    '#C38F5A',
-    '#8B5E2A',
-  ];
+  const goldColors = ['#FF7A1A', '#F59E0B', '#C38F5A', '#8B5E2A'];
 
   const maxMontant = Math.max(...items.map(i => i.montant));
 
@@ -66,9 +50,7 @@ module.exports = async function handler(req, res) {
     const startAngle = -90 + i * segAngle;
     const endAngle = startAngle + segAngle - gapAngle;
     const outerR = innerR + ((item.montant / maxMontant) * (maxR - innerR));
-    const color = item.isAutres
-      ? goldColors[0]
-      : blueColors[i % blueColors.length];
+    const color = item.isAutres ? goldColors[0] : blueColors[i % blueColors.length];
     return {
       ...item,
       startAngle,
@@ -115,12 +97,6 @@ module.exports = async function handler(req, res) {
     `;
   }).join('');
 
-  // Données "Autres" détaillées pour le tooltip
-  const autresDetail = autresItems
-    .sort((a, b) => b.montant - a.montant)
-    .map(i => `${i.label} : ${i.montant.toLocaleString('fr-FR')} € (${i.ratio}%)`)
-    .join('\n');
-
   const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -143,7 +119,6 @@ module.exports = async function handler(req, res) {
     .seg { transition: opacity 0.15s, filter 0.15s; }
     .seg:hover { opacity: 0.7 !important; filter: brightness(1.3); }
     .seg.active { filter: brightness(1.4); opacity: 1 !important; }
-
     .svg-wrap { position: relative; width: 100%; max-width: 480px; }
 
     .tooltip-overlay {
@@ -158,33 +133,26 @@ module.exports = async function handler(req, res) {
       opacity: 0;
       transition: opacity 0.2s;
       z-index: 100;
-      min-width: 180px;
-      max-width: 220px;
+      width: 230px;
+      max-height: 320px;
       text-align: center;
       box-shadow: 0 4px 24px rgba(0,0,0,0.8);
+      overflow: hidden;
     }
     .tooltip-overlay.visible { opacity: 1; }
     .tt-label { font-size: 12px; color: #888; margin-bottom: 6px; }
     .tt-amount { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
     .tt-ratio { font-size: 12px; color: #888; font-weight: 800; margin-bottom: 8px; }
-    .tt-detail {
-      font-size: 10px;
-      color: #666;
-      text-align: left;
-      line-height: 1.8;
-      border-top: 1px solid #222;
-      padding-top: 8px;
-      margin-top: 4px;
-      white-space: pre-line;
+
+    #tt-detail {
+      max-height: 180px;
+      overflow-y: auto;
+      scrollbar-width: thin;
+      scrollbar-color: #C38F5A #222;
     }
-    .tt-detail-item {
-      display: flex;
-      justify-content: space-between;
-      gap: 8px;
-      font-size: 10px;
-      color: #666;
-      line-height: 1.8;
-    }
+    #tt-detail::-webkit-scrollbar { width: 4px; }
+    #tt-detail::-webkit-scrollbar-track { background: #222; border-radius: 2px; }
+    #tt-detail::-webkit-scrollbar-thumb { background: #C38F5A; border-radius: 2px; }
   </style>
 </head>
 <body>
@@ -195,10 +163,6 @@ module.exports = async function handler(req, res) {
           <feGaussianBlur stdDeviation="8" result="blur"/>
           <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
         </filter>
-        <linearGradient id="goldGrad" x1="0%" y1="0%" x2="100%" y2="100%">
-          <stop offset="0%" stop-color="#E8C27A"/>
-          <stop offset="100%" stop-color="#8B5E2A"/>
-        </linearGradient>
       </defs>
 
       ${gridCircles}
@@ -247,18 +211,18 @@ module.exports = async function handler(req, res) {
         document.getElementById('tt-amount').style.color = d.color;
         document.getElementById('tt-ratio').textContent = d.ratio + '% des dépenses';
 
-        // Si "Autres" → afficher le détail
         const detailEl = document.getElementById('tt-detail');
         if (d.isAutres && autresItems.length > 0) {
-          const sorted = [...autresItems].sort((a, b) => b.montant - a.montant);
-          detailEl.innerHTML = '<div style="border-top:1px solid #222;padding-top:8px;margin-top:6px">' +
-            sorted.map(i =>
-              '<div style="display:flex;justify-content:space-between;gap:12px;font-size:10px;color:#888;line-height:1.8">' +
-              '<span>' + i.label + '</span>' +
-              '<span style="color:#C38F5A;font-weight:600">' + i.montant.toLocaleString('fr-FR') + ' €</span>' +
+          detailEl.innerHTML =
+            '<div style="border-top:1px solid #2a2a2a;padding-top:8px;margin-top:4px">' +
+            autresItems.map(i =>
+              '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #1a1a1a">' +
+              '<span style="flex:1;text-align:left;font-size:10px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px">' + i.label + '</span>' +
+              '<span style="color:#C38F5A;font-weight:700;font-size:10px;white-space:nowrap">' + i.montant.toLocaleString("fr-FR") + ' €</span>' +
+              '<span style="color:#666;font-size:9px;white-space:nowrap;min-width:26px;text-align:right">' + i.ratio + '%</span>' +
               '</div>'
             ).join('') +
-          '</div>';
+            '</div>';
         } else {
           detailEl.innerHTML = '';
         }
@@ -268,7 +232,7 @@ module.exports = async function handler(req, res) {
         window._tt = setTimeout(() => {
           tooltip.classList.remove('visible');
           document.querySelectorAll('.seg').forEach(s => s.classList.remove('active'));
-        }, 4000);
+        }, 5000);
       });
     });
 
