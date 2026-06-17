@@ -5,15 +5,23 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: "Paramètres manquants (categories, depenses_total, revenu)" });
   }
 
-  const total = parseFloat(depenses_total.replace(/[€\s\u00a0]/g, '').replace(',', '.'));
-  const revenuTotal = parseFloat(revenu.replace(/[€\s\u00a0]/g, '').replace(',', '.'));
+  function parseMoney(value) {
+  const cleaned = String(value)
+    .replace(/[€\s\u00a0\u202f]/g, '')
+    .replace(/,/g, '')
+    .replace(/\.(?=\d{3}$)/g, '');
+
+  return parseFloat(cleaned);
+  }
+  const total = parseMoney(depenses_total);
+  const revenuTotal = parseMoney(revenu);
 
   const rawItems = categories.split('/').map(item => {
     const lastPipe = item.lastIndexOf('|');
     if (lastPipe === -1) return null;
     const label = item.substring(0, lastPipe).trim();
-    const montantRaw = item.substring(lastPipe + 1).replace(/[€\s\u00a0]/g, '').replace(',', '.');
-    const montant = parseFloat(montantRaw);
+    const montantRaw = parseMoney(item.substring(lastPipe + 1));
+    const montant = parseMoney(montantRaw);
     const ratio = Math.round((montant / total) * 100);
     const ratioRevenu = Math.round((montant / revenuTotal) * 100);
     return { label, montant, ratio, ratioRevenu };
