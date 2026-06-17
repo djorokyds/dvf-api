@@ -5,9 +5,18 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: "Paramètres manquants (epargne_disponible, matelas, revenu_moyen)" });
   }
 
-  const epargne = parseFloat(epargne_disponible.replace(/\s/g, '').replace(',', '.'));
-  const cible = parseFloat(matelas.replace(/\s/g, '').replace(',', '.'));
-  const revenu = parseFloat(revenu_moyen.replace(/\s/g, '').replace(',', '.'));
+  function parseMoney(value) {
+    const cleaned = String(value)
+      .replace(/[€\s\u00a0\u202f]/g, '')
+      .replace(/,/g, '')
+      .replace(/\.(?=\d{3}$)/g, '');
+  
+    return parseFloat(cleaned);
+  }
+
+  const epargne = parseMoney(epargne_disponible);
+  const cible = parseMoney(matelas);
+  const revenu = parseMoney(revenu_moyen);
 
   const pct = Math.min(100, Math.round((epargne / cible) * 100));
   const tauxCouverture = Math.round((epargne / revenu) * 10) / 10;
