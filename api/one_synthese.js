@@ -129,7 +129,7 @@ module.exports = async function handler(req, res) {
       border: 1px solid #D95F09;
       border-radius: 14px;
       padding: 14px 18px 14px 14px;
-      pointer-events: auto;
+      pointer-events: none;
       opacity: 0;
       transition: opacity 0.2s;
       z-index: 100;
@@ -141,7 +141,10 @@ module.exports = async function handler(req, res) {
       display: flex;
       flex-direction: column;
     }
-    .tooltip-overlay.visible { opacity: 1; }
+    .tooltip-overlay.visible {
+      opacity: 1;
+      pointer-events: auto;
+    }
     .tt-label { font-size: 12px; color: #888; margin-bottom: 6px; flex-shrink: 0; }
     .tt-amount { font-size: 24px; font-weight: 800; margin-bottom: 4px; flex-shrink: 0; }
     .tt-ratio { font-size: 12px; color: #888; font-weight: 800; margin-bottom: 8px; flex-shrink: 0; }
