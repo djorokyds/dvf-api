@@ -5,10 +5,18 @@ module.exports = async function handler(req, res) {
     return res.status(400).json({ error: "Paramètres manquants" });
   }
 
-  const bloquee = parseFloat(epargne_bloquee.replace(/\s/g, '').replace(',', '.'));
-  const dispo = parseFloat(epargne_dispo.replace(/\s/g, '').replace(',', '.'));
-  const brut = parseFloat(epargne_brut.replace(/\s/g, '').replace(',', '.'));
-  const dette = parseFloat(dette_court_terme.replace(/\s/g, '').replace(',', '.'));
+  function parseMoney(value) {
+    return parseFloat(
+      String(value)
+        .replace(/[€\s\u00a0\u202f]/g, '')
+        .replace(',', '.')
+    );
+  }
+  
+  const bloquee = parseMoney(epargne_bloquee);
+  const dispo = parseMoney(epargne_dispo);
+  const brut = parseMoney(epargne_brut);
+  const dette = parseMoney(dette_court_terme);
 
   const total = brut + dette;
   const pctEpargne = Math.round((brut / total) * 100);
