@@ -128,31 +128,49 @@ module.exports = async function handler(req, res) {
       background: rgba(13,13,20,0.97);
       border: 1px solid #D95F09;
       border-radius: 14px;
-      padding: 14px 18px;
-      pointer-events: none;
+      padding: 14px 18px 14px 14px;
+      pointer-events: auto;
       opacity: 0;
       transition: opacity 0.2s;
       z-index: 100;
-      width: 230px;
+      width: 235px;
       max-height: 320px;
       text-align: center;
       box-shadow: 0 4px 24px rgba(0,0,0,0.8);
       overflow: hidden;
+      display: flex;
+      flex-direction: column;
     }
     .tooltip-overlay.visible { opacity: 1; }
-    .tt-label { font-size: 12px; color: #888; margin-bottom: 6px; }
-    .tt-amount { font-size: 24px; font-weight: 800; margin-bottom: 4px; }
-    .tt-ratio { font-size: 12px; color: #888; font-weight: 800; margin-bottom: 8px; }
+    .tt-label { font-size: 12px; color: #888; margin-bottom: 6px; flex-shrink: 0; }
+    .tt-amount { font-size: 24px; font-weight: 800; margin-bottom: 4px; flex-shrink: 0; }
+    .tt-ratio { font-size: 12px; color: #888; font-weight: 800; margin-bottom: 8px; flex-shrink: 0; }
 
     #tt-detail {
-      max-height: 180px;
+      flex: 1;
       overflow-y: auto;
+      overflow-x: hidden;
+      padding-right: 10px;
+      margin-right: -4px;
       scrollbar-width: thin;
-      scrollbar-color: #C38F5A #222;
+      scrollbar-color: #C38F5A #2a2a2a;
     }
-    #tt-detail::-webkit-scrollbar { width: 4px; }
-    #tt-detail::-webkit-scrollbar-track { background: #222; border-radius: 2px; }
-    #tt-detail::-webkit-scrollbar-thumb { background: #C38F5A; border-radius: 2px; }
+    #tt-detail::-webkit-scrollbar { width: 5px; }
+    #tt-detail::-webkit-scrollbar-track { background: #2a2a2a; border-radius: 3px; }
+    #tt-detail::-webkit-scrollbar-thumb { background: #C38F5A; border-radius: 3px; }
+    #tt-detail::-webkit-scrollbar-thumb:hover { background: #E8A87A; }
+
+    /* Fermer bouton */
+    .tt-close {
+      position: absolute;
+      top: 8px; right: 10px;
+      font-size: 14px;
+      color: #444;
+      cursor: pointer;
+      pointer-events: auto;
+      line-height: 1;
+    }
+    .tt-close:hover { color: #888; }
   </style>
 </head>
 <body>
@@ -178,6 +196,7 @@ module.exports = async function handler(req, res) {
     </svg>
 
     <div class="tooltip-overlay" id="tooltip">
+      <span class="tt-close" id="tt-close">✕</span>
       <div class="tt-label" id="tt-label"></div>
       <div class="tt-amount" id="tt-amount"></div>
       <div class="tt-ratio" id="tt-ratio"></div>
@@ -196,6 +215,16 @@ module.exports = async function handler(req, res) {
 
     const autresItems = ${JSON.stringify(autresItems)};
     const tooltip = document.getElementById('tooltip');
+
+    function closeTooltip() {
+      tooltip.classList.remove('visible');
+      document.querySelectorAll('.seg').forEach(s => s.classList.remove('active'));
+    }
+
+    document.getElementById('tt-close').addEventListener('click', e => {
+      e.stopPropagation();
+      closeTooltip();
+    });
 
     document.querySelectorAll('.seg').forEach(seg => {
       seg.addEventListener('click', e => {
@@ -216,8 +245,8 @@ module.exports = async function handler(req, res) {
           detailEl.innerHTML =
             '<div style="border-top:1px solid #2a2a2a;padding-top:8px;margin-top:4px">' +
             autresItems.map(i =>
-              '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:3px 0;border-bottom:1px solid #1a1a1a">' +
-              '<span style="flex:1;text-align:left;font-size:10px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:100px">' + i.label + '</span>' +
+              '<div style="display:flex;justify-content:space-between;align-items:center;gap:6px;padding:4px 0;border-bottom:1px solid #1a1a1a">' +
+              '<span style="flex:1;text-align:left;font-size:10px;color:#aaa;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;max-width:95px">' + i.label + '</span>' +
               '<span style="color:#C38F5A;font-weight:700;font-size:10px;white-space:nowrap">' + i.montant.toLocaleString("fr-FR") + ' €</span>' +
               '<span style="color:#666;font-size:9px;white-space:nowrap;min-width:26px;text-align:right">' + i.ratio + '%</span>' +
               '</div>'
@@ -229,16 +258,18 @@ module.exports = async function handler(req, res) {
 
         tooltip.classList.add('visible');
         clearTimeout(window._tt);
-        window._tt = setTimeout(() => {
-          tooltip.classList.remove('visible');
-          document.querySelectorAll('.seg').forEach(s => s.classList.remove('active'));
-        }, 5000);
+        // Pas de fermeture automatique si "Autres" (pour permettre le scroll)
+        if (!d.isAutres) {
+          window._tt = setTimeout(closeTooltip, 4000);
+        }
       });
     });
 
-    document.addEventListener('click', () => {
-      tooltip.classList.remove('visible');
-      document.querySelectorAll('.seg').forEach(s => s.classList.remove('active'));
+    // Fermer en cliquant en dehors
+    document.addEventListener('click', e => {
+      if (!e.target.closest('.tooltip-overlay') && !e.target.closest('.seg')) {
+        closeTooltip();
+      }
     });
   </script>
 </body>
