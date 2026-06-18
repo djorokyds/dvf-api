@@ -83,7 +83,7 @@ module.exports = async function handler(req, res) {
     }
     .label-top .desc {
       font-size: 11px;
-      color: #E8845A;
+      color: #FF7A1A;
       margin-top: 2px;
       font-weight: 500;
     }
@@ -103,7 +103,7 @@ module.exports = async function handler(req, res) {
     }
     .label-bottom .desc {
       font-size: 11px;
-      color: #E8845A;
+      color: #FF7A1A;
       margin-top: 2px;
       font-weight: 500;
     }
@@ -119,7 +119,7 @@ module.exports = async function handler(req, res) {
     /* Badge % */
     .badge {
       display: inline-block;
-      background: #E8845A;
+      background: #FF7A1A;
       color: #1f1f1f;
       font-size: 13px;
       font-weight: 800;
@@ -136,7 +136,7 @@ module.exports = async function handler(req, res) {
       max-width: 300px;
       margin: 0 auto;
     }
-    .footer-text strong { color: #E8845A; }
+    .footer-text strong { color: #FF7A1A; }
   </style>
 </head>
 <body>
@@ -168,14 +168,14 @@ module.exports = async function handler(req, res) {
         <defs>
           <!-- Gradient cercle visible (dessus) -->
           <radialGradient id="gradTop" cx="50%" cy="60%" r="50%">
-            <stop offset="0%" stop-color="#E8845A" stop-opacity="0.95"/>
-            <stop offset="100%" stop-color="#C85A2A" stop-opacity="0.7"/>
+            <stop offset="0%" stop-color="#FF7A1A" stop-opacity="0.95"/>
+            <stop offset="100%" stop-color="#FF7A1A" stop-opacity="0.7"/>
           </radialGradient>
 
           <!-- Gradient cercle immergé (dessous) — plus sombre -->
           <radialGradient id="gradBottom" cx="50%" cy="40%" r="55%">
-            <stop offset="0%" stop-color="#E8845A" stop-opacity="${opacityBottom1}"/>
-            <stop offset="60%" stop-color="#C85A2A" stop-opacity="${opacityBottom2}"/>
+            <stop offset="0%" stop-color="#FF7A1A" stop-opacity="${opacityBottom1}"/>
+            <stop offset="60%" stop-color="#FF7A1A" stop-opacity="${opacityBottom2}"/>
             <stop offset="100%" stop-color="#1f1f1f" stop-opacity="0"/>
           </radialGradient>
 
