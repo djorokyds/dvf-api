@@ -91,6 +91,16 @@ module.exports = async function handler(req, res) {
     { label: 'Immobilier', done: immo },
   ];
 
+  // Déterminer le lien CTA selon le contexte
+  let ctaLink;
+  if (level < 4) {
+    ctaLink = 'https://fi-one-app.glide.page/dl/0a8846'; // Formation
+  } else if (!bourse || !per || !immo) {
+    ctaLink = 'https://fi-one-app.glide.page/dl/58ec5f'; // Simulateur
+  } else {
+    ctaLink = null;
+  }
+
   const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
@@ -364,7 +374,7 @@ module.exports = async function handler(req, res) {
             <div class="next-icon">${nextIcon}</div>
             <div class="next-text">${nextStep}</div>
           </div>
-          <div class="next-cta">${nextCTA}</div>
+          <div class="next-cta" onclick="window.location.href='${ctaLink}'">${nextCTA}</div>
         </div>
         ` : `
         <div class="congrats">
