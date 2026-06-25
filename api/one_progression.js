@@ -13,48 +13,71 @@ module.exports = async function handler(req, res) {
   const immo = simulateurImmo === 'true' || simulateurImmo === '1';
   const mois = parseInt(moisEquilibres) || 0;
 
-  // Discipline niveau
-  let disciplineLabel, disciplineColor;
-  if (mois === 0) { disciplineLabel = 'Novice'; disciplineColor = '#E74C3C'; }
-  else if (mois <= 2) { disciplineLabel = 'Régulier'; disciplineColor = '#F39C12'; }
-  else if (mois <= 5) { disciplineLabel = 'Discipliné'; disciplineColor = '#F0D000'; }
-  else if (mois <= 11) { disciplineLabel = 'Solide'; disciplineColor = '#C38F5A'; }
-  else { disciplineLabel = 'Expert'; disciplineColor = '#27AE60'; }
+  // Discipline
+  let disciplineLabel, disciplineColor, disciplinePhrase;
+  if (mois === 0) {
+    disciplineLabel = 'Novice'; disciplineColor = '#E74C3C';
+    disciplinePhrase = 'Commencez par équilibrer votre premier mois.';
+  } else if (mois <= 2) {
+    disciplineLabel = 'Régulier'; disciplineColor = '#F39C12';
+    disciplinePhrase = 'Vous prenez de bonnes habitudes. Continuez sur cette lancée.';
+  } else if (mois <= 5) {
+    disciplineLabel = 'Discipliné'; disciplineColor = '#F0D000';
+    disciplinePhrase = 'Votre régularité commence à porter ses fruits.';
+  } else if (mois <= 11) {
+    disciplineLabel = 'Solide'; disciplineColor = '#C38F5A';
+    disciplinePhrase = 'Votre discipline financière est un vrai atout patrimonial.';
+  } else {
+    disciplineLabel = 'Expert'; disciplineColor = '#27AE60';
+    disciplinePhrase = 'Maîtrise totale. Vous êtes un modèle de rigueur financière.';
+  }
 
-  // Progression globale
-  const formationPct = Math.round((level / 4) * 100);
+  // Profil utilisateur
   const simCount = [bourse, per, immo].filter(Boolean).length;
+  const formationPct = Math.round((level / 4) * 100);
   const simPct = Math.round((simCount / 3) * 100);
   const disciplinePct = Math.min(100, Math.round((mois / 12) * 100));
   const globalPct = Math.round((formationPct + simPct + disciplinePct) / 3);
 
+  let profilLabel, profilColor;
+  if (globalPct < 20) { profilLabel = 'Débutant'; profilColor = '#888'; }
+  else if (globalPct < 40) { profilLabel = 'Gestionnaire'; profilColor = '#F39C12'; }
+  else if (globalPct < 60) { profilLabel = 'Investisseur'; profilColor = '#C38F5A'; }
+  else if (globalPct < 80) { profilLabel = 'Stratège'; profilColor = '#7B9DD9'; }
+  else { profilLabel = 'Bâtisseur de patrimoine'; profilColor = '#27AE60'; }
+
+  // Flamme — couleur selon globalPct
+  let flameColor1, flameColor2, flameOpacity;
+  if (globalPct < 25) { flameColor1 = '#444'; flameColor2 = '#333'; flameOpacity = 0.3; }
+  else if (globalPct < 50) { flameColor1 = '#E8700A'; flameColor2 = '#C85A00'; flameOpacity = 0.6; }
+  else if (globalPct < 75) { flameColor1 = '#FF8C00'; flameColor2 = '#E05500'; flameOpacity = 0.8; }
+  else { flameColor1 = '#FFB347'; flameColor2 = '#FF6A00'; flameOpacity = 1.0; }
+
   // Prochaine étape
-  let nextStep, nextIcon;
+  let nextStep, nextIcon, nextCTA;
   const formationModules = ['Fondations', 'Sécurité', 'Investissement', 'Stratégie'];
   if (level < 4) {
-    nextStep = `Terminer le module ${formationModules[level]}`;
-    nextIcon = '📚';
+    nextStep = `Module "${formationModules[level]}" à compléter`;
+    nextIcon = '📚'; nextCTA = 'Accéder au module →';
   } else if (mois < 12) {
-    if (mois === 0) nextStep = 'Atteindre 1 mois équilibré';
-    else if (mois <= 2) nextStep = 'Atteindre 3 mois équilibrés';
-    else if (mois <= 5) nextStep = 'Atteindre 6 mois équilibrés';
-    else nextStep = 'Atteindre 12 mois équilibrés';
-    nextIcon = '🎯';
+    if (mois === 0) { nextStep = 'Équilibrez votre premier mois'; nextCTA = 'Voir mon budget →'; }
+    else if (mois <= 2) { nextStep = 'Atteindre 3 mois équilibrés'; nextCTA = 'Voir mon budget →'; }
+    else if (mois <= 5) { nextStep = 'Atteindre 6 mois équilibrés'; nextCTA = 'Voir mon budget →'; }
+    else { nextStep = 'Atteindre 12 mois équilibrés'; nextCTA = 'Voir mon budget →'; }
+    nextIcon = '🎯'; nextCTA = nextCTA || 'Voir mon budget →';
   } else if (!bourse) {
-    nextStep = 'Découvrir le simulateur Bourse';
-    nextIcon = '📈';
+    nextStep = 'Simuler votre premier investissement Bourse';
+    nextIcon = '📈'; nextCTA = 'Lancer le simulateur →';
   } else if (!per) {
-    nextStep = 'Découvrir le simulateur PER';
-    nextIcon = '🏦';
+    nextStep = 'Découvrir le potentiel du PER';
+    nextIcon = '🏦'; nextCTA = 'Lancer le simulateur →';
   } else if (!immo) {
-    nextStep = 'Découvrir le simulateur Immobilier';
-    nextIcon = '🏠';
+    nextStep = 'Simuler votre projet immobilier';
+    nextIcon = '🏠'; nextCTA = 'Lancer le simulateur →';
   } else {
-    nextStep = null;
-    nextIcon = '🏆';
+    nextStep = null; nextIcon = '🏆'; nextCTA = null;
   }
 
-  // Formation items
   const formationItems = [
     { label: 'Fondations', done: level >= 1 },
     { label: 'Sécurité', done: level >= 2 },
@@ -81,111 +104,100 @@ module.exports = async function handler(req, res) {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
       background: #1f1f1f;
       color: #eaeaea;
-      padding: 0;
     }
-
-    /* Carte principale */
     .card {
       background: #242424;
-      border-radius: 0;
       border-bottom: 1px solid #2a2a2a;
       overflow: hidden;
     }
-
-    /* Header cliquable */
     .header {
       display: flex;
       align-items: center;
       justify-content: space-between;
-      padding: 14px 16px;
+      padding: 14px 16px 10px;
       cursor: pointer;
       user-select: none;
-      gap: 12px;
+      gap: 10px;
     }
     .header:active { background: #2a2a2a; }
-
     .header-left {
       display: flex;
       align-items: center;
-      gap: 10px;
+      gap: 12px;
       flex: 1;
     }
+
+    /* Flamme SVG */
+    .flame-wrap {
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      flex-shrink: 0;
+      gap: 2px;
+    }
+    .flame-pct {
+      font-size: 10px;
+      font-weight: 700;
+      color: ${flameOpacity > 0.5 ? flameColor1 : '#555'};
+    }
+
+    .header-text {}
     .header-title {
       font-size: 14px;
       font-weight: 600;
       color: #eaeaea;
+      margin-bottom: 3px;
     }
-
-    /* Mini progress ring */
-    .mini-ring { flex-shrink: 0; }
-
-    /* Chevron */
+    .profil-badge {
+      display: inline-block;
+      font-size: 10px;
+      font-weight: 600;
+      color: ${profilColor};
+      background: ${profilColor}18;
+      border: 1px solid ${profilColor}44;
+      border-radius: 20px;
+      padding: 2px 8px;
+    }
     .chevron {
-      font-size: 12px;
-      color: #555;
+      font-size: 11px;
+      color: #444;
       transition: transform 0.3s ease;
       flex-shrink: 0;
     }
     .chevron.open { transform: rotate(180deg); }
 
-    /* Barre progression globale */
-    .global-bar-wrap {
-      padding: 0 16px 12px;
-    }
-    .global-bar-track {
-      height: 3px;
-      background: #2a2a2a;
-      border-radius: 2px;
-      overflow: hidden;
-    }
-    .global-bar-fill {
-      height: 100%;
-      border-radius: 2px;
-      background: linear-gradient(90deg, #C38F5A, #E8B87A);
-      width: ${globalPct}%;
-      transition: width 0.8s ease;
+    /* Contenu */
+    .content { max-height: 0; overflow: hidden; transition: max-height 0.4s ease; }
+    .content.open { max-height: 700px; }
+    .content-inner { padding: 8px 16px 16px; display: flex; flex-direction: column; gap: 14px; }
+
+    /* Colonnes */
+    .two-cols {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
     }
 
-    /* Contenu repliable */
-    .content {
-      max-height: 0;
-      overflow: hidden;
-      transition: max-height 0.4s ease;
-    }
-    .content.open { max-height: 600px; }
-
-    .content-inner {
-      padding: 4px 16px 16px;
-      display: flex;
-      flex-direction: column;
-      gap: 16px;
-    }
-
-    /* Section */
     .section-title {
-      font-size: 10px;
-      font-weight: 600;
+      font-size: 9px;
+      font-weight: 700;
       color: #555;
       text-transform: uppercase;
       letter-spacing: 1px;
       margin-bottom: 8px;
     }
 
-    /* Items formation / simulateurs */
-    .items-grid {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 6px;
-    }
+    /* Items */
     .item {
       display: flex;
       align-items: center;
       gap: 8px;
+      padding: 4px 0;
       font-size: 12px;
     }
     .item-check {
-      width: 16px;
-      height: 16px;
+      width: 17px;
+      height: 17px;
       border-radius: 50%;
       display: flex;
       align-items: center;
@@ -194,46 +206,32 @@ module.exports = async function handler(req, res) {
       flex-shrink: 0;
     }
     .item-check.done {
-      background: rgba(195,143,90,0.2);
+      background: rgba(195,143,90,0.18);
       color: #C38F5A;
-      border: 1px solid #C38F5A;
+      border: 1px solid #C38F5A66;
     }
     .item-check.todo {
-      background: #2a2a2a;
-      color: #444;
-      border: 1px solid #333;
-    }
-    .item-label.done { color: #eaeaea; }
-    .item-label.todo { color: #555; }
-
-    /* Barre discipline */
-    .discipline-row {
-      display: flex;
-      align-items: center;
-      justify-content: space-between;
-      margin-bottom: 6px;
-    }
-    .discipline-level {
-      font-size: 13px;
-      font-weight: 700;
-      color: ${disciplineColor};
-    }
-    .discipline-mois {
-      font-size: 11px;
+      background: #2e2e2e;
       color: #666;
+      border: 1px solid #444;
     }
-    .disc-bar-track {
-      height: 5px;
-      background: #2a2a2a;
-      border-radius: 3px;
-      overflow: hidden;
+    .item-label.done { color: #ccc; font-weight: 500; }
+    .item-label.todo { color: #777; }
+
+    .sep { height: 1px; background: #2a2a2a; }
+
+    /* Discipline */
+    .discipline-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: baseline;
+      margin-bottom: 5px;
     }
-    .disc-bar-fill {
-      height: 100%;
-      border-radius: 3px;
-      background: ${disciplineColor};
-      width: ${disciplinePct}%;
-    }
+    .discipline-level { font-size: 13px; font-weight: 700; color: ${disciplineColor}; }
+    .discipline-mois { font-size: 10px; color: #666; }
+    .discipline-phrase { font-size: 11px; color: #666; font-style: italic; line-height: 1.4; margin-top: 5px; }
+    .disc-bar-track { height: 4px; background: #2a2a2a; border-radius: 2px; overflow: hidden; }
+    .disc-bar-fill { height: 100%; border-radius: 2px; background: ${disciplineColor}; width: ${disciplinePct}%; }
 
     /* Prochaine étape */
     .next-step {
@@ -241,81 +239,86 @@ module.exports = async function handler(req, res) {
       border-radius: 10px;
       padding: 12px 14px;
       border-left: 3px solid #C38F5A;
-      display: flex;
-      align-items: flex-start;
-      gap: 10px;
     }
+    .next-label { font-size: 9px; color: #555; text-transform: uppercase; letter-spacing: 0.8px; margin-bottom: 5px; }
+    .next-row { display: flex; align-items: flex-start; gap: 8px; margin-bottom: 10px; }
     .next-icon { font-size: 16px; flex-shrink: 0; margin-top: 1px; }
-    .next-content {}
-    .next-label {
-      font-size: 9px;
-      color: #555;
-      text-transform: uppercase;
-      letter-spacing: 0.8px;
-      margin-bottom: 3px;
-    }
-    .next-text {
-      font-size: 12px;
-      font-weight: 600;
-      color: #eaeaea;
-      line-height: 1.4;
+    .next-text { font-size: 13px; font-weight: 600; color: #eaeaea; line-height: 1.4; }
+    .next-cta {
+      display: inline-block;
+      background: #C38F5A;
+      color: #1a1a1a;
+      font-size: 11px;
+      font-weight: 700;
+      padding: 7px 14px;
+      border-radius: 8px;
+      cursor: pointer;
+      letter-spacing: 0.3px;
+      width: 100%;
+      text-align: center;
     }
 
-    /* Félicitations */
-    .congrats {
-      text-align: center;
-      padding: 8px 0;
-    }
+    .congrats { text-align: center; padding: 8px 0; }
     .congrats-icon { font-size: 28px; margin-bottom: 6px; }
     .congrats-title { font-size: 14px; font-weight: 700; color: #C38F5A; margin-bottom: 4px; }
     .congrats-text { font-size: 11px; color: #666; line-height: 1.5; }
-
-    /* Séparateur */
-    .sep { height: 1px; background: #2a2a2a; }
   </style>
 </head>
 <body>
   <div class="card">
 
-    <!-- Header cliquable -->
     <div class="header" id="header" onclick="togglePanel()">
       <div class="header-left">
 
-        <!-- Mini ring SVG -->
-        <svg class="mini-ring" width="32" height="32" viewBox="0 0 32 32">
-          <circle cx="16" cy="16" r="13" fill="none" stroke="#2a2a2a" stroke-width="3"/>
-          <circle cx="16" cy="16" r="13" fill="none" stroke="#C38F5A" stroke-width="3"
-            stroke-dasharray="${Math.round(2 * Math.PI * 13 * globalPct / 100)} ${Math.round(2 * Math.PI * 13)}"
-            stroke-dashoffset="${Math.round(2 * Math.PI * 13 * 0.25)}"
-            stroke-linecap="round"
-            transform="rotate(-90 16 16)"
-          />
-          <text x="16" y="20" text-anchor="middle" font-size="9" font-weight="700"
-            fill="#C38F5A" font-family="-apple-system, sans-serif">${globalPct}%</text>
-        </svg>
+        <!-- Flamme -->
+        <div class="flame-wrap">
+          <svg width="28" height="34" viewBox="0 0 28 34" fill="none">
+            <defs>
+              <radialGradient id="flameGlow" cx="50%" cy="80%" r="60%">
+                <stop offset="0%" stop-color="${flameColor1}" stop-opacity="${flameOpacity}"/>
+                <stop offset="100%" stop-color="${flameColor2}" stop-opacity="0"/>
+              </radialGradient>
+              <linearGradient id="flameGrad" x1="50%" y1="0%" x2="50%" y2="100%">
+                <stop offset="0%" stop-color="${flameColor1}" stop-opacity="${flameOpacity}"/>
+                <stop offset="100%" stop-color="${flameColor2}" stop-opacity="${flameOpacity * 0.7}"/>
+              </linearGradient>
+            </defs>
+            <!-- Lueur base -->
+            ${flameOpacity > 0.4 ? `<ellipse cx="14" cy="30" rx="10" ry="4" fill="${flameColor1}" opacity="${flameOpacity * 0.3}"/>` : ''}
+            <!-- Corps flamme -->
+            <path d="M14 2 C14 2 20 8 20 14 C20 16 19 17 18 17 C19 13 16 10 14 8 C14 8 16 14 13 18 C12 19 11 19 10 18 C9 16 9 14 10 12 C8 14 7 17 8 20 C8 22 9 24 11 25 C8 24 6 21 6 18 C6 12 10 6 14 2Z"
+              fill="url(#flameGrad)"
+              ${flameOpacity > 0.6 ? `filter="url(#f1)"` : ''}
+            />
+            <!-- Coeur flamme (plus clair) -->
+            ${flameOpacity > 0.5 ? `
+            <path d="M14 10 C14 10 17 14 17 17 C17 19 16 20 15 20 C15 18 14 16 13 15 C13 17 12 19 12 20 C11 19 11 17 12 15 C11 16 10 18 10 19 C10 16 12 12 14 10Z"
+              fill="${flameColor1}" opacity="${flameOpacity * 0.5}"/>
+            ` : ''}
+            <defs>
+              <filter id="f1"><feGaussianBlur stdDeviation="1" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+            </defs>
+          </svg>
+          <div class="flame-pct">${globalPct}%</div>
+        </div>
 
-        <div>
-          <div class="header-title">📈 Ma progression Fi-One</div>
+        <div class="header-text">
+          <div class="header-title">Ma progression Fi-One</div>
+          <span class="profil-badge">${profilLabel}</span>
         </div>
       </div>
       <div class="chevron" id="chevron">▼</div>
-    </div>
-
-    <!-- Barre fine sous le header -->
-    <div class="global-bar-wrap">
-      <div class="global-bar-track">
-        <div class="global-bar-fill"></div>
-      </div>
     </div>
 
     <!-- Contenu repliable -->
     <div class="content" id="content">
       <div class="content-inner">
 
-        <!-- Formation -->
-        <div>
-          <div class="section-title">Formation</div>
-          <div class="items-grid">
+        <!-- 2 colonnes : Formation + Outils -->
+        <div class="two-cols">
+
+          <div>
+            <div class="section-title">Formation</div>
             ${formationItems.map(it => `
               <div class="item">
                 <div class="item-check ${it.done ? 'done' : 'todo'}">${it.done ? '✓' : '○'}</div>
@@ -323,14 +326,9 @@ module.exports = async function handler(req, res) {
               </div>
             `).join('')}
           </div>
-        </div>
 
-        <div class="sep"></div>
-
-        <!-- Simulateurs -->
-        <div>
-          <div class="section-title">Simulateurs</div>
-          <div class="items-grid">
+          <div>
+            <div class="section-title">Outils découverts</div>
             ${simItems.map(it => `
               <div class="item">
                 <div class="item-check ${it.done ? 'done' : 'todo'}">${it.done ? '✓' : '○'}</div>
@@ -338,6 +336,7 @@ module.exports = async function handler(req, res) {
               </div>
             `).join('')}
           </div>
+
         </div>
 
         <div class="sep"></div>
@@ -345,13 +344,14 @@ module.exports = async function handler(req, res) {
         <!-- Discipline -->
         <div>
           <div class="section-title">Discipline financière</div>
-          <div class="discipline-row">
+          <div class="discipline-header">
             <div class="discipline-level">${disciplineLabel}</div>
             <div class="discipline-mois">${mois} mois équilibré${mois > 1 ? 's' : ''}</div>
           </div>
           <div class="disc-bar-track">
             <div class="disc-bar-fill"></div>
           </div>
+          <div class="discipline-phrase">${disciplinePhrase}</div>
         </div>
 
         <div class="sep"></div>
@@ -359,11 +359,12 @@ module.exports = async function handler(req, res) {
         <!-- Prochaine étape -->
         ${nextStep ? `
         <div class="next-step">
-          <div class="next-icon">${nextIcon}</div>
-          <div class="next-content">
-            <div class="next-label">Prochaine étape</div>
+          <div class="next-label">Prochaine étape recommandée</div>
+          <div class="next-row">
+            <div class="next-icon">${nextIcon}</div>
             <div class="next-text">${nextStep}</div>
           </div>
+          <div class="next-cta">${nextCTA}</div>
         </div>
         ` : `
         <div class="congrats">
