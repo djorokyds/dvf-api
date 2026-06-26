@@ -327,14 +327,25 @@ function detectIntent(query) {
   const text = `${query.objectif || ''} ${query.message || ''}`
     .toLowerCase();
 
-  if (
-    query.mode === 'mensuel' ||
+  const hasMonthlyData =
+    query.revenus ||
+    query.depenses ||
+    query.epargne ||
+    query.variation_depenses ||
+    query.variation_epargne ||
+    query.autres_charges ||
+    query.variation_categories ||
+    query.nb_transactions;
+  
+  const asksMonthlyAnalysis =
     text.includes('analyse mon mois') ||
     text.includes('mois en cours') ||
     text.includes('ce mois') ||
     text.includes('bilan mensuel') ||
-    text.includes('analyse mensuelle')
-  ) {
+    text.includes('analyse mensuelle') ||
+    text.includes('mois');
+  
+  if (asksMonthlyAnalysis && hasMonthlyData) {
     return 'analyse_mensuelle';
   }
 
