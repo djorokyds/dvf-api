@@ -32,20 +32,20 @@ module.exports = async function handler(req, res) {
 
     const contexte = isProfile
       ? `
-PROFIL UTILISATEUR
+PROFIL
 Nom : ${nom || 'non renseigné'}
 Objectif : ${objectif || 'non renseigné'}
 Revenu net mensuel : ${revenu_net || 'non renseigné'} €
 Épargne disponible : ${epargne_dispo || 'non renseigné'} €
 Épargne bloquée : ${epargne_bloquee || 'non renseigné'} €
-Nombre de biens immobiliers : ${nb_immobilier || '0'}
+Biens immobiliers : ${nb_immobilier || '0'}
 Taux d'endettement : ${taux_endettement || 'non renseigné'} %
 Matelas de sécurité : ${matelas_securite || 'non renseigné'} €
 Épargne moyenne mensuelle : ${epargne_moyen || 'non renseigné'} €
 FI-Score : ${fi_score || 'non renseigné'}/100
 `
       : `
-ANALYSE MENSUELLE
+SITUATION MENSUELLE
 Revenus : ${revenus || 'non renseigné'} €
 Dépenses : ${depenses || 'non renseigné'} €
 Épargne : ${epargne || 'non renseigné'} €
@@ -56,49 +56,59 @@ Transactions par catégorie : ${nb_transactions || 'non renseigné'}
 `;
 
     const prompt = `
-Tu es ONE Coach, le coach financier personnel de Fi-One.
+Tu es ONE Coach, le mentor financier personnel de Fi-One.
 
-Tu n'es PAS un conseiller financier réglementé.
-Tu n'écris PAS un rapport.
-Tu parles comme un coach personnel qui accompagne l'utilisateur.
+Ta mission n'est pas de faire une analyse.
+Ta mission est d'accompagner l'utilisateur vers une meilleure situation financière, avec une orientation forte vers l'accès à la propriété.
 
-STYLE OBLIGATOIRE :
-- Direct
-- Humain
-- Bienveillant
-- Motivant
-- Court
-- Pas de jargon
-- Pas de liste interminable
-- Pas de répétition inutile des données
-- Tu interprètes, tu ne récites pas
-- Tu donnes UNE priorité principale
-- Tu termines par UNE question qui pousse à l'action
+Tu parles comme un coach humain.
+Tu ne fais jamais de rapport.
+Tu ne listes pas tout.
+Tu ne culpabilises jamais.
+Tu ne fais pas peur.
+Tu ne récites pas les chiffres.
+Tu interprètes les chiffres.
 
-RÈGLE IMPORTANTE :
-Si une donnée manque, ne fais pas un long avertissement.
-Dis simplement ce que cela empêche de conclure.
+PERSONNALITÉ :
+- sobre
+- premium
+- bienveillant
+- honnête
+- encourageant
+- légèrement exigeant si nécessaire
+- orienté action
+- tourné vers l'avenir
+
+Tu dois choisir UN seul mood :
+encouragement, challenge, pédagogie, projection, célébration.
 
 FORMAT JSON STRICT :
 {
-  "phrase_choc": "une phrase forte, personnalisée, qui résume la situation",
-  "message_coach": "message court de coach en 4 à 7 phrases maximum",
-  "ce_qui_me_rassure": ["maximum 2 éléments"],
-  "ce_qui_me_freine": "un seul frein principal",
-  "priorite_du_moment": {
-    "titre": "priorité courte",
-    "action": "action concrète à faire maintenant",
-    "pourquoi": "raison simple"
-  },
-  "question_finale": "question courte qui fait réfléchir",
-  "ton": "positif|alerte|encourageant"
+  "mood": "encouragement|challenge|pédagogie|projection|célébration",
+  "salutation": "phrase courte personnalisée",
+  "message_principal": "message naturel de coach en 5 à 8 phrases maximum",
+  "mission_titre": "titre court de mission",
+  "mission": "mission concrète à faire cette semaine",
+  "pourquoi": "raison simple et motivante",
+  "pensee_finale": "phrase finale inspirante, non culpabilisante",
+  "cta": "texte court du bouton ou invitation"
 }
+
+RÈGLES :
+- Maximum 140 mots au total.
+- Ne jamais dire "diagnostic".
+- Ne jamais dire "analyse".
+- Ne jamais dire "risque" sauf danger évident.
+- Ne jamais utiliser plus d'une mission.
+- Ne termine pas toujours par une question.
+- Si tu poses une question, elle doit être douce et constructive.
+- Si les données sont insuffisantes, dis simplement ce que tu aimerais mieux comprendre.
 
 CONTEXTE :
 ${contexte}
 
-QUESTION UTILISATEUR :
-${message || 'Fais un coaching court sur ma situation.'}
+DEMANDE UTILISATEUR :
+${message || 'Prépare mon rendez-vous ONE Coach du jour.'}
 `;
 
     const result = await ai.models.generateContent({
@@ -113,26 +123,24 @@ ${message || 'Fais un coaching court sur ma situation.'}
       data = JSON.parse(raw);
     } catch (e) {
       data = {
-        phrase_choc: "Tu avances, mais il faut maintenant clarifier ta priorité.",
-        message_coach: raw,
-        ce_qui_me_rassure: [],
-        ce_qui_me_freine: "Les données ne permettent pas encore une lecture complète.",
-        priorite_du_moment: {
-          titre: "Clarifier la situation",
-          action: "Complète les informations financières manquantes.",
-          pourquoi: "Sans cela, le coaching reste approximatif.",
-        },
-        question_finale: "Quelle est l’action que tu peux faire aujourd’hui ?",
-        ton: "encourageant",
+        mood: 'encouragement',
+        salutation: 'Bonjour.',
+        message_principal: raw,
+        mission_titre: 'Mission de la semaine',
+        mission: 'Clarifie une action simple à mettre en place cette semaine.',
+        pourquoi: 'Un petit pas régulier vaut mieux qu’une grande décision repoussée.',
+        pensee_finale: 'L’important n’est pas d’aller vite, mais d’avancer avec constance.',
+        cta: 'Continuer avec ONE Coach',
       };
     }
 
-    const accent =
-      data.ton === 'alerte'
-        ? '#E74C3C'
-        : data.ton === 'positif'
-        ? '#27AE60'
-        : '#C38F5A';
+    const moodLabel = {
+      encouragement: 'Encouragement',
+      challenge: 'Challenge',
+      pédagogie: 'Pédagogie',
+      projection: 'Projection',
+      célébration: 'Célébration',
+    }[data.mood] || 'Rendez-vous';
 
     const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -145,30 +153,34 @@ ${message || 'Fais un coaching court sur ma situation.'}
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #171717;
-      color: #f2f2f2;
-      padding-bottom: 24px;
+      background: #151515;
+      color: #F2F0EC;
+      padding-bottom: 28px;
     }
 
     .header {
-      padding: 18px 16px;
-      background: linear-gradient(135deg, #21180f, #151515);
-      border-bottom: 1px solid #C38F5A33;
+      padding: 18px 18px 14px;
+      border-bottom: 1px solid #2A2A2A;
+      background: #181818;
+    }
+
+    .topline {
       display: flex;
       align-items: center;
       gap: 12px;
     }
 
     .avatar {
-      width: 44px;
-      height: 44px;
+      width: 42px;
+      height: 42px;
       border-radius: 50%;
-      background: linear-gradient(135deg, #C38F5A, #8B5E2A);
+      background: #C38F5A;
+      color: #151515;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 21px;
-      flex-shrink: 0;
+      font-size: 20px;
+      font-weight: 800;
     }
 
     .name {
@@ -178,126 +190,99 @@ ${message || 'Fais un coaching court sur ma situation.'}
     }
 
     .sub {
-      font-size: 12px;
-      color: #777;
       margin-top: 2px;
+      font-size: 12px;
+      color: #7E7E7E;
     }
 
-    .container {
-      padding: 16px;
-      max-width: 760px;
+    .wrap {
+      max-width: 720px;
       margin: 0 auto;
+      padding: 18px;
     }
 
-    .main-card {
-      background: #222;
-      border: 1px solid #2f2f2f;
-      border-left: 4px solid ${accent};
-      border-radius: 18px;
+    .badge {
+      display: inline-block;
+      margin-bottom: 12px;
+      padding: 6px 10px;
+      border-radius: 999px;
+      background: #231D17;
+      color: #C38F5A;
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .4px;
+      text-transform: uppercase;
+    }
+
+    .coach-card {
+      background: #202020;
+      border: 1px solid #2D2D2D;
+      border-radius: 20px;
       padding: 20px;
     }
 
-    .phrase {
-      font-size: 19px;
+    .salutation {
+      font-size: 20px;
       line-height: 1.35;
       font-weight: 800;
-      color: #fff;
-      margin-bottom: 16px;
+      margin-bottom: 14px;
+      color: #FFFFFF;
     }
 
-    .coach-text {
+    .message {
       font-size: 15px;
       line-height: 1.65;
-      color: #d8d8d8;
+      color: #D8D6D2;
       white-space: pre-line;
     }
 
-    .block {
+    .mission {
       margin-top: 16px;
-      background: #1c1c1c;
-      border-radius: 14px;
-      padding: 14px;
-      border: 1px solid #2a2a2a;
+      padding: 18px;
+      border-radius: 18px;
+      background: #1A1A1A;
+      border: 1px solid #3A3027;
     }
 
-    .block-title {
-      font-size: 11px;
-      text-transform: uppercase;
-      letter-spacing: 1px;
-      color: #777;
-      font-weight: 800;
-      margin-bottom: 10px;
-    }
-
-    .chips {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-
-    .chip {
-      background: #263226;
-      border: 1px solid #27AE6044;
-      color: #bce7c6;
-      padding: 8px 10px;
-      border-radius: 999px;
-      font-size: 13px;
-      line-height: 1.4;
-    }
-
-    .frein {
-      color: #ddd;
-      font-size: 14px;
-      line-height: 1.5;
-    }
-
-    .priority {
-      margin-top: 16px;
-      background: linear-gradient(135deg, #2a1e12, #201b15);
-      border: 1px solid #C38F5A44;
-      border-radius: 16px;
-      padding: 16px;
-    }
-
-    .priority-label {
+    .mission-kicker {
       font-size: 11px;
       color: #C38F5A;
       font-weight: 800;
       text-transform: uppercase;
-      letter-spacing: 1px;
+      letter-spacing: .8px;
       margin-bottom: 8px;
     }
 
-    .priority-title {
-      font-size: 17px;
+    .mission-title {
+      font-size: 18px;
       font-weight: 800;
       margin-bottom: 8px;
-      color: #fff;
+      color: #FFFFFF;
     }
 
-    .priority-action {
+    .mission-text {
       font-size: 14px;
-      color: #e5e5e5;
       line-height: 1.55;
-      margin-bottom: 8px;
+      color: #E3E0DA;
+      margin-bottom: 10px;
     }
 
-    .priority-why {
+    .why {
       font-size: 13px;
-      color: #9a9a9a;
       line-height: 1.5;
+      color: #9C9C9C;
     }
 
-    .question {
+    .final {
       margin-top: 16px;
       padding: 16px;
       border-radius: 16px;
-      background: #101010;
-      border: 1px solid #333;
-      font-size: 15px;
-      line-height: 1.5;
-      color: #fff;
-      font-weight: 700;
+      background: #181818;
+      border: 1px solid #2B2B2B;
+      color: #CFCBC3;
+      font-size: 14px;
+      line-height: 1.55;
+      font-style: italic;
     }
 
     .chat {
@@ -308,11 +293,11 @@ ${message || 'Fais un coaching court sur ma situation.'}
 
     .chat input {
       flex: 1;
-      background: #222;
+      background: #202020;
       border: 1px solid #333;
-      border-radius: 12px;
-      color: #fff;
-      padding: 12px;
+      border-radius: 14px;
+      color: #F2F0EC;
+      padding: 13px 14px;
       font-size: 14px;
       outline: none;
     }
@@ -323,13 +308,13 @@ ${message || 'Fais un coaching court sur ma situation.'}
 
     .chat button {
       background: #C38F5A;
+      color: #151515;
       border: none;
-      color: #171717;
-      font-weight: 800;
-      border-radius: 12px;
+      border-radius: 14px;
       padding: 0 16px;
-      cursor: pointer;
+      font-weight: 900;
       font-size: 16px;
+      cursor: pointer;
     }
 
     .loading {
@@ -346,72 +331,41 @@ ${message || 'Fais un coaching court sur ma situation.'}
 </head>
 
 <body>
-  <div class="header">
-    <div class="avatar">🧠</div>
-    <div>
-      <div class="name">ONE Coach</div>
-      <div class="sub">${isProfile ? 'Coaching de profil' : 'Coaching mensuel'} · Fi-One</div>
+  <header class="header">
+    <div class="topline">
+      <div class="avatar">1</div>
+      <div>
+        <div class="name">ONE Coach</div>
+        <div class="sub">Ton rendez-vous financier · Fi-One</div>
+      </div>
     </div>
-  </div>
+  </header>
 
-  <main class="container">
-    <section class="main-card">
-      <div class="phrase">${data.phrase_choc || ''}</div>
-      <div class="coach-text">${data.message_coach || ''}</div>
+  <main class="wrap">
+    <div class="badge">${moodLabel}</div>
+
+    <section class="coach-card">
+      <div class="salutation">${data.salutation || ''}</div>
+      <div class="message">${data.message_principal || ''}</div>
     </section>
 
-    ${
-      data.ce_qui_me_rassure?.length
-        ? `
-    <section class="block">
-      <div class="block-title">Ce qui me rassure</div>
-      <div class="chips">
-        ${data.ce_qui_me_rassure
-          .slice(0, 2)
-          .map((item) => `<div class="chip">✅ ${item}</div>`)
-          .join('')}
-      </div>
-    </section>`
-        : ''
-    }
+    <section class="mission">
+      <div class="mission-kicker">Mission de la semaine</div>
+      <div class="mission-title">${data.mission_titre || ''}</div>
+      <div class="mission-text">${data.mission || ''}</div>
+      <div class="why">${data.pourquoi || ''}</div>
+    </section>
 
-    ${
-      data.ce_qui_me_freine
-        ? `
-    <section class="block">
-      <div class="block-title">Ce qui te freine</div>
-      <div class="frein">⚠️ ${data.ce_qui_me_freine}</div>
-    </section>`
-        : ''
-    }
-
-    ${
-      data.priorite_du_moment?.titre
-        ? `
-    <section class="priority">
-      <div class="priority-label">Priorité du moment</div>
-      <div class="priority-title">${data.priorite_du_moment.titre}</div>
-      <div class="priority-action">${data.priorite_du_moment.action}</div>
-      <div class="priority-why">${data.priorite_du_moment.pourquoi}</div>
-    </section>`
-        : ''
-    }
-
-    ${
-      data.question_finale
-        ? `
-    <section class="question">
-      ${data.question_finale}
-    </section>`
-        : ''
-    }
+    <section class="final">
+      ${data.pensee_finale || ''}
+    </section>
 
     <section class="chat">
-      <input id="chatInput" type="text" placeholder="Pose une question à ONE Coach..." />
+      <input id="chatInput" type="text" placeholder="Répondre à ONE Coach..." />
       <button id="sendBtn">→</button>
     </section>
 
-    <div class="loading" id="loading">ONE Coach réfléchit...</div>
+    <div id="loading" class="loading">ONE Coach prépare sa réponse...</div>
   </main>
 
   <script>
@@ -421,11 +375,10 @@ ${message || 'Fais un coaching court sur ma situation.'}
     function sendMessage() {
       const input = document.getElementById('chatInput');
       const msg = input.value.trim();
-
       if (!msg) return;
 
-      document.getElementById('loading').classList.add('visible');
       input.disabled = true;
+      document.getElementById('loading').classList.add('visible');
 
       params.set('message', msg);
       window.location.href = baseUrl + '?' + params.toString();
@@ -442,18 +395,22 @@ ${message || 'Fais un coaching court sur ma situation.'}
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.status(200).send(html);
   } catch (error) {
-const errorText = error.message || '';
+    const errorText = error.message || '';
 
-    if (errorText.includes('429') || errorText.includes('RESOURCE_EXHAUSTED') || errorText.includes('quota')) {
+    if (
+      errorText.includes('429') ||
+      errorText.includes('RESOURCE_EXHAUSTED') ||
+      errorText.includes('quota')
+    ) {
       return res.status(429).send(`
-        <div style="font-family:Arial;padding:24px;background:#171717;color:white;min-height:100vh">
-          <h2 style="color:#C38F5A">ONE Coach est momentanément saturé</h2>
+        <div style="font-family:Arial;padding:24px;background:#151515;color:white;min-height:100vh">
+          <h2 style="color:#C38F5A">ONE Coach revient dans quelques secondes</h2>
           <p>Le coach a reçu trop de demandes en peu de temps.</p>
-          <p>Patientez quelques secondes puis réessayez.</p>
+          <p>Patiente quelques instants puis réessaie.</p>
         </div>
       `);
     }
-    
+
     return res.status(500).json({
       error: error.message,
     });
