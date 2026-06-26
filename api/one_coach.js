@@ -1,346 +1,418 @@
 const { GoogleGenAI } = require('@google/genai');
 
 module.exports = async function handler(req, res) {
-  const ai = new GoogleGenAI({
-    apiKey: process.env.GOOGLE_API_KEY,
-  });
-
-  const {
-    revenus, depenses, epargne,
-    variation_depenses, variation_epargne,
-    autres_charges, nb_transactions,
-    nom, objectif,
-    revenu_net, epargne_dispo, epargne_bloquee,
-    nb_immobilier, taux_endettement,
-    matelas_securite, epargne_moyen, fi_score,
-    mode, message,
-  } = req.query;
-
-  const isProfile = mode === 'profil';
-
-  let contexte = '';
-  if (!isProfile) {
-    contexte = `
-ANALYSE MENSUELLE :
-- Revenus : ${revenus || 'non renseigné'} €
-- Dépenses : ${depenses || 'non renseigné'} €
-- Épargne : ${epargne || 'non renseigné'} €
-- Variation dépenses vs mois précédent : ${variation_depenses || 'non renseigné'}
-- Variation épargne vs mois précédent : ${variation_epargne || 'non renseigné'}
-- Autres charges : ${autres_charges || 'non renseigné'}
-- Transactions par catégorie : ${nb_transactions || 'non renseigné'}
-`;
-  } else {
-    contexte = `
-PROFIL GLOBAL :
-- Nom : ${nom || 'non renseigné'}
-- Objectif : ${objectif || 'non renseigné'}
-- Revenu net mensuel : ${revenu_net || 'non renseigné'} €
-- Épargne disponible : ${epargne_dispo || 'non renseigné'} €
-- Épargne bloquée : ${epargne_bloquee || 'non renseigné'} €
-- Biens immobiliers : ${nb_immobilier || '0'}
-- Taux d'endettement : ${taux_endettement || 'non renseigné'} %
-- Matelas de sécurité : ${matelas_securite || 'non renseigné'} €
-- Épargne moyenne mensuelle : ${epargne_moyen || 'non renseigné'} €
-- FI-Score : ${fi_score || 'non renseigné'}/100
-`;
-  }
-
-  const systemPrompt = `Tu es ONE Coach, le coach financier personnel de l'application Fi-One.
-Tu aides l'utilisateur à comprendre sa situation financière, son budget, ses dettes, ses objectifs et ses priorités.
-Tu ne donnes pas de conseil financier réglementé.
-Tu fournis des explications claires, pédagogiques, bienveillantes et actionnables.
-Tu utilises UNIQUEMENT les données fournies dans le contexte.
-Tu signales les limites si les données sont insuffisantes.
-Tu proposes toujours 1 à 3 actions concrètes.
-Tu réponds UNIQUEMENT en JSON valide, sans markdown autour.
-
-FORMAT JSON :
-{
-  "resume": "phrase courte synthétisant la situation",
-  "diagnostic": "analyse (2-3 phrases)",
-  "forces": ["force 1", "force 2"],
-  "points_attention": ["point 1", "point 2"],
-  "risques": ["risque 1"],
-  "actions_recommandees": [
-    {"action": "texte", "priorite": "haute|moyenne|basse"}
-  ],
-  "module_learning": {"titre": "nom du module", "raison": "pourquoi"},
-  "score_interpretation": "interprétation du score ou situation",
-  "message_motivation": "message court bienveillant",
-  "et_si": {
-    "hypothese": "Et si vous investissiez X€ de plus par mois ?",
-    "impacts": ["impact 1", "impact 2", "impact 3"],
-    "effort_quotidien": "X€ par jour"
-  }
-}`;
-
-  const userMessage = message
-    ? `${contexte}\n\nQuestion : ${message}`
-    : `${contexte}\n\nFais une analyse complète.`;
-
-  const fullPrompt = systemPrompt + '\n\n' + userMessage;
-
   try {
+    const ai = new GoogleGenAI({
+      apiKey: process.env.GOOGLE_API_KEY,
+    });
+
+    const {
+      mode,
+      nom,
+      objectif,
+      revenu_net,
+      epargne_dispo,
+      epargne_bloquee,
+      nb_immobilier,
+      taux_endettement,
+      matelas_securite,
+      epargne_moyen,
+      fi_score,
+      revenus,
+      depenses,
+      epargne,
+      variation_depenses,
+      variation_epargne,
+      autres_charges,
+      nb_transactions,
+      message,
+    } = req.query;
+
+    const isProfile = mode === 'profil';
+
+    const contexte = isProfile
+      ? `
+PROFIL UTILISATEUR
+Nom : ${nom || 'non renseigné'}
+Objectif : ${objectif || 'non renseigné'}
+Revenu net mensuel : ${revenu_net || 'non renseigné'} €
+Épargne disponible : ${epargne_dispo || 'non renseigné'} €
+Épargne bloquée : ${epargne_bloquee || 'non renseigné'} €
+Nombre de biens immobiliers : ${nb_immobilier || '0'}
+Taux d'endettement : ${taux_endettement || 'non renseigné'} %
+Matelas de sécurité : ${matelas_securite || 'non renseigné'} €
+Épargne moyenne mensuelle : ${epargne_moyen || 'non renseigné'} €
+FI-Score : ${fi_score || 'non renseigné'}/100
+`
+      : `
+ANALYSE MENSUELLE
+Revenus : ${revenus || 'non renseigné'} €
+Dépenses : ${depenses || 'non renseigné'} €
+Épargne : ${epargne || 'non renseigné'} €
+Variation dépenses : ${variation_depenses || 'non renseigné'}
+Variation épargne : ${variation_epargne || 'non renseigné'}
+Autres charges : ${autres_charges || 'non renseigné'}
+Transactions par catégorie : ${nb_transactions || 'non renseigné'}
+`;
+
+    const prompt = `
+Tu es ONE Coach, le coach financier personnel de Fi-One.
+
+Tu n'es PAS un conseiller financier réglementé.
+Tu n'écris PAS un rapport.
+Tu parles comme un coach personnel qui accompagne l'utilisateur.
+
+STYLE OBLIGATOIRE :
+- Direct
+- Humain
+- Bienveillant
+- Motivant
+- Court
+- Pas de jargon
+- Pas de liste interminable
+- Pas de répétition inutile des données
+- Tu interprètes, tu ne récites pas
+- Tu donnes UNE priorité principale
+- Tu termines par UNE question qui pousse à l'action
+
+RÈGLE IMPORTANTE :
+Si une donnée manque, ne fais pas un long avertissement.
+Dis simplement ce que cela empêche de conclure.
+
+FORMAT JSON STRICT :
+{
+  "phrase_choc": "une phrase forte, personnalisée, qui résume la situation",
+  "message_coach": "message court de coach en 4 à 7 phrases maximum",
+  "ce_qui_me_rassure": ["maximum 2 éléments"],
+  "ce_qui_me_freine": "un seul frein principal",
+  "priorite_du_moment": {
+    "titre": "priorité courte",
+    "action": "action concrète à faire maintenant",
+    "pourquoi": "raison simple"
+  },
+  "question_finale": "question courte qui fait réfléchir",
+  "ton": "positif|alerte|encourageant"
+}
+
+CONTEXTE :
+${contexte}
+
+QUESTION UTILISATEUR :
+${message || 'Fais un coaching court sur ma situation.'}
+`;
+
     const result = await ai.models.generateContent({
       model: 'gemini-2.5-flash',
-      contents: fullPrompt,
+      contents: prompt,
     });
-    
+
     const raw = result.text.replace(/```json|```/g, '').trim();
 
     let data;
-    try { data = JSON.parse(raw); }
-    catch (e) { data = { resume: raw, diagnostic: '', forces: [], points_attention: [], risques: [], actions_recommandees: [], message_motivation: '' }; }
+    try {
+      data = JSON.parse(raw);
+    } catch (e) {
+      data = {
+        phrase_choc: "Tu avances, mais il faut maintenant clarifier ta priorité.",
+        message_coach: raw,
+        ce_qui_me_rassure: [],
+        ce_qui_me_freine: "Les données ne permettent pas encore une lecture complète.",
+        priorite_du_moment: {
+          titre: "Clarifier la situation",
+          action: "Complète les informations financières manquantes.",
+          pourquoi: "Sans cela, le coaching reste approximatif.",
+        },
+        question_finale: "Quelle est l’action que tu peux faire aujourd’hui ?",
+        ton: "encourageant",
+      };
+    }
 
-    const prioriteColor = p => p === 'haute' ? '#E74C3C' : p === 'moyenne' ? '#F39C12' : '#27AE60';
-    const prioriteLabel = p => p === 'haute' ? 'Priorité haute' : p === 'moyenne' ? 'Priorité moyenne' : 'À envisager';
+    const accent =
+      data.ton === 'alerte'
+        ? '#E74C3C'
+        : data.ton === 'positif'
+        ? '#27AE60'
+        : '#C38F5A';
 
     const html = `<!DOCTYPE html>
 <html lang="fr">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ONE Coach - Fi-One</title>
   <style>
     * { box-sizing: border-box; margin: 0; padding: 0; }
-    html, body { width: 100%; height: auto; }
+
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #1a1a1a;
-      color: #eaeaea;
-      padding: 0 0 24px;
+      background: #171717;
+      color: #f2f2f2;
+      padding-bottom: 24px;
     }
-    .coach-header {
-      background: linear-gradient(135deg, #1f1f1f, #2a1f0f);
+
+    .header {
+      padding: 18px 16px;
+      background: linear-gradient(135deg, #21180f, #151515);
       border-bottom: 1px solid #C38F5A33;
-      padding: 16px 16px 12px;
       display: flex;
       align-items: center;
       gap: 12px;
     }
-    .coach-avatar {
-      width: 42px; height: 42px;
+
+    .avatar {
+      width: 44px;
+      height: 44px;
       border-radius: 50%;
       background: linear-gradient(135deg, #C38F5A, #8B5E2A);
-      display: flex; align-items: center; justify-content: center;
-      font-size: 20px; flex-shrink: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 21px;
+      flex-shrink: 0;
     }
-    .coach-name { font-size: 14px; font-weight: 700; color: #C38F5A; }
-    .coach-sub { font-size: 11px; color: #666; margin-top: 2px; }
-    .resume-box {
-      margin: 14px 14px 0;
-      background: #242424;
-      border-radius: 12px;
-      padding: 14px;
-      border-left: 3px solid #C38F5A;
-    }
-    .resume-text { font-size: 13px; color: #eaeaea; line-height: 1.5; font-weight: 500; }
-    .section { margin: 12px 14px 0; }
-    .section-title {
-      font-size: 10px; font-weight: 700; color: #555;
-      text-transform: uppercase; letter-spacing: 1px; margin-bottom: 8px;
-    }
-    .card {
-      background: #242424; border-radius: 12px;
-      padding: 14px; border: 1px solid #2a2a2a;
-    }
-    .card-text { font-size: 12px; color: #aaa; line-height: 1.6; }
-    .list-item {
-      display: flex; align-items: flex-start; gap: 10px;
-      padding: 6px 0; border-bottom: 1px solid #2a2a2a;
-      font-size: 12px;
-    }
-    .list-item:last-child { border-bottom: none; padding-bottom: 0; }
-    .list-dot { width: 6px; height: 6px; border-radius: 50%; flex-shrink: 0; margin-top: 5px; }
-    .action-item {
-      background: #1e1e1e; border-radius: 10px;
-      padding: 11px 13px; margin-bottom: 8px;
-      border-left: 3px solid;
-      display: flex; align-items: flex-start; gap: 10px;
-    }
-    .action-item:last-child { margin-bottom: 0; }
-    .action-badge {
-      font-size: 9px; font-weight: 700;
-      padding: 2px 7px; border-radius: 20px;
-      flex-shrink: 0; margin-top: 1px; white-space: nowrap;
-    }
-    .action-text { font-size: 12px; color: #ccc; line-height: 1.4; }
-    .module-card {
-      background: #1e2a1e; border-radius: 12px;
-      padding: 13px 14px; border: 1px solid #27AE6044;
-      display: flex; align-items: flex-start; gap: 10px;
-    }
-    .module-icon { font-size: 20px; flex-shrink: 0; }
-    .module-title { font-size: 13px; font-weight: 700; color: #27AE60; margin-bottom: 3px; }
-    .module-raison { font-size: 11px; color: #666; line-height: 1.4; }
-    .etsi-card {
-      background: #1f1f2e; border-radius: 12px;
-      padding: 14px; border: 1px solid #5B8DD944;
-    }
-    .etsi-hypothese { font-size: 13px; font-weight: 700; color: #7BB8E8; margin-bottom: 10px; line-height: 1.4; }
-    .etsi-impact { display: flex; align-items: flex-start; gap: 8px; padding: 4px 0; font-size: 12px; color: #aaa; line-height: 1.4; }
-    .etsi-dot { color: #7BB8E8; flex-shrink: 0; font-size: 14px; margin-top: -1px; }
-    .etsi-effort { margin-top: 10px; padding-top: 10px; border-top: 1px solid #2a2a3a; font-size: 11px; color: #555; font-style: italic; }
-    .motivation-card {
-      background: linear-gradient(135deg, #1f1a0f, #2a2210);
-      border-radius: 12px; padding: 14px; border: 1px solid #C38F5A33; text-align: center;
-    }
-    .motivation-text { font-size: 13px; color: #C38F5A; line-height: 1.6; font-style: italic; }
-    .chat-section { margin: 12px 14px 0; }
-    .chat-input-wrap { display: flex; gap: 8px; align-items: center; }
-    .chat-input {
-      flex: 1; background: #242424; border: 1px solid #333;
-      border-radius: 10px; padding: 10px 12px; font-size: 13px;
-      color: #eaeaea; font-family: inherit; outline: none;
-    }
-    .chat-input:focus { border-color: #C38F5A66; }
-    .chat-input::placeholder { color: #444; }
-    .chat-btn {
-      background: #C38F5A; border: none; border-radius: 10px;
-      padding: 10px 16px; color: #1a1a1a; font-size: 14px;
-      font-weight: 700; cursor: pointer; flex-shrink: 0;
-    }
-    .chat-btn:active { background: #A87A45; }
-    .score-interp { font-size: 12px; color: #888; font-style: italic; line-height: 1.5; }
 
-    /* Loading */
+    .name {
+      font-size: 15px;
+      font-weight: 800;
+      color: #C38F5A;
+    }
+
+    .sub {
+      font-size: 12px;
+      color: #777;
+      margin-top: 2px;
+    }
+
+    .container {
+      padding: 16px;
+      max-width: 760px;
+      margin: 0 auto;
+    }
+
+    .main-card {
+      background: #222;
+      border: 1px solid #2f2f2f;
+      border-left: 4px solid ${accent};
+      border-radius: 18px;
+      padding: 20px;
+    }
+
+    .phrase {
+      font-size: 19px;
+      line-height: 1.35;
+      font-weight: 800;
+      color: #fff;
+      margin-bottom: 16px;
+    }
+
+    .coach-text {
+      font-size: 15px;
+      line-height: 1.65;
+      color: #d8d8d8;
+      white-space: pre-line;
+    }
+
+    .block {
+      margin-top: 16px;
+      background: #1c1c1c;
+      border-radius: 14px;
+      padding: 14px;
+      border: 1px solid #2a2a2a;
+    }
+
+    .block-title {
+      font-size: 11px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      color: #777;
+      font-weight: 800;
+      margin-bottom: 10px;
+    }
+
+    .chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+    }
+
+    .chip {
+      background: #263226;
+      border: 1px solid #27AE6044;
+      color: #bce7c6;
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-size: 13px;
+      line-height: 1.4;
+    }
+
+    .frein {
+      color: #ddd;
+      font-size: 14px;
+      line-height: 1.5;
+    }
+
+    .priority {
+      margin-top: 16px;
+      background: linear-gradient(135deg, #2a1e12, #201b15);
+      border: 1px solid #C38F5A44;
+      border-radius: 16px;
+      padding: 16px;
+    }
+
+    .priority-label {
+      font-size: 11px;
+      color: #C38F5A;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 8px;
+    }
+
+    .priority-title {
+      font-size: 17px;
+      font-weight: 800;
+      margin-bottom: 8px;
+      color: #fff;
+    }
+
+    .priority-action {
+      font-size: 14px;
+      color: #e5e5e5;
+      line-height: 1.55;
+      margin-bottom: 8px;
+    }
+
+    .priority-why {
+      font-size: 13px;
+      color: #9a9a9a;
+      line-height: 1.5;
+    }
+
+    .question {
+      margin-top: 16px;
+      padding: 16px;
+      border-radius: 16px;
+      background: #101010;
+      border: 1px solid #333;
+      font-size: 15px;
+      line-height: 1.5;
+      color: #fff;
+      font-weight: 700;
+    }
+
+    .chat {
+      margin-top: 18px;
+      display: flex;
+      gap: 8px;
+    }
+
+    .chat input {
+      flex: 1;
+      background: #222;
+      border: 1px solid #333;
+      border-radius: 12px;
+      color: #fff;
+      padding: 12px;
+      font-size: 14px;
+      outline: none;
+    }
+
+    .chat input:focus {
+      border-color: #C38F5A;
+    }
+
+    .chat button {
+      background: #C38F5A;
+      border: none;
+      color: #171717;
+      font-weight: 800;
+      border-radius: 12px;
+      padding: 0 16px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
     .loading {
       display: none;
-      text-align: center;
-      padding: 12px;
+      margin-top: 10px;
       font-size: 12px;
-      color: #555;
+      color: #777;
     }
-    .loading.visible { display: block; }
+
+    .loading.visible {
+      display: block;
+    }
   </style>
 </head>
+
 <body>
-
-  <div class="coach-header">
-    <div class="coach-avatar">🧠</div>
+  <div class="header">
+    <div class="avatar">🧠</div>
     <div>
-      <div class="coach-name">ONE Coach</div>
-      <div class="coach-sub">${isProfile ? 'Analyse de profil' : 'Analyse mensuelle'} · Fi-One</div>
+      <div class="name">ONE Coach</div>
+      <div class="sub">${isProfile ? 'Coaching de profil' : 'Coaching mensuel'} · Fi-One</div>
     </div>
   </div>
 
-  ${data.resume ? `
-  <div class="resume-box">
-    <div class="resume-text">${data.resume}</div>
-  </div>` : ''}
+  <main class="container">
+    <section class="main-card">
+      <div class="phrase">${data.phrase_choc || ''}</div>
+      <div class="coach-text">${data.message_coach || ''}</div>
+    </section>
 
-  ${data.diagnostic ? `
-  <div class="section">
-    <div class="section-title">Diagnostic</div>
-    <div class="card"><div class="card-text">${data.diagnostic}</div></div>
-  </div>` : ''}
-
-  ${data.score_interpretation ? `
-  <div class="section">
-    <div class="section-title">Interprétation</div>
-    <div class="card"><div class="score-interp">${data.score_interpretation}</div></div>
-  </div>` : ''}
-
-  ${(data.forces?.length || data.points_attention?.length) ? `
-  <div class="section">
-    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px">
-      ${data.forces?.length ? `
-      <div>
-        <div class="section-title">✅ Forces</div>
-        <div class="card" style="padding:10px 12px">
-          ${data.forces.map(f => `
-            <div class="list-item">
-              <div class="list-dot" style="background:#27AE60"></div>
-              <span style="color:#aaa;font-size:11px">${f}</span>
-            </div>`).join('')}
-        </div>
-      </div>` : ''}
-      ${data.points_attention?.length ? `
-      <div>
-        <div class="section-title">⚠️ Attention</div>
-        <div class="card" style="padding:10px 12px">
-          ${data.points_attention.map(p => `
-            <div class="list-item">
-              <div class="list-dot" style="background:#F39C12"></div>
-              <span style="color:#aaa;font-size:11px">${p}</span>
-            </div>`).join('')}
-        </div>
-      </div>` : ''}
-    </div>
-  </div>` : ''}
-
-  ${data.risques?.length ? `
-  <div class="section">
-    <div class="section-title">🔴 Risques</div>
-    <div class="card">
-      ${data.risques.map(r => `
-        <div class="list-item">
-          <div class="list-dot" style="background:#E74C3C"></div>
-          <span style="color:#aaa;font-size:12px">${r}</span>
-        </div>`).join('')}
-    </div>
-  </div>` : ''}
-
-  ${data.actions_recommandees?.length ? `
-  <div class="section">
-    <div class="section-title">Actions recommandées</div>
-    ${data.actions_recommandees.map(a => `
-      <div class="action-item" style="border-color:${prioriteColor(a.priorite)}">
-        <span class="action-badge" style="background:${prioriteColor(a.priorite)}22;color:${prioriteColor(a.priorite)}">
-          ${prioriteLabel(a.priorite)}
-        </span>
-        <span class="action-text">${a.action}</span>
-      </div>`).join('')}
-  </div>` : ''}
-
-  ${data.module_learning?.titre ? `
-  <div class="section">
-    <div class="section-title">Module Fi-One recommandé</div>
-    <div class="module-card">
-      <div class="module-icon">📚</div>
-      <div>
-        <div class="module-title">${data.module_learning.titre}</div>
-        <div class="module-raison">${data.module_learning.raison}</div>
+    ${
+      data.ce_qui_me_rassure?.length
+        ? `
+    <section class="block">
+      <div class="block-title">Ce qui me rassure</div>
+      <div class="chips">
+        ${data.ce_qui_me_rassure
+          .slice(0, 2)
+          .map((item) => `<div class="chip">✅ ${item}</div>`)
+          .join('')}
       </div>
-    </div>
-  </div>` : ''}
+    </section>`
+        : ''
+    }
 
-  ${data.et_si?.hypothese ? `
-  <div class="section">
-    <div class="section-title">Et si...</div>
-    <div class="etsi-card">
-      <div class="etsi-hypothese">${data.et_si.hypothese}</div>
-      ${(data.et_si.impacts || []).map(i => `
-        <div class="etsi-impact">
-          <span class="etsi-dot">·</span>
-          <span>${i}</span>
-        </div>`).join('')}
-      ${data.et_si.effort_quotidien ? `
-        <div class="etsi-effort">Effort quotidien : ${data.et_si.effort_quotidien}</div>` : ''}
-    </div>
-  </div>` : ''}
+    ${
+      data.ce_qui_me_freine
+        ? `
+    <section class="block">
+      <div class="block-title">Ce qui te freine</div>
+      <div class="frein">⚠️ ${data.ce_qui_me_freine}</div>
+    </section>`
+        : ''
+    }
 
-  ${data.message_motivation ? `
-  <div class="section">
-    <div class="motivation-card">
-      <div class="motivation-text">"${data.message_motivation}"</div>
-    </div>
-  </div>` : ''}
+    ${
+      data.priorite_du_moment?.titre
+        ? `
+    <section class="priority">
+      <div class="priority-label">Priorité du moment</div>
+      <div class="priority-title">${data.priorite_du_moment.titre}</div>
+      <div class="priority-action">${data.priorite_du_moment.action}</div>
+      <div class="priority-why">${data.priorite_du_moment.pourquoi}</div>
+    </section>`
+        : ''
+    }
 
-  <!-- Chat -->
-  <div class="chat-section">
-    <div class="section-title" style="margin-bottom:8px">Poser une question</div>
-    <div class="chat-input-wrap">
-      <input
-        class="chat-input" id="chatInput" type="text"
-        placeholder="Ex: Que faire avec mon épargne ?"
-        onkeydown="if(event.key==='Enter') sendMessage()"
-      />
-      <button class="chat-btn" onclick="sendMessage()">→</button>
-    </div>
-    <div class="loading" id="loading">ONE Coach analyse votre question...</div>
-  </div>
+    ${
+      data.question_finale
+        ? `
+    <section class="question">
+      ${data.question_finale}
+    </section>`
+        : ''
+    }
+
+    <section class="chat">
+      <input id="chatInput" type="text" placeholder="Pose une question à ONE Coach..." />
+      <button id="sendBtn">→</button>
+    </section>
+
+    <div class="loading" id="loading">ONE Coach réfléchit...</div>
+  </main>
 
   <script>
     const baseUrl = window.location.href.split('?')[0];
@@ -349,21 +421,29 @@ FORMAT JSON :
     function sendMessage() {
       const input = document.getElementById('chatInput');
       const msg = input.value.trim();
+
       if (!msg) return;
+
       document.getElementById('loading').classList.add('visible');
       input.disabled = true;
+
       params.set('message', msg);
       window.location.href = baseUrl + '?' + params.toString();
     }
-  </script>
 
+    document.getElementById('sendBtn').addEventListener('click', sendMessage);
+    document.getElementById('chatInput').addEventListener('keydown', function(event) {
+      if (event.key === 'Enter') sendMessage();
+    });
+  </script>
 </body>
 </html>`;
 
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.status(200).send(html);
-
   } catch (error) {
-    return res.status(500).json({ error: error.message });
+    return res.status(500).json({
+      error: error.message,
+    });
   }
 };
