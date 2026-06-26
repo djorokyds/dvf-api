@@ -7,26 +7,26 @@ function escapeHtml(value = '') {
     .replaceAll("'", '&#039;');
 }
 
-function renderCoachHtml(data = {}) {
-  const moodLabel = {
-    encouragement: 'Encouragement',
-    challenge: 'Challenge',
-    pédagogie: 'Pédagogie',
-    projection: 'Projection',
-    célébration: 'Célébration',
-  }[data.mood] || 'Rendez-vous';
+function formatCoachMessage(message = '') {
+  return escapeHtml(message)
+    .split(/\n\s*\n/)
+    .filter(Boolean)
+    .map((p) => `<p>${p.trim()}</p>`)
+    .join('');
+}
 
+function renderCoachHtml(data = {}) {
   const safe = {
-    moodLabel: escapeHtml(moodLabel),
+    intention: escapeHtml(data.intention || 'Faisons le point'),
     phrase: escapeHtml(data.phrase_choc),
-    message: escapeHtml(data.message_coach),
-    missionTitre: escapeHtml(data.mission_titre),
-    mission: escapeHtml(data.mission),
-    pourquoi: escapeHtml(data.pourquoi),
+    messageHtml: formatCoachMessage(data.message_coach),
+    prioriteTitre: escapeHtml(data.priorite_titre),
+    prioriteAction: escapeHtml(data.priorite_action),
+    prioritePourquoi: escapeHtml(data.priorite_pourquoi),
     moduleNom: escapeHtml(data.module_recommande?.nom),
     moduleRaison: escapeHtml(data.module_recommande?.raison),
     moduleAction: escapeHtml(data.module_recommande?.action),
-    pensee: escapeHtml(data.pensee_finale),
+    reflection: escapeHtml(data.reflection),
   };
 
   return `<!DOCTYPE html>
@@ -90,16 +90,15 @@ function renderCoachHtml(data = {}) {
     padding: 18px;
   }
 
-  .badge {
+  .intent {
     display: inline-block;
     margin-bottom: 12px;
-    padding: 6px 10px;
+    padding: 6px 11px;
     border-radius: 999px;
     background: #231D17;
     color: #C38F5A;
     font-size: 11px;
     font-weight: 800;
-    text-transform: uppercase;
     letter-spacing: .5px;
   }
 
@@ -119,15 +118,24 @@ function renderCoachHtml(data = {}) {
     font-size: 21px;
     line-height: 1.35;
     font-weight: 850;
-    margin-bottom: 14px;
+    margin-bottom: 16px;
     color: white;
   }
 
-  .message {
+  .message p {
     font-size: 15px;
-    line-height: 1.7;
+    line-height: 1.68;
     color: #D8D6D2;
-    white-space: pre-line;
+    margin-bottom: 12px;
+  }
+
+  .message p:last-child {
+    margin-bottom: 0;
+  }
+
+  .message strong,
+  .message b {
+    color: #F2F0EC;
   }
 
   .kicker {
@@ -139,12 +147,12 @@ function renderCoachHtml(data = {}) {
     margin-bottom: 8px;
   }
 
-  .mission {
+  .priority {
     background: #1A1A1A;
     border-color: #3A3027;
   }
 
-  .mission-title {
+  .priority-title {
     font-size: 18px;
     font-weight: 850;
     color: white;
@@ -200,7 +208,7 @@ function renderCoachHtml(data = {}) {
   .module-reason { color: #AFAFAF; }
   .module-action { color: #D8D6D2; margin-top: 8px; }
 
-  .final {
+  .reflection {
     background: #181818;
     color: #CFCBC3;
     font-size: 14px;
@@ -269,18 +277,18 @@ function renderCoachHtml(data = {}) {
 </header>
 
 <main class="wrap">
-  <div class="badge">${safe.moodLabel}</div>
+  <div class="intent">${safe.intention}</div>
 
   <section class="card main-card">
     <div class="phrase">${safe.phrase}</div>
-    <div class="message" id="coachMessage">${safe.message}</div>
+    <div class="message" id="coachMessage">${safe.messageHtml}</div>
   </section>
 
-  <section class="card mission">
-    <div class="kicker">Mission de la semaine</div>
-    <div class="mission-title">${safe.missionTitre}</div>
-    <div class="text">${safe.mission}</div>
-    <div class="muted">${safe.pourquoi}</div>
+  <section class="card priority">
+    <div class="kicker">Priorité du moment</div>
+    <div class="priority-title">${safe.prioriteTitre}</div>
+    <div class="text">${safe.prioriteAction}</div>
+    <div class="muted">${safe.prioritePourquoi}</div>
   </section>
 
   <section class="card module-card">
@@ -293,9 +301,14 @@ function renderCoachHtml(data = {}) {
     </div>
   </section>
 
-  <section class="card final">
-    ${safe.pensee}
-  </section>
+  ${
+    safe.reflection
+      ? `<section class="card reflection">
+          <div class="kicker">À garder en tête</div>
+          ${safe.reflection}
+        </section>`
+      : ''
+  }
 
   <section class="chat">
     <input id="chatInput" type="text" placeholder="Répondre à ONE Coach..." />
