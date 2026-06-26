@@ -626,11 +626,6 @@ function renderCoachHtml(data = {}) {
     saveConversationContext();
 
     params.set(
-      'mode',
-      'mensuel'
-    );
-
-    params.set(
       'message',
       'Analyse mon mois en cours'
     );
