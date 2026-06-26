@@ -442,6 +442,18 @@ ${message || 'Fais un coaching court sur ma situation.'}
     res.setHeader('Content-Type', 'text/html; charset=utf-8');
     return res.status(200).send(html);
   } catch (error) {
+const errorText = error.message || '';
+
+    if (errorText.includes('429') || errorText.includes('RESOURCE_EXHAUSTED') || errorText.includes('quota')) {
+      return res.status(429).send(`
+        <div style="font-family:Arial;padding:24px;background:#171717;color:white;min-height:100vh">
+          <h2 style="color:#C38F5A">ONE Coach est momentanément saturé</h2>
+          <p>Le coach a reçu trop de demandes en peu de temps.</p>
+          <p>Patientez quelques secondes puis réessayez.</p>
+        </div>
+      `);
+    }
+    
     return res.status(500).json({
       error: error.message,
     });
