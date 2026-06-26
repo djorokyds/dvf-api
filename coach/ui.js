@@ -9,6 +9,7 @@ function escapeHtml(value = '') {
 
 function formatCoachMessage(message = '') {
   return escapeHtml(message)
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
     .split(/\n\s*\n/)
     .filter(Boolean)
     .map((p) => `<p>${p.trim()}</p>`)
@@ -136,6 +137,11 @@ function renderCoachHtml(data = {}) {
   .message strong,
   .message b {
     color: #F2F0EC;
+    font-weight: 850;
+    background: #2A2118;
+    border: 1px solid #3A3027;
+    padding: 1px 5px;
+    border-radius: 6px;
   }
 
   .kicker {
@@ -303,10 +309,7 @@ function renderCoachHtml(data = {}) {
 
   ${
     safe.reflection
-      ? `<section class="card reflection">
-          <div class="kicker">À garder en tête</div>
-          ${safe.reflection}
-        </section>`
+      ? `<section class="card reflection">${safe.reflection}</section>`
       : ''
   }
 
