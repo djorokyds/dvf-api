@@ -22,10 +22,14 @@ module.exports = async function handler(req, res) {
     if (
       text.includes('429') ||
       text.includes('RESOURCE_EXHAUSTED') ||
-      text.includes('quota')
+      text.includes('quota') ||
+      text.includes('503') ||
+      text.includes('UNAVAILABLE') ||
+      text.includes('high demand')
     ) {
-      const seconds = extractRetrySeconds(text);
-      return res.status(429).send(renderRetryPage(seconds));
+      const seconds = text.includes('503') || text.includes('UNAVAILABLE') ? 25 : extractRetrySeconds(text);
+      return res.status(text.includes('503') || text.includes('UNAVAILABLE') ? 503 : 429)
+        .send(renderRetryPage(seconds));
     }
 
     return res.status(500).json({ error: error.message });
