@@ -7,40 +7,99 @@ function escapeHtml(value = '') {
     .replaceAll("'", '&#039;');
 }
 
+function formatMarkdownText(value = '') {
+  return escapeHtml(value)
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+}
+
 function formatCoachMessage(message = '') {
-  return escapeHtml(message)
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+  return formatMarkdownText(message)
     .split(/\n\s*\n/)
+    .map((paragraph) => paragraph.trim())
     .filter(Boolean)
-    .map((p) => `<p>${p.trim()}</p>`)
+    .map((paragraph) => `<p>${paragraph}</p>`)
     .join('');
 }
 
 function renderCoachHtml(data = {}) {
+  const reassurance = Array.isArray(data.ce_qui_me_rassure)
+    ? data.ce_qui_me_rassure
+    : [];
+
   const safe = {
-    intention: escapeHtml(data.intention || 'Faisons le point'),
+    intention: escapeHtml(
+      data.intention || 'Faisons le point'
+    ),
+
     phrase: escapeHtml(data.phrase_choc),
-    messageHtml: formatCoachMessage(data.message_coach),
-    prioriteTitre: escapeHtml(data.priorite_titre),
-    prioriteAction: escapeHtml(data.priorite_action),
-    prioritePourquoi: escapeHtml(data.priorite_pourquoi),
-    moduleNom: escapeHtml(data.module_recommande?.nom),
-    moduleRaison: escapeHtml(data.module_recommande?.raison),
-    moduleAction: escapeHtml(data.module_recommande?.action),
-    reflection: escapeHtml(data.reflection),
+
+    messageHtml: formatCoachMessage(
+      data.message_coach
+    ),
+
+    reassurance:
+      reassurance
+        .slice(0, 2)
+        .map(formatMarkdownText),
+
+    friction: formatMarkdownText(
+      data.ce_qui_te_freine
+    ),
+
+    prioriteTitre: escapeHtml(
+      data.priorite_titre
+    ),
+
+    prioriteAction: formatMarkdownText(
+      data.priorite_action
+    ),
+
+    prioritePourquoi: formatMarkdownText(
+      data.priorite_pourquoi
+    ),
+
+    moduleNom: escapeHtml(
+      data.module_recommande?.nom
+    ),
+
+    moduleRaison: formatMarkdownText(
+      data.module_recommande?.raison
+    ),
+
+    moduleAction: formatMarkdownText(
+      data.module_recommande?.action
+    ),
+
+    reflection: formatMarkdownText(
+      data.reflection
+    ),
   };
 
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta
+  name="viewport"
+  content="width=device-width, initial-scale=1.0"
+/>
+
 <title>ONE Coach - Fi-One</title>
+
 <style>
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+  * {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
 
   body {
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-family:
+      -apple-system,
+      BlinkMacSystemFont,
+      "Segoe UI",
+      sans-serif;
+
     background: #151515;
     color: #F2F0EC;
     padding-bottom: 28px;
@@ -100,7 +159,7 @@ function renderCoachHtml(data = {}) {
     color: #C38F5A;
     font-size: 11px;
     font-weight: 800;
-    letter-spacing: .5px;
+    letter-spacing: .4px;
   }
 
   .card {
@@ -118,39 +177,64 @@ function renderCoachHtml(data = {}) {
   .phrase {
     font-size: 21px;
     line-height: 1.35;
-    font-weight: 850;
-    margin-bottom: 16px;
-    color: white;
+    font-weight: 800;
+    margin-bottom: 17px;
+    color: #FFFFFF;
   }
 
   .message p {
     font-size: 15px;
-    line-height: 1.68;
+    line-height: 1.7;
     color: #D8D6D2;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
   }
 
   .message p:last-child {
     margin-bottom: 0;
   }
 
-  .message strong,
-  .message b {
-    color: #F2F0EC;
-    font-weight: 850;
-    background: #2A2118;
-    border: 1px solid #3A3027;
-    padding: 1px 5px;
-    border-radius: 6px;
+  strong {
+    color: #F3D2AD;
+    font-weight: 750;
   }
 
   .kicker {
     color: #C38F5A;
     font-size: 11px;
-    font-weight: 850;
+    font-weight: 800;
     text-transform: uppercase;
     letter-spacing: .8px;
-    margin-bottom: 8px;
+    margin-bottom: 9px;
+  }
+
+  .reassurance-card {
+    padding-bottom: 12px;
+  }
+
+  .reassurance-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 9px;
+  }
+
+  .reassurance-item {
+    background: #1E2A20;
+    border: 1px solid #31543A;
+    color: #C9E5CE;
+    padding: 9px 12px;
+    border-radius: 14px;
+    font-size: 13px;
+    line-height: 1.45;
+  }
+
+  .friction-card {
+    background: #1D1D1D;
+  }
+
+  .friction-text {
+    font-size: 14px;
+    line-height: 1.6;
+    color: #E5DED5;
   }
 
   .priority {
@@ -160,21 +244,21 @@ function renderCoachHtml(data = {}) {
 
   .priority-title {
     font-size: 18px;
-    font-weight: 850;
-    color: white;
-    margin-bottom: 8px;
+    font-weight: 800;
+    color: #FFFFFF;
+    margin-bottom: 9px;
   }
 
   .text {
     font-size: 14px;
-    line-height: 1.55;
+    line-height: 1.6;
     color: #E3E0DA;
   }
 
   .muted {
-    margin-top: 9px;
+    margin-top: 10px;
     font-size: 13px;
-    line-height: 1.5;
+    line-height: 1.55;
     color: #9C9C9C;
   }
 
@@ -200,38 +284,66 @@ function renderCoachHtml(data = {}) {
 
   .module-name {
     font-size: 15px;
-    font-weight: 850;
-    color: white;
-    margin-bottom: 5px;
+    font-weight: 800;
+    color: #FFFFFF;
+    margin-bottom: 6px;
   }
 
   .module-reason,
   .module-action {
     font-size: 13px;
-    line-height: 1.5;
+    line-height: 1.55;
   }
 
-  .module-reason { color: #AFAFAF; }
-  .module-action { color: #D8D6D2; margin-top: 8px; }
+  .module-reason {
+    color: #AFAFAF;
+  }
+
+  .module-action {
+    color: #D8D6D2;
+    margin-top: 8px;
+  }
 
   .reflection {
     background: #181818;
     color: #CFCBC3;
     font-size: 14px;
-    line-height: 1.55;
+    line-height: 1.6;
     font-style: italic;
+  }
+
+  .actions {
+    margin-top: 16px;
+    display: grid;
+    gap: 10px;
+  }
+
+  .monthly-button {
+    width: 100%;
+    border: 1px solid #3A3027;
+    background: transparent;
+    color: #CFA06E;
+    border-radius: 14px;
+    padding: 12px 14px;
+    font-size: 13px;
+    font-weight: 700;
+    cursor: pointer;
+  }
+
+  .monthly-button:hover {
+    background: #1F1B17;
   }
 
   .chat {
     display: flex;
     gap: 8px;
-    margin-top: 16px;
   }
 
   .chat input {
     flex: 1;
+    min-width: 0;
     background: #202020;
-    border: 1px solid #333;
+    border: 1px solid #333333;
     color: #F2F0EC;
     border-radius: 14px;
     padding: 13px 14px;
@@ -239,14 +351,16 @@ function renderCoachHtml(data = {}) {
     outline: none;
   }
 
-  .chat input:focus { border-color: #C38F5A; }
+  .chat input:focus {
+    border-color: #C38F5A;
+  }
 
   .chat button {
     background: #C38F5A;
     color: #151515;
     border: none;
     border-radius: 14px;
-    padding: 0 16px;
+    padding: 0 17px;
     font-weight: 900;
     font-size: 16px;
     cursor: pointer;
@@ -255,15 +369,17 @@ function renderCoachHtml(data = {}) {
   .loading {
     display: none;
     margin-top: 10px;
-    color: #777;
+    color: #777777;
     font-size: 12px;
   }
 
-  .loading.visible { display: block; }
+  .loading.visible {
+    display: block;
+  }
 
   .legal {
     text-align: center;
-    color: #666;
+    color: #666666;
     font-size: 11px;
     line-height: 1.5;
     margin-top: 18px;
@@ -275,84 +391,278 @@ function renderCoachHtml(data = {}) {
 <header class="header">
   <div class="topline">
     <div class="avatar">1</div>
+
     <div>
       <div class="name">ONE Coach</div>
-      <div class="sub">Ton rendez-vous financier · Fi-One</div>
+      <div class="sub">
+        Ton rendez-vous financier · Fi-One
+      </div>
     </div>
   </div>
 </header>
 
 <main class="wrap">
-  <div class="intent">${safe.intention}</div>
+  <div class="intent">
+    ${safe.intention}
+  </div>
 
   <section class="card main-card">
-    <div class="phrase">${safe.phrase}</div>
-    <div class="message" id="coachMessage">${safe.messageHtml}</div>
+    <div class="phrase">
+      ${safe.phrase}
+    </div>
+
+    <div
+      class="message"
+      id="coachMessage"
+    >
+      ${safe.messageHtml}
+    </div>
   </section>
 
+  ${
+    safe.reassurance.length
+      ? `
+        <section class="card reassurance-card">
+          <div class="kicker">
+            Ce qui me rassure
+          </div>
+
+          <div class="reassurance-list">
+            ${safe.reassurance
+              .map(
+                (item) => `
+                  <div class="reassurance-item">
+                    ✓ ${item}
+                  </div>
+                `
+              )
+              .join('')}
+          </div>
+        </section>
+      `
+      : ''
+  }
+
+  ${
+    safe.friction
+      ? `
+        <section class="card friction-card">
+          <div class="kicker">
+            Ce qui te freine
+          </div>
+
+          <div class="friction-text">
+            ⚠ ${safe.friction}
+          </div>
+        </section>
+      `
+      : ''
+  }
+
   <section class="card priority">
-    <div class="kicker">Priorité du moment</div>
-    <div class="priority-title">${safe.prioriteTitre}</div>
-    <div class="text">${safe.prioriteAction}</div>
-    <div class="muted">${safe.prioritePourquoi}</div>
+    <div class="kicker">
+      Priorité du moment
+    </div>
+
+    <div class="priority-title">
+      ${safe.prioriteTitre}
+    </div>
+
+    <div class="text">
+      ${safe.prioriteAction}
+    </div>
+
+    <div class="muted">
+      ${safe.prioritePourquoi}
+    </div>
   </section>
 
   <section class="card module-card">
-    <div class="module-icon">↗</div>
+    <div class="module-icon">
+      ↗
+    </div>
+
     <div>
-      <div class="kicker">Module conseillé</div>
-      <div class="module-name">${safe.moduleNom}</div>
-      <div class="module-reason">${safe.moduleRaison}</div>
-      <div class="module-action">${safe.moduleAction}</div>
+      <div class="kicker">
+        Module conseillé
+      </div>
+
+      <div class="module-name">
+        ${safe.moduleNom}
+      </div>
+
+      <div class="module-reason">
+        ${safe.moduleRaison}
+      </div>
+
+      <div class="module-action">
+        ${safe.moduleAction}
+      </div>
     </div>
   </section>
 
   ${
     safe.reflection
-      ? `<section class="card reflection">${safe.reflection}</section>`
+      ? `
+        <section class="card reflection">
+          ${safe.reflection}
+        </section>
+      `
       : ''
   }
 
-  <section class="chat">
-    <input id="chatInput" type="text" placeholder="Répondre à ONE Coach..." />
-    <button id="sendBtn">→</button>
+  <section class="actions">
+    <button
+      type="button"
+      class="monthly-button"
+      id="monthlyBtn"
+    >
+      Analyser le mois en cours
+    </button>
+
+    <div class="chat">
+      <input
+        id="chatInput"
+        type="text"
+        placeholder="Répondre à ONE Coach..."
+      />
+
+      <button
+        type="button"
+        id="sendBtn"
+      >
+        →
+      </button>
+    </div>
   </section>
 
-  <div id="loading" class="loading">ONE Coach prépare sa réponse...</div>
+  <div
+    id="loading"
+    class="loading"
+  >
+    ONE Coach prépare sa réponse...
+  </div>
 
   <div class="legal">
-    ONE Coach n'est pas un conseiller financier réglementé.<br />
+    ONE Coach n'est pas un conseiller financier réglementé.
+    <br />
     Ses recommandations sont basées sur les informations partagées.
   </div>
 </main>
 
 <script>
-  const baseUrl = window.location.href.split('?')[0];
-  const params = new URLSearchParams(window.location.search);
+  const baseUrl =
+    window.location.href.split('?')[0];
 
-  function sendMessage() {
-    const input = document.getElementById('chatInput');
-    const msg = input.value.trim();
+  const params =
+    new URLSearchParams(window.location.search);
 
-    if (!msg) return;
+  function saveConversationContext() {
+    const currentQuestion =
+      params.get('message') || '';
 
-    const currentQuestion = params.get('message') || '';
-    const currentAnswer = document.getElementById('coachMessage')?.innerText || '';
+    const currentAnswer =
+      document.getElementById('coachMessage')
+        ?.innerText || '';
 
-    params.set('previous_question', currentQuestion);
-    params.set('previous_answer', currentAnswer.slice(0, 900));
-    params.set('message', msg);
+    params.set(
+      'previous_question',
+      currentQuestion
+    );
 
-    input.disabled = true;
-    document.getElementById('loading').classList.add('visible');
-
-    window.location.href = baseUrl + '?' + params.toString();
+    params.set(
+      'previous_answer',
+      currentAnswer.slice(0, 900)
+    );
   }
 
-  document.getElementById('sendBtn').addEventListener('click', sendMessage);
-  document.getElementById('chatInput').addEventListener('keydown', function(e) {
-    if (e.key === 'Enter') sendMessage();
-  });
+  function startLoading() {
+    document
+      .getElementById('loading')
+      .classList
+      .add('visible');
+
+    document
+      .getElementById('chatInput')
+      .disabled = true;
+
+    document
+      .getElementById('sendBtn')
+      .disabled = true;
+
+    document
+      .getElementById('monthlyBtn')
+      .disabled = true;
+  }
+
+  function navigateWithParams() {
+    window.location.href =
+      baseUrl + '?' + params.toString();
+  }
+
+  function sendMessage() {
+    const input =
+      document.getElementById('chatInput');
+
+    const message =
+      input.value.trim();
+
+    if (!message) {
+      return;
+    }
+
+    saveConversationContext();
+
+    params.set(
+      'message',
+      message
+    );
+
+    startLoading();
+    navigateWithParams();
+  }
+
+  function analyzeCurrentMonth() {
+    saveConversationContext();
+
+    params.set(
+      'mode',
+      'mensuel'
+    );
+
+    params.set(
+      'message',
+      'Analyse mon mois en cours'
+    );
+
+    startLoading();
+    navigateWithParams();
+  }
+
+  document
+    .getElementById('sendBtn')
+    .addEventListener(
+      'click',
+      sendMessage
+    );
+
+  document
+    .getElementById('monthlyBtn')
+    .addEventListener(
+      'click',
+      analyzeCurrentMonth
+    );
+
+  document
+    .getElementById('chatInput')
+    .addEventListener(
+      'keydown',
+      function (event) {
+        if (event.key === 'Enter') {
+          sendMessage();
+        }
+      }
+    );
 </script>
 </body>
 </html>`;
