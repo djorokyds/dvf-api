@@ -1,5 +1,7 @@
 const { GoogleGenAI } = require('@google/genai');
 
+const MODEL_NAME = 'gemini-2.5-flash';
+
 function escapeHtml(value = '') {
   return String(value)
     .replaceAll('&', '&amp;')
@@ -9,40 +11,54 @@ function escapeHtml(value = '') {
     .replaceAll("'", '&#039;');
 }
 
-module.exports = async function handler(req, res) {
-  try {
-    const ai = new GoogleGenAI({
-      apiKey: process.env.GOOGLE_API_KEY,
-    });
+function cleanJson(raw = '') {
+  return String(raw)
+    .replace(/```json/gi, '')
+    .replace(/```/g, '')
+    .trim();
+}
 
-    const {
-      mode,
-      nom,
-      objectif,
-      revenu_net,
-      epargne_dispo,
-      epargne_bloquee,
-      nb_immobilier,
-      taux_endettement,
-      matelas_securite,
-      epargne_moyen,
-      fi_score,
-      revenus,
-      depenses,
-      epargne,
-      variation_depenses,
-      variation_epargne,
-      autres_charges,
-      nb_transactions,
-      message,
-      previous_question,
-      previous_answer,
-    } = req.query;
+function extractRetrySeconds(errorText = '') {
+  const retryDelayMatch = errorText.match(/retryDelay["']?\s*:\s*["']?(\d+)s/i);
+  if (retryDelayMatch) return Number(retryDelayMatch[1]);
 
-    const isProfile = mode === 'profil';
+  const retryInMatch = errorText.match(/retry in ([0-9.]+)s/i);
+  if (retryInMatch) return Math.ceil(Number(retryInMatch[1]));
 
-    const contexte = isProfile
-      ? `
+  return 40;
+}
+
+function formatEuro(value) {
+  if (!value) return '';
+  const number = Number(String(value).replace(',', '.'));
+  if (Number.isNaN(number)) return `${value} €`;
+  return `${number.toLocaleString('fr-FR')} €`;
+}
+
+function buildContext(query) {
+  const {
+    mode,
+    nom,
+    objectif,
+    revenu_net,
+    epargne_dispo,
+    epargne_bloquee,
+    nb_immobilier,
+    taux_endettement,
+    matelas_securite,
+    epargne_moyen,
+    fi_score,
+    revenus,
+    depenses,
+    epargne,
+    variation_depenses,
+    variation_epargne,
+    autres_charges,
+    nb_transactions,
+  } = query;
+
+  if (mode === 'profil') {
+    return `
 PROFIL UTILISATEUR
 Nom : ${nom || 'non renseigné'}
 Objectif : ${objectif || 'non renseigné'}
@@ -54,8 +70,10 @@ Taux d'endettement : ${taux_endettement || 'non renseigné'} %
 Matelas de sécurité : ${matelas_securite || 'non renseigné'} €
 Épargne moyenne mensuelle : ${epargne_moyen || 'non renseigné'} €
 FI-Score : ${fi_score || 'non renseigné'}/100
-`
-      : `
+`;
+  }
+
+  return `
 SITUATION MENSUELLE
 Revenus : ${revenus || 'non renseigné'} €
 Dépenses : ${depenses || 'non renseigné'} €
@@ -65,37 +83,49 @@ Variation épargne : ${variation_epargne || 'non renseigné'}
 Autres charges : ${autres_charges || 'non renseigné'}
 Transactions par catégorie : ${nb_transactions || 'non renseigné'}
 `;
+}
 
-    const prompt = `
+function buildPrompt(query) {
+  const contexte = buildContext(query);
+
+  return `
 Tu es ONE Coach, le mentor financier personnel de l'application Fi-One.
 
 Tu n'es pas un assistant généraliste.
-Tu es un coach financier humain, sobre, premium, concret, qui aide l'utilisateur à progresser.
+Tu n'es pas un conseiller financier réglementé.
+Tu es un coach financier personnel, humain, sobre et premium.
 
-OBJECTIF :
-Répondre comme un coach personnel, pas comme un rapport.
-Tu dois aider l'utilisateur à faire le prochain bon pas.
+MISSION DE ONE COACH :
+Aider l'utilisateur à faire le prochain bon pas.
+Ne pas faire un rapport.
+Ne pas réciter les chiffres.
+Interpréter les chiffres avec pédagogie.
+Orienter l'utilisateur vers le bon module Fi-One.
 
 STYLE :
-- naturel
-- clair
 - humain
-- direct mais jamais culpabilisant
-- premium et sobre
-- orienté action
+- sobre
+- premium
+- direct
+- encourageant
+- jamais culpabilisant
+- jamais trop long
+- jamais robotique
 - pas de jargon
-- pas de longues listes
-- pas de ton robotique
-- pas de "diagnostic", "analyse", "risque" sauf nécessité
+- pas de longue liste
 
 RÈGLE SUR LES CHIFFRES :
 Tu dois intégrer naturellement 2 à 4 chiffres clés dans le message principal.
-Tu ne fais pas de tableau de chiffres.
-Tu expliques ce que les chiffres signifient.
+Les chiffres doivent renforcer le coaching.
+Tu dois expliquer ce qu'ils signifient.
+Ne fais pas de tableau.
+Ne crée pas de carte séparée de chiffres.
+
 Exemples :
 - "Avec 15 000 € d'épargne disponible, tu as déjà une vraie base d'apport."
 - "Ton taux d'endettement à 12 % te laisse une marge confortable."
-- "Ton épargne moyenne de 650 € par mois montre une discipline réelle."
+- "Ton épargne moyenne de 650 € par mois montre une vraie discipline."
+- "Ton matelas de sécurité de 6 000 € est utile, mais il doit rester protégé."
 
 MODULES FI-ONE DISPONIBLES :
 - Module budget : comprendre ses dépenses, réduire ses charges, organiser son budget mensuel.
@@ -108,36 +138,36 @@ MODULES FI-ONE DISPONIBLES :
 
 RÈGLE MODULE :
 Tu dois recommander UN seul module Fi-One.
-Le module doit dépendre de la situation ou de la question.
-Ne choisis pas toujours l'immobilier.
-Si l'utilisateur parle d'un prix de bien, d'un projet immobilier ou d'un apport, recommande souvent le Simulateur immobilier.
-S'il parle de mensualité ou de capacité, recommande le Simulateur capacité d'emprunt.
-S'il parle de dépenses floues, recommande le Module budget.
-S'il parle d'épargne ou d'apport, recommande le Module épargne.
-S'il parle de crédits ou dettes, recommande le Module dettes.
-S'il veut apprendre, recommande une formation.
+Le module doit dépendre de la question ou de la situation.
+Ne recommande pas toujours l'immobilier.
+Si l'utilisateur parle d'un prix de bien, d'achat ou d'apport : Simulateur immobilier.
+S'il parle de mensualité, capacité ou emprunt : Simulateur capacité d'emprunt.
+S'il parle de dépenses ou budget flou : Module budget.
+S'il parle d'épargne, apport ou matelas : Module épargne.
+S'il parle de crédits, dette, auto, conso : Module dettes.
+S'il veut apprendre : une formation.
 
-HISTORIQUE RECENT :
-Dernière question : ${previous_question || 'aucune'}
-Dernière réponse : ${previous_answer || 'aucune'}
+HISTORIQUE RÉCENT :
+Dernière question : ${query.previous_question || 'aucune'}
+Dernière réponse : ${query.previous_answer || 'aucune'}
 
 CONTEXTE :
 ${contexte}
 
 DEMANDE UTILISATEUR :
-${message || 'Prépare mon rendez-vous ONE Coach du jour.'}
+${query.message || 'Prépare mon rendez-vous ONE Coach du jour.'}
 
 FORMAT JSON STRICT :
 {
   "mood": "encouragement|challenge|pédagogie|projection|célébration",
   "salutation": "phrase courte personnalisée",
-  "message_principal": "message naturel de coach en 6 à 9 phrases maximum, avec 2 à 4 chiffres intégrés naturellement",
+  "message_principal": "message naturel de coach en 6 à 9 phrases maximum avec 2 à 4 chiffres intégrés naturellement",
   "mission_titre": "titre court",
   "mission": "mission concrète à faire cette semaine",
   "pourquoi": "raison simple et motivante",
   "module_recommande": {
     "nom": "nom exact du module Fi-One",
-    "raison": "pourquoi ce module est le plus utile maintenant",
+    "raison": "pourquoi ce module est utile maintenant",
     "action": "ce que l'utilisateur doit faire dans ce module"
   },
   "continuite": "phrase courte liée à l'historique si utile, sinon vide",
@@ -145,66 +175,64 @@ FORMAT JSON STRICT :
   "cta": "invitation courte"
 }
 `;
+}
 
-    const result = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
-      contents: prompt,
-    });
+function fallbackData(raw = '') {
+  return {
+    mood: 'encouragement',
+    salutation: 'Bonjour.',
+    message_principal: raw || 'Je n’ai pas pu structurer complètement ma réponse, mais l’idée reste simple : avançons avec une action concrète.',
+    mission_titre: 'Clarifier la prochaine étape',
+    mission: 'Choisis une action financière simple à mettre en place cette semaine.',
+    pourquoi: 'Un petit pas régulier vaut mieux qu’une grande décision repoussée.',
+    module_recommande: {
+      nom: 'Formation gestion financière',
+      raison: 'Pour renforcer les bases avant d’aller plus loin.',
+      action: 'Commence par le module qui t’aide à mieux lire ta situation.',
+    },
+    continuite: '',
+    pensee_finale: 'L’important n’est pas d’aller vite, mais d’avancer avec constance.',
+    cta: 'Continuer avec ONE Coach',
+  };
+}
 
-    const raw = result.text.replace(/```json|```/g, '').trim();
 
-    let data;
-    try {
-      data = JSON.parse(raw);
-    } catch (e) {
-      data = {
-        mood: 'encouragement',
-        salutation: 'Bonjour.',
-        message_principal: raw,
-        mission_titre: 'Clarifier la prochaine étape',
-        mission: 'Choisis une action financière simple à mettre en place cette semaine.',
-        pourquoi: 'Un petit pas régulier vaut mieux qu’une grande décision repoussée.',
-        module_recommande: {
-          nom: 'Formation gestion financière',
-          raison: 'Pour renforcer les bases avant d’aller plus loin.',
-          action: 'Commence par le module qui t’aide à mieux lire ta situation.',
-        },
-        continuite: '',
-        pensee_finale: 'L’important n’est pas d’aller vite, mais d’avancer avec constance.',
-        cta: 'Continuer avec ONE Coach',
-      };
-    }
+function renderCoachHtml(data, query) {
+  const moodLabel = {
+    encouragement: 'Encouragement',
+    challenge: 'Challenge',
+    pédagogie: 'Pédagogie',
+    projection: 'Projection',
+    célébration: 'Célébration',
+  }[data.mood] || 'Rendez-vous';
 
-    const moodLabel = {
-      encouragement: 'Encouragement',
-      challenge: 'Challenge',
-      pédagogie: 'Pédagogie',
-      projection: 'Projection',
-      célébration: 'Célébration',
-    }[data.mood] || 'Rendez-vous';
+  const safe = {
+    moodLabel: escapeHtml(moodLabel),
+    salutation: escapeHtml(data.salutation),
+    message: escapeHtml(data.message_principal),
+    missionTitre: escapeHtml(data.mission_titre),
+    mission: escapeHtml(data.mission),
+    pourquoi: escapeHtml(data.pourquoi),
+    moduleNom: escapeHtml(data.module_recommande?.nom),
+    moduleRaison: escapeHtml(data.module_recommande?.raison),
+    moduleAction: escapeHtml(data.module_recommande?.action),
+    continuite: escapeHtml(data.continuite),
+    pensee: escapeHtml(data.pensee_finale),
+  };
 
-    const safe = {
-      moodLabel: escapeHtml(moodLabel),
-      salutation: escapeHtml(data.salutation),
-      message: escapeHtml(data.message_principal),
-      missionTitre: escapeHtml(data.mission_titre),
-      mission: escapeHtml(data.mission),
-      pourquoi: escapeHtml(data.pourquoi),
-      moduleNom: escapeHtml(data.module_recommande?.nom),
-      moduleRaison: escapeHtml(data.module_recommande?.raison),
-      moduleAction: escapeHtml(data.module_recommande?.action),
-      continuite: escapeHtml(data.continuite),
-      pensee: escapeHtml(data.pensee_finale),
-    };
-
-    const html = `<!DOCTYPE html>
+  return `<!DOCTYPE html>
 <html lang="fr">
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>ONE Coach - Fi-One</title>
+
   <style>
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -220,11 +248,11 @@ FORMAT JSON STRICT :
     }
 
     .topline {
+      max-width: 760px;
+      margin: 0 auto;
       display: flex;
       align-items: center;
       gap: 12px;
-      max-width: 760px;
-      margin: 0 auto;
     }
 
     .avatar {
@@ -319,7 +347,7 @@ FORMAT JSON STRICT :
     .mission-title {
       font-size: 18px;
       font-weight: 850;
-      color: #fff;
+      color: #FFFFFF;
       margin-bottom: 8px;
     }
 
@@ -361,21 +389,23 @@ FORMAT JSON STRICT :
     .module-name {
       font-size: 15px;
       font-weight: 850;
-      color: #fff;
+      color: #FFFFFF;
       margin-bottom: 5px;
     }
 
-    .module-reason {
+    .module-reason,
+    .module-action {
       font-size: 13px;
-      color: #AFAFAF;
       line-height: 1.5;
+    }
+
+    .module-reason {
+      color: #AFAFAF;
     }
 
     .module-action {
       margin-top: 8px;
-      font-size: 13px;
       color: #D8D6D2;
-      line-height: 1.5;
     }
 
     .continuity {
@@ -404,7 +434,7 @@ FORMAT JSON STRICT :
     .chat input {
       flex: 1;
       background: #202020;
-      border: 1px solid #333;
+      border: 1px solid #333333;
       border-radius: 14px;
       color: #F2F0EC;
       padding: 13px 14px;
@@ -431,7 +461,7 @@ FORMAT JSON STRICT :
       display: none;
       margin-top: 10px;
       font-size: 12px;
-      color: #777;
+      color: #777777;
     }
 
     .loading.visible {
@@ -442,7 +472,7 @@ FORMAT JSON STRICT :
       margin-top: 18px;
       text-align: center;
       font-size: 11px;
-      color: #666;
+      color: #666666;
       line-height: 1.5;
     }
   </style>
@@ -514,6 +544,7 @@ FORMAT JSON STRICT :
     function sendMessage() {
       const input = document.getElementById('chatInput');
       const msg = input.value.trim();
+
       if (!msg) return;
 
       const currentQuestion = params.get('message') || '';
@@ -536,45 +567,4 @@ FORMAT JSON STRICT :
   </script>
 </body>
 </html>`;
-
-    res.setHeader('Content-Type', 'text/html; charset=utf-8');
-    return res.status(200).send(html);
-  } catch (error) {
-    const errorText = error.message || '';
-
-    if (
-      errorText.includes('429') ||
-      errorText.includes('RESOURCE_EXHAUSTED') ||
-      errorText.includes('quota')
-    ) {
-    return res.status(429).send(`
-      <div style="font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Arial,sans-serif;padding:28px;background:#151515;color:white;min-height:100vh">
-        <h2 style="color:#C38F5A;margin-bottom:16px">ONE Coach revient dans quelques secondes</h2>
-        <p style="font-size:18px;color:#eee">Le coach a reçu trop de demandes en peu de temps.</p>
-        <p style="font-size:18px;color:#aaa">Nouvelle tentative automatique dans :</p>
-    
-        <div id="countdown" style="font-size:48px;font-weight:800;color:#C38F5A;margin:24px 0">40</div>
-    
-        <p style="font-size:14px;color:#777">La page se relancera automatiquement.</p>
-    
-        <script>
-          let seconds = 40;
-          const el = document.getElementById('countdown');
-    
-          const timer = setInterval(() => {
-            seconds -= 1;
-            el.textContent = seconds;
-    
-            if (seconds <= 0) {
-              clearInterval(timer);
-              window.location.reload();
-            }
-          }, 1000);
-        </script>
-      </div>
-    `);
-    return res.status(500).json({
-      error: error.message,
-    });
-  }
-};
+}
