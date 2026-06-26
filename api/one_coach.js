@@ -1,8 +1,9 @@
-const { GoogleGenerativeAI } = require('@google/generative-ai');
+const { GoogleGenAI } = require('@google/genai');
 
 module.exports = async function handler(req, res) {
-  const genAI = new GoogleGenerativeAI(process.env.GOOGLE_API_KEY);
-  const model = genAI.getGenerativeModel({ model: 'gemini-1.5-flash' });
+  const ai = new GoogleGenAI({
+    apiKey: process.env.GOOGLE_API_KEY,
+  });
 
   const {
     revenus, depenses, epargne,
@@ -81,8 +82,12 @@ FORMAT JSON :
   const fullPrompt = systemPrompt + '\n\n' + userMessage;
 
   try {
-    const result = await model.generateContent(fullPrompt);
-    const raw = result.response.text().replace(/```json|```/g, '').trim();
+    const result = await ai.models.generateContent({
+      model: 'gemini-1.5-flash',
+      contents: fullPrompt,
+    });
+    
+    const raw = result.text.replace(/```json|```/g, '').trim();
 
     let data;
     try { data = JSON.parse(raw); }
