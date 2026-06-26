@@ -11,7 +11,8 @@ function fallbackData(raw = '', analysis = {}) {
     phrase_choc: 'Tu avances, maintenant il faut transformer tes chiffres en décision utile.',
     message_coach: raw || 'Je n’ai pas pu structurer complètement ma réponse.',
     priorite_titre: analysis.mission?.title || 'Clarifier la prochaine étape',
-    priorite_action: analysis.mission?.action || 'Choisis une action financière simple cette semaine.',
+    priorite_action:
+      analysis.mission?.action || 'Choisis une action financière simple cette semaine.',
     priorite_pourquoi:
       analysis.mission?.why || 'Un petit pas régulier vaut mieux qu’une grande décision repoussée.',
     module_recommande: {
@@ -25,7 +26,7 @@ function fallbackData(raw = '', analysis = {}) {
 
 function normalizeCoachData(data = {}, analysis = {}) {
   return {
-    intention: data.intention || data.mood || 'Faisons le point',
+    intention: data.intention || 'Faisons le point',
     phrase_choc: data.phrase_choc || '',
     message_coach: data.message_coach || data.message || '',
     priorite_titre:
@@ -49,10 +50,7 @@ function normalizeCoachData(data = {}, analysis = {}) {
         data.module_action ||
         'Commence par ce module pour avancer avec méthode.',
     },
-    reflection:
-      data.reflection ||
-      data.pensee_finale ||
-      '',
+    reflection: data.reflection || data.pensee_finale || '',
   };
 }
 
