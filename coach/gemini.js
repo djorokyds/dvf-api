@@ -1,6 +1,6 @@
 const { GoogleGenAI } = require('@google/genai');
 
-const MODEL_NAME = 'gemini-2.5-flash-lite';
+const MODEL_NAME = 'gemini-3.1-flash-lite';
 
 function createGeminiClient() {
   return new GoogleGenAI({
