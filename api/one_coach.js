@@ -112,7 +112,7 @@ ${message || 'Prépare mon rendez-vous ONE Coach du jour.'}
 `;
 
     const result = await ai.models.generateContent({
-      model: 'gemini-2.5-flash',
+      model: 'gemini-2.5-flash-lite',
       contents: prompt,
     });
 
