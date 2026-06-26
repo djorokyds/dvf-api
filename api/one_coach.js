@@ -1,5 +1,14 @@
 const { GoogleGenAI } = require('@google/genai');
 
+function escapeHtml(value = '') {
+  return String(value)
+    .replaceAll('&', '&amp;')
+    .replaceAll('<', '&lt;')
+    .replaceAll('>', '&gt;')
+    .replaceAll('"', '&quot;')
+    .replaceAll("'", '&#039;');
+}
+
 module.exports = async function handler(req, res) {
   try {
     const ai = new GoogleGenAI({
@@ -26,13 +35,15 @@ module.exports = async function handler(req, res) {
       autres_charges,
       nb_transactions,
       message,
+      previous_question,
+      previous_answer,
     } = req.query;
 
     const isProfile = mode === 'profil';
 
     const contexte = isProfile
       ? `
-PROFIL
+PROFIL UTILISATEUR
 Nom : ${nom || 'non renseigné'}
 Objectif : ${objectif || 'non renseigné'}
 Revenu net mensuel : ${revenu_net || 'non renseigné'} €
@@ -56,63 +67,87 @@ Transactions par catégorie : ${nb_transactions || 'non renseigné'}
 `;
 
     const prompt = `
-Tu es ONE Coach, le mentor financier personnel de Fi-One.
+Tu es ONE Coach, le mentor financier personnel de l'application Fi-One.
 
-Ta mission n'est pas de faire une analyse.
-Ta mission est d'accompagner l'utilisateur vers une meilleure situation financière, avec une orientation forte vers l'accès à la propriété.
+Tu n'es pas un assistant généraliste.
+Tu es un coach financier humain, sobre, premium, concret, qui aide l'utilisateur à progresser.
 
-Tu parles comme un coach humain.
-Tu ne fais jamais de rapport.
-Tu ne listes pas tout.
-Tu ne culpabilises jamais.
-Tu ne fais pas peur.
-Tu ne récites pas les chiffres.
-Tu interprètes les chiffres.
+OBJECTIF :
+Répondre comme un coach personnel, pas comme un rapport.
+Tu dois aider l'utilisateur à faire le prochain bon pas.
 
-PERSONNALITÉ :
-- sobre
-- premium
-- bienveillant
-- honnête
-- encourageant
-- légèrement exigeant si nécessaire
+STYLE :
+- naturel
+- clair
+- humain
+- direct mais jamais culpabilisant
+- premium et sobre
 - orienté action
-- tourné vers l'avenir
+- pas de jargon
+- pas de longues listes
+- pas de ton robotique
+- pas de "diagnostic", "analyse", "risque" sauf nécessité
 
-Tu dois choisir UN seul mood :
-encouragement, challenge, pédagogie, projection, célébration.
+RÈGLE SUR LES CHIFFRES :
+Tu dois intégrer naturellement 2 à 4 chiffres clés dans le message principal.
+Tu ne fais pas de tableau de chiffres.
+Tu expliques ce que les chiffres signifient.
+Exemples :
+- "Avec 15 000 € d'épargne disponible, tu as déjà une vraie base d'apport."
+- "Ton taux d'endettement à 12 % te laisse une marge confortable."
+- "Ton épargne moyenne de 650 € par mois montre une discipline réelle."
 
-FORMAT JSON STRICT :
-{
-  "mood": "encouragement|challenge|pédagogie|projection|célébration",
-  "salutation": "phrase courte personnalisée",
-  "message_principal": "message naturel de coach en 5 à 8 phrases maximum",
-  "mission_titre": "titre court de mission",
-  "mission": "mission concrète à faire cette semaine",
-  "pourquoi": "raison simple et motivante",
-  "pensee_finale": "phrase finale inspirante, non culpabilisante",
-  "cta": "texte court du bouton ou invitation"
-}
+MODULES FI-ONE DISPONIBLES :
+- Module budget : comprendre ses dépenses, réduire ses charges, organiser son budget mensuel.
+- Module épargne : construire un apport, renforcer un matelas de sécurité, structurer son effort d'épargne.
+- Module dettes : suivre ses crédits, réduire son endettement, arbitrer entre remboursement et épargne.
+- Simulateur immobilier : tester un achat, un budget de bien, un apport, des frais de notaire, une mensualité ou un projet locatif.
+- Simulateur capacité d'emprunt : estimer combien l'utilisateur peut emprunter selon ses revenus, charges et endettement.
+- Formation achat immobilier : comprendre les étapes d'un achat, le financement, les frais, la banque et le notaire.
+- Formation gestion financière : améliorer les bases financières et les bons réflexes.
 
-RÈGLES :
-- Maximum 140 mots au total.
-- Ne jamais dire "diagnostic".
-- Ne jamais dire "analyse".
-- Ne jamais dire "risque" sauf danger évident.
-- Ne jamais utiliser plus d'une mission.
-- Ne termine pas toujours par une question.
-- Si tu poses une question, elle doit être douce et constructive.
-- Si les données sont insuffisantes, dis simplement ce que tu aimerais mieux comprendre.
+RÈGLE MODULE :
+Tu dois recommander UN seul module Fi-One.
+Le module doit dépendre de la situation ou de la question.
+Ne choisis pas toujours l'immobilier.
+Si l'utilisateur parle d'un prix de bien, d'un projet immobilier ou d'un apport, recommande souvent le Simulateur immobilier.
+S'il parle de mensualité ou de capacité, recommande le Simulateur capacité d'emprunt.
+S'il parle de dépenses floues, recommande le Module budget.
+S'il parle d'épargne ou d'apport, recommande le Module épargne.
+S'il parle de crédits ou dettes, recommande le Module dettes.
+S'il veut apprendre, recommande une formation.
+
+HISTORIQUE RECENT :
+Dernière question : ${previous_question || 'aucune'}
+Dernière réponse : ${previous_answer || 'aucune'}
 
 CONTEXTE :
 ${contexte}
 
 DEMANDE UTILISATEUR :
 ${message || 'Prépare mon rendez-vous ONE Coach du jour.'}
+
+FORMAT JSON STRICT :
+{
+  "mood": "encouragement|challenge|pédagogie|projection|célébration",
+  "salutation": "phrase courte personnalisée",
+  "message_principal": "message naturel de coach en 6 à 9 phrases maximum, avec 2 à 4 chiffres intégrés naturellement",
+  "mission_titre": "titre court",
+  "mission": "mission concrète à faire cette semaine",
+  "pourquoi": "raison simple et motivante",
+  "module_recommande": {
+    "nom": "nom exact du module Fi-One",
+    "raison": "pourquoi ce module est le plus utile maintenant",
+    "action": "ce que l'utilisateur doit faire dans ce module"
+  },
+  "continuite": "phrase courte liée à l'historique si utile, sinon vide",
+  "pensee_finale": "phrase finale inspirante ou question douce",
+  "cta": "invitation courte"
+}
 `;
 
     const result = await ai.models.generateContent({
-      model: 'gemini-2.5-flash-lite',
+      model: 'gemini-2.5-flash',
       contents: prompt,
     });
 
@@ -126,9 +161,15 @@ ${message || 'Prépare mon rendez-vous ONE Coach du jour.'}
         mood: 'encouragement',
         salutation: 'Bonjour.',
         message_principal: raw,
-        mission_titre: 'Mission de la semaine',
-        mission: 'Clarifie une action simple à mettre en place cette semaine.',
+        mission_titre: 'Clarifier la prochaine étape',
+        mission: 'Choisis une action financière simple à mettre en place cette semaine.',
         pourquoi: 'Un petit pas régulier vaut mieux qu’une grande décision repoussée.',
+        module_recommande: {
+          nom: 'Formation gestion financière',
+          raison: 'Pour renforcer les bases avant d’aller plus loin.',
+          action: 'Commence par le module qui t’aide à mieux lire ta situation.',
+        },
+        continuite: '',
         pensee_finale: 'L’important n’est pas d’aller vite, mais d’avancer avec constance.',
         cta: 'Continuer avec ONE Coach',
       };
@@ -141,6 +182,20 @@ ${message || 'Prépare mon rendez-vous ONE Coach du jour.'}
       projection: 'Projection',
       célébration: 'Célébration',
     }[data.mood] || 'Rendez-vous';
+
+    const safe = {
+      moodLabel: escapeHtml(moodLabel),
+      salutation: escapeHtml(data.salutation),
+      message: escapeHtml(data.message_principal),
+      missionTitre: escapeHtml(data.mission_titre),
+      mission: escapeHtml(data.mission),
+      pourquoi: escapeHtml(data.pourquoi),
+      moduleNom: escapeHtml(data.module_recommande?.nom),
+      moduleRaison: escapeHtml(data.module_recommande?.raison),
+      moduleAction: escapeHtml(data.module_recommande?.action),
+      continuite: escapeHtml(data.continuite),
+      pensee: escapeHtml(data.pensee_finale),
+    };
 
     const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -159,7 +214,7 @@ ${message || 'Prépare mon rendez-vous ONE Coach du jour.'}
     }
 
     .header {
-      padding: 18px 18px 14px;
+      padding: 18px;
       border-bottom: 1px solid #2A2A2A;
       background: #181818;
     }
@@ -168,19 +223,21 @@ ${message || 'Prépare mon rendez-vous ONE Coach du jour.'}
       display: flex;
       align-items: center;
       gap: 12px;
+      max-width: 760px;
+      margin: 0 auto;
     }
 
     .avatar {
       width: 42px;
       height: 42px;
-      border-radius: 50%;
+      border-radius: 14px;
       background: #C38F5A;
       color: #151515;
       display: flex;
       align-items: center;
       justify-content: center;
-      font-size: 20px;
-      font-weight: 800;
+      font-size: 18px;
+      font-weight: 900;
     }
 
     .name {
@@ -196,7 +253,7 @@ ${message || 'Prépare mon rendez-vous ONE Coach du jour.'}
     }
 
     .wrap {
-      max-width: 720px;
+      max-width: 760px;
       margin: 0 auto;
       padding: 18px;
     }
@@ -209,45 +266,51 @@ ${message || 'Prépare mon rendez-vous ONE Coach du jour.'}
       background: #231D17;
       color: #C38F5A;
       font-size: 11px;
-      font-weight: 700;
-      letter-spacing: .4px;
+      font-weight: 800;
+      letter-spacing: .5px;
       text-transform: uppercase;
     }
 
-    .coach-card {
+    .coach-card,
+    .mission-card,
+    .module-card,
+    .final-card {
       background: #202020;
       border: 1px solid #2D2D2D;
       border-radius: 20px;
-      padding: 20px;
+    }
+
+    .coach-card {
+      padding: 21px;
+      border-left: 3px solid #C38F5A;
     }
 
     .salutation {
-      font-size: 20px;
+      font-size: 21px;
       line-height: 1.35;
-      font-weight: 800;
+      font-weight: 850;
       margin-bottom: 14px;
       color: #FFFFFF;
     }
 
     .message {
       font-size: 15px;
-      line-height: 1.65;
+      line-height: 1.7;
       color: #D8D6D2;
       white-space: pre-line;
     }
 
-    .mission {
-      margin-top: 16px;
+    .mission-card {
+      margin-top: 14px;
       padding: 18px;
-      border-radius: 18px;
       background: #1A1A1A;
-      border: 1px solid #3A3027;
+      border-color: #3A3027;
     }
 
-    .mission-kicker {
+    .kicker {
       font-size: 11px;
       color: #C38F5A;
-      font-weight: 800;
+      font-weight: 850;
       text-transform: uppercase;
       letter-spacing: .8px;
       margin-bottom: 8px;
@@ -255,30 +318,77 @@ ${message || 'Prépare mon rendez-vous ONE Coach du jour.'}
 
     .mission-title {
       font-size: 18px;
-      font-weight: 800;
+      font-weight: 850;
+      color: #fff;
       margin-bottom: 8px;
-      color: #FFFFFF;
     }
 
-    .mission-text {
+    .text {
       font-size: 14px;
       line-height: 1.55;
       color: #E3E0DA;
-      margin-bottom: 10px;
     }
 
-    .why {
+    .muted {
+      margin-top: 9px;
       font-size: 13px;
       line-height: 1.5;
       color: #9C9C9C;
     }
 
-    .final {
-      margin-top: 16px;
+    .module-card {
+      margin-top: 14px;
       padding: 16px;
-      border-radius: 16px;
+      display: flex;
+      gap: 12px;
+      align-items: flex-start;
+      background: #1D1D1D;
+    }
+
+    .module-icon {
+      width: 34px;
+      height: 34px;
+      border-radius: 12px;
+      background: #25201B;
+      color: #C38F5A;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      font-size: 17px;
+    }
+
+    .module-name {
+      font-size: 15px;
+      font-weight: 850;
+      color: #fff;
+      margin-bottom: 5px;
+    }
+
+    .module-reason {
+      font-size: 13px;
+      color: #AFAFAF;
+      line-height: 1.5;
+    }
+
+    .module-action {
+      margin-top: 8px;
+      font-size: 13px;
+      color: #D8D6D2;
+      line-height: 1.5;
+    }
+
+    .continuity {
+      margin-top: 14px;
+      font-size: 13px;
+      color: #8C8C8C;
+      line-height: 1.5;
+    }
+
+    .final-card {
+      margin-top: 14px;
+      padding: 16px;
       background: #181818;
-      border: 1px solid #2B2B2B;
       color: #CFCBC3;
       font-size: 14px;
       line-height: 1.55;
@@ -286,7 +396,7 @@ ${message || 'Prépare mon rendez-vous ONE Coach du jour.'}
     }
 
     .chat {
-      margin-top: 18px;
+      margin-top: 16px;
       display: flex;
       gap: 8px;
     }
@@ -327,6 +437,14 @@ ${message || 'Prépare mon rendez-vous ONE Coach du jour.'}
     .loading.visible {
       display: block;
     }
+
+    .legal {
+      margin-top: 18px;
+      text-align: center;
+      font-size: 11px;
+      color: #666;
+      line-height: 1.5;
+    }
   </style>
 </head>
 
@@ -342,22 +460,38 @@ ${message || 'Prépare mon rendez-vous ONE Coach du jour.'}
   </header>
 
   <main class="wrap">
-    <div class="badge">${moodLabel}</div>
+    <div class="badge">${safe.moodLabel}</div>
 
     <section class="coach-card">
-      <div class="salutation">${data.salutation || ''}</div>
-      <div class="message">${data.message_principal || ''}</div>
+      <div class="salutation">${safe.salutation}</div>
+      <div class="message" id="coachMessage">${safe.message}</div>
     </section>
 
-    <section class="mission">
-      <div class="mission-kicker">Mission de la semaine</div>
-      <div class="mission-title">${data.mission_titre || ''}</div>
-      <div class="mission-text">${data.mission || ''}</div>
-      <div class="why">${data.pourquoi || ''}</div>
+    <section class="mission-card">
+      <div class="kicker">Mission de la semaine</div>
+      <div class="mission-title">${safe.missionTitre}</div>
+      <div class="text">${safe.mission}</div>
+      <div class="muted">${safe.pourquoi}</div>
     </section>
 
-    <section class="final">
-      ${data.pensee_finale || ''}
+    <section class="module-card">
+      <div class="module-icon">↗</div>
+      <div>
+        <div class="kicker">Module conseillé</div>
+        <div class="module-name">${safe.moduleNom}</div>
+        <div class="module-reason">${safe.moduleRaison}</div>
+        <div class="module-action">${safe.moduleAction}</div>
+      </div>
+    </section>
+
+    ${
+      safe.continuite
+        ? `<div class="continuity">${safe.continuite}</div>`
+        : ''
+    }
+
+    <section class="final-card">
+      ${safe.pensee}
     </section>
 
     <section class="chat">
@@ -366,6 +500,11 @@ ${message || 'Prépare mon rendez-vous ONE Coach du jour.'}
     </section>
 
     <div id="loading" class="loading">ONE Coach prépare sa réponse...</div>
+
+    <div class="legal">
+      ONE Coach n'est pas un conseiller financier réglementé.<br />
+      Ses recommandations sont basées sur les informations partagées.
+    </div>
   </main>
 
   <script>
@@ -377,10 +516,16 @@ ${message || 'Prépare mon rendez-vous ONE Coach du jour.'}
       const msg = input.value.trim();
       if (!msg) return;
 
+      const currentQuestion = params.get('message') || '';
+      const currentAnswer = document.getElementById('coachMessage')?.innerText || '';
+
+      params.set('previous_question', currentQuestion);
+      params.set('previous_answer', currentAnswer.slice(0, 900));
+      params.set('message', msg);
+
       input.disabled = true;
       document.getElementById('loading').classList.add('visible');
 
-      params.set('message', msg);
       window.location.href = baseUrl + '?' + params.toString();
     }
 
