@@ -43,7 +43,6 @@ function parseKeyValueList(rawValue) {
       const amount = toNumber(item.slice(separatorIndex + 1).trim());
 
       if (!label || amount === null) return null;
-
       return { label, amount };
     })
     .filter(Boolean);
@@ -64,10 +63,17 @@ function parseCategoryTransactions(rawValue) {
       const averageTransactions = toNumber(item.slice(separatorIndex + 1).trim());
 
       if (!label || averageTransactions === null) return null;
-
       return { label, averageTransactions };
     })
     .filter(Boolean);
+}
+
+function extractProjectAmount(query) {
+  const text = `${query.objectif || ''} ${query.message || ''}`;
+  const matches = text.match(/(\d[\d\s]{3,})\s*(€|euros)?/i);
+
+  if (!matches) return null;
+  return toNumber(matches[1]);
 }
 
 function analyzeProfile(query) {
@@ -242,8 +248,6 @@ function analyzeMonthlySituation(query) {
 
   if (budgetRule.epargneOk === true) {
     forces.push(`ton épargne représente ${pct(budgetRule.epargneRatio)}, conforme au repère de 20 %`);
-  } else if (budgetRule.epargneOk === false) {
-    vigilances.push(`ton épargne représente ${pct(budgetRule.epargneRatio)}, sous le repère de 20 %`);
   }
 
   const categoryIncreases = variationCategories
@@ -262,11 +266,6 @@ function analyzeMonthlySituation(query) {
   if (categoryDecreases.length > 0) {
     const highestDecrease = categoryDecreases[0];
     forces.push(`la catégorie ${highestDecrease.label} diminue de ${euro(Math.abs(highestDecrease.amount))}`);
-  }
-
-  if (revenus !== null && depenses !== null && revenus > 0) {
-    const savingsRate = Math.round(((revenus - depenses) / revenus) * 1000) / 10;
-    observations.push(`ton taux d’épargne réel du mois est d’environ ${savingsRate} %`);
   }
 
   if (budgetRule.summary) observations.push(budgetRule.summary);
@@ -342,6 +341,58 @@ function detectIntent(query) {
   return 'formation_gestion';
 }
 
+function buildDecisionDrivers(intent, profileAnalysis, monthly, query) {
+  const forces = [];
+  const vigilances = [];
+  const projectAmount = extractProjectAmount(query);
+  const { epargneProjet, tauxEndettement, epargneMoyen } = profileAnalysis.numbers;
+
+  if (intent === 'simulateur_immobilier') {
+    if (epargneProjet !== null && epargneProjet > 0) {
+      forces.push(`${euro(epargneProjet)} sont déjà mobilisables pour ton apport`);
+    }
+
+    if (tauxEndettement !== null && tauxEndettement <= 20) {
+      forces.push(`ton taux d’endettement de ${tauxEndettement} % te laisse une vraie marge d’emprunt`);
+    }
+
+    if (projectAmount && epargneProjet !== null) {
+      const apportRatio = ratio(epargneProjet, projectAmount);
+
+      if (apportRatio !== null && apportRatio < 10) {
+        vigilances.push(
+          `ton apport mobilisable représente environ ${pct(apportRatio)} du projet de ${euro(projectAmount)}, ce qui reste à renforcer pour aborder le financement plus sereinement`
+        );
+      } else if (apportRatio !== null && apportRatio >= 10) {
+        forces.push(
+          `ton apport mobilisable représente environ ${pct(apportRatio)} du projet visé`
+        );
+      }
+    }
+
+    if (!vigilances.length && epargneMoyen !== null && epargneMoyen >= 300) {
+      forces.push(`ta capacité d’épargne de ${euro(epargneMoyen)} par mois peut renforcer ton dossier rapidement`);
+    }
+
+    return {
+      forces: forces.slice(0, 2),
+      vigilances: vigilances.slice(0, 1),
+    };
+  }
+
+  if (intent === 'analyse_mensuelle') {
+    return {
+      forces: monthly.forces.slice(0, 2),
+      vigilances: monthly.vigilances.slice(0, 1),
+    };
+  }
+
+  return {
+    forces: profileAnalysis.forces.slice(0, 2),
+    vigilances: profileAnalysis.vigilances.slice(0, 1),
+  };
+}
+
 function choosePriority(intent, analysis) {
   if (intent === 'analyse_mensuelle') {
     const highestIncrease = analysis.monthly.variationCategories
@@ -415,16 +466,8 @@ function buildCoachAnalysis(query) {
   const monthly = analyzeMonthlySituation(query);
   const intent = detectIntent(query);
   const module = getModuleById(intent);
-  const mission = choosePriority(intent, {
-    profile: profileAnalysis,
-    monthly,
-  });
-
-  const relevantForces =
-    intent === 'analyse_mensuelle' ? monthly.forces : profileAnalysis.forces;
-
-  const relevantVigilances =
-    intent === 'analyse_mensuelle' ? monthly.vigilances : profileAnalysis.vigilances;
+  const mission = choosePriority(intent, { profile: profileAnalysis, monthly });
+  const decisionDrivers = buildDecisionDrivers(intent, profileAnalysis, monthly, query);
 
   return {
     ...profileAnalysis,
@@ -432,8 +475,9 @@ function buildCoachAnalysis(query) {
     intent,
     module,
     mission,
-    relevantForces,
-    relevantVigilances,
+    decisionDrivers,
+    relevantForces: decisionDrivers.forces,
+    relevantVigilances: decisionDrivers.vigilances,
   };
 }
 
