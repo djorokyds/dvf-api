@@ -17,7 +17,7 @@ module.exports = async function handler(req, res) {
   const revenuTotal = parseMoney(revenu);
 
   const rawItems = categories.split('/').map(item => {
-    const lastPipe = item.lastIndexOf('|');
+    const lastPipe = item.lastIndexOf(':');
     if (lastPipe === -1) return null;
     const label = item.substring(0, lastPipe).trim();
     const montantRaw = parseMoney(item.substring(lastPipe + 1));
