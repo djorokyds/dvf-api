@@ -23,9 +23,9 @@ function pct(value) {
   return `${Math.round(value * 10) / 10} %`;
 }
 
-function ratio(amount, revenus) {
-  if (amount === null || revenus === null || revenus <= 0) return null;
-  return (amount / revenus) * 100;
+function ratio(amount, base) {
+  if (amount === null || base === null || base <= 0) return null;
+  return (amount / base) * 100;
 }
 
 function parseKeyValueList(rawValue) {
@@ -89,40 +89,8 @@ function analyzeProfile(query) {
       ? Math.max(0, epargneDispo - matelas)
       : null;
 
-  const forces = [];
-  const vigilances = [];
-
-  if (fiScore !== null) {
-    if (fiScore >= 70) forces.push(`ton FI-Score est solide à ${fiScore}/100`);
-    else if (fiScore < 50) vigilances.push(`ton FI-Score reste à renforcer à ${fiScore}/100`);
-  }
-
-  if (tauxEndettement !== null) {
-    if (tauxEndettement <= 20) {
-      forces.push(`ton taux d’endettement de ${tauxEndettement} % te laisse une marge confortable`);
-    } else if (tauxEndettement > 35) {
-      vigilances.push(`ton taux d’endettement de ${tauxEndettement} % limite ta marge`);
-    }
-  }
-
-  if (matelas !== null && matelas > 0) {
-    forces.push(`ton matelas de sécurité de ${euro(matelas)} est protégé`);
-  }
-
-  if (epargneProjet !== null) {
-    if (epargneProjet > 0) {
-      forces.push(`${euro(epargneProjet)} sont réellement mobilisables pour tes projets`);
-    } else {
-      vigilances.push(`ton épargne disponible est entièrement consacrée à ta sécurité`);
-    }
-  }
-
-  if (epargneMoyen !== null) {
-    if (epargneMoyen >= 300) forces.push(`tu épargnes en moyenne ${euro(epargneMoyen)} par mois`);
-    else if (epargneMoyen < 150) vigilances.push(`ton effort d’épargne mensuel reste à consolider`);
-  }
-
   let profile = 'à préciser';
+
   if (fiScore !== null) {
     if (fiScore >= 75) profile = 'solide';
     else if (fiScore >= 55) profile = 'intermédiaire';
@@ -140,8 +108,6 @@ function analyzeProfile(query) {
       epargneMoyen,
       revenuNet,
     },
-    forces: forces.slice(0, 4),
-    vigilances: vigilances.slice(0, 3),
   };
 }
 
@@ -165,13 +131,13 @@ function analyzeBudgetRule(query, monthlyNumbers) {
   let summary = '';
 
   if (budgetRespecte === true && fixesOk !== false && autresOk !== false && epargneOk !== false) {
-    summary = 'Ton budget respecte globalement les repères Fi-One du mois.';
+    summary = 'Ton budget reste globalement équilibré.';
   } else if (autresOk === false) {
-    summary = 'Aujourd’hui, ton budget est principalement déséquilibré par les dépenses variables.';
+    summary = 'Ton budget est principalement déséquilibré par les dépenses variables.';
   } else if (fixesOk === false) {
-    summary = 'Ce sont surtout tes charges fixes qui limitent ta marge de manœuvre.';
+    summary = 'Tes charges fixes limitent aujourd’hui ta marge de manœuvre.';
   } else if (epargneOk === false) {
-    summary = 'Ton effort d’épargne est aujourd’hui inférieur au repère Fi-One.';
+    summary = 'Ton niveau d’épargne du mois limite ta capacité à accélérer tes projets.';
   } else if (budgetRespecte === false) {
     summary = `Ton budget dépasse le prévisionnel de ${euro(depassement)}.`;
   } else {
@@ -204,51 +170,15 @@ function analyzeMonthlySituation(query) {
   const variationCategories = parseKeyValueList(query.variation_categories);
   const transactionsByCategory = parseCategoryTransactions(query.nb_transactions);
 
-  const numbers = { revenus, depenses, epargne, variationDepenses, variationEpargne };
+  const numbers = {
+    revenus,
+    depenses,
+    epargne,
+    variationDepenses,
+    variationEpargne,
+  };
+
   const budgetRule = analyzeBudgetRule(query, numbers);
-
-  const forces = [];
-  const vigilances = [];
-  const observations = [];
-
-  if (epargne !== null) {
-    if (epargne > 0) forces.push(`tu as dégagé ${euro(epargne)} d’épargne ce mois-ci`);
-    else vigilances.push(`tu n’as pas dégagé d’épargne positive ce mois-ci`);
-  }
-
-  if (variationEpargne !== null) {
-    if (variationEpargne > 0) {
-      forces.push(`ton épargne progresse de ${euro(variationEpargne)} par rapport au mois dernier`);
-    } else if (variationEpargne < 0) {
-      vigilances.push(`ton épargne recule de ${euro(Math.abs(variationEpargne))} par rapport au mois dernier`);
-    }
-  }
-
-  if (variationDepenses !== null) {
-    if (variationDepenses > 0) {
-      vigilances.push(`tes dépenses augmentent de ${euro(variationDepenses)} par rapport au mois dernier`);
-    } else if (variationDepenses < 0) {
-      forces.push(`tes dépenses diminuent de ${euro(Math.abs(variationDepenses))} par rapport au mois dernier`);
-    }
-  }
-
-  if (budgetRule.budgetRespecte === true) {
-    forces.push(`ton budget prévisionnel est respecté`);
-  } else if (budgetRule.budgetRespecte === false) {
-    vigilances.push(`ton budget prévisionnel est dépassé de ${euro(budgetRule.depassement)}`);
-  }
-
-  if (budgetRule.autresOk === false) {
-    vigilances.push(`tes dépenses variables représentent ${pct(budgetRule.autresRatio)}, au-dessus du repère de 30 %`);
-  }
-
-  if (budgetRule.fixesOk === false) {
-    vigilances.push(`tes charges fixes représentent ${pct(budgetRule.fixesRatio)}, au-dessus du repère de 50 %`);
-  }
-
-  if (budgetRule.epargneOk === true) {
-    forces.push(`ton épargne représente ${pct(budgetRule.epargneRatio)}, conforme au repère de 20 %`);
-  }
 
   const categoryIncreases = variationCategories
     .filter((category) => category.amount > 0)
@@ -258,17 +188,34 @@ function analyzeMonthlySituation(query) {
     .filter((category) => category.amount < 0)
     .sort((a, b) => a.amount - b.amount);
 
-  if (categoryIncreases.length > 0) {
-    const highestIncrease = categoryIncreases[0];
-    vigilances.push(`la catégorie ${highestIncrease.label} enregistre la plus forte hausse avec +${euro(highestIncrease.amount)}`);
+  const highestIncrease = categoryIncreases[0] || null;
+  const highestDecrease = categoryDecreases[0] || null;
+
+  const consequences = [];
+
+  if (budgetRule.budgetRespecte === false) {
+    consequences.push(`le budget prévisionnel est dépassé de ${euro(budgetRule.depassement)}`);
   }
 
-  if (categoryDecreases.length > 0) {
-    const highestDecrease = categoryDecreases[0];
-    forces.push(`la catégorie ${highestDecrease.label} diminue de ${euro(Math.abs(highestDecrease.amount))}`);
+  if (budgetRule.autresOk === false) {
+    consequences.push(`les dépenses variables pèsent trop dans l’équilibre du mois`);
   }
 
-  if (budgetRule.summary) observations.push(budgetRule.summary);
+  if (budgetRule.fixesOk === false) {
+    consequences.push(`les charges fixes réduisent ta liberté d’ajustement`);
+  }
+
+  if (budgetRule.epargneOk === false) {
+    consequences.push(`l’épargne du mois ne renforce pas assez tes objectifs`);
+  }
+
+  if (highestIncrease) {
+    consequences.push(`la hausse la plus visible vient de ${highestIncrease.label} avec +${euro(highestIncrease.amount)}`);
+  }
+
+  if (variationEpargne !== null && variationEpargne > 0) {
+    consequences.push(`ton épargne progresse malgré les mouvements du mois`);
+  }
 
   return {
     hasData:
@@ -286,9 +233,9 @@ function analyzeMonthlySituation(query) {
     autresCharges,
     variationCategories,
     transactionsByCategory,
-    forces: forces.slice(0, 4),
-    vigilances: vigilances.slice(0, 3),
-    observations: observations.slice(0, 3),
+    highestIncrease,
+    highestDecrease,
+    consequences,
   };
 }
 
@@ -342,75 +289,113 @@ function detectIntent(query) {
 }
 
 function buildDecisionDrivers(intent, profileAnalysis, monthly, query) {
-  const forces = [];
-  const vigilances = [];
+  const reassure = [];
+  const friction = [];
+
   const projectAmount = extractProjectAmount(query);
-  const { epargneProjet, tauxEndettement, epargneMoyen } = profileAnalysis.numbers;
+  const {
+    epargneProjet,
+    tauxEndettement,
+    epargneMoyen,
+  } = profileAnalysis.numbers;
 
   if (intent === 'simulateur_immobilier') {
     if (epargneProjet !== null && epargneProjet > 0) {
-      forces.push(`${euro(epargneProjet)} sont déjà mobilisables pour ton apport`);
+      reassure.push(`${euro(epargneProjet)} sont déjà mobilisables pour constituer ton apport`);
     }
 
     if (tauxEndettement !== null && tauxEndettement <= 20) {
-      forces.push(`ton taux d’endettement de ${tauxEndettement} % te laisse une vraie marge d’emprunt`);
+      reassure.push(`ton endettement de ${tauxEndettement} % laisse une vraie marge pour financer un projet`);
     }
 
     if (projectAmount && epargneProjet !== null) {
       const apportRatio = ratio(epargneProjet, projectAmount);
 
       if (apportRatio !== null && apportRatio < 10) {
-        vigilances.push(
-          `ton apport mobilisable représente environ ${pct(apportRatio)} du projet de ${euro(projectAmount)}, ce qui reste à renforcer pour aborder le financement plus sereinement`
-        );
-      } else if (apportRatio !== null && apportRatio >= 10) {
-        forces.push(
-          `ton apport mobilisable représente environ ${pct(apportRatio)} du projet visé`
+        friction.push(
+          `pour un projet de ${euro(projectAmount)}, ton apport mobilisable reste le principal levier à renforcer`
         );
       }
     }
 
-    if (!vigilances.length && epargneMoyen !== null && epargneMoyen >= 300) {
-      forces.push(`ta capacité d’épargne de ${euro(epargneMoyen)} par mois peut renforcer ton dossier rapidement`);
+    if (!friction.length && epargneMoyen !== null && epargneMoyen >= 300) {
+      friction.push(
+        `le prochain enjeu est de transformer ta capacité d’épargne en apport plus solide`
+      );
     }
 
     return {
-      forces: forces.slice(0, 2),
-      vigilances: vigilances.slice(0, 1),
+      reassure: reassure.slice(0, 2),
+      friction: friction[0] || '',
     };
   }
 
   if (intent === 'analyse_mensuelle') {
+    if (monthly.budgetRule.budgetRespecte === true) {
+      reassure.push('ton budget prévisionnel est respecté ce mois-ci');
+    }
+
+    if (monthly.budgetRule.epargneOk === true) {
+      reassure.push(`ton épargne représente ${pct(monthly.budgetRule.epargneRatio)}, ce qui soutient tes objectifs`);
+    }
+
+    if (monthly.budgetRule.summary) {
+      friction.push(monthly.budgetRule.summary);
+    }
+
+    if (monthly.highestIncrease) {
+      friction.push(
+        `${monthly.highestIncrease.label} explique la plus forte hausse du mois avec +${euro(monthly.highestIncrease.amount)}`
+      );
+    }
+
     return {
-      forces: monthly.forces.slice(0, 2),
-      vigilances: monthly.vigilances.slice(0, 1),
+      reassure: reassure.slice(0, 2),
+      friction: friction[0] || '',
+    };
+  }
+
+  if (intent === 'epargne') {
+    if (profileAnalysis.numbers.matelas !== null) {
+      reassure.push(`ton matelas de sécurité de ${euro(profileAnalysis.numbers.matelas)} protège ton équilibre`);
+    }
+
+    if (epargneMoyen !== null && epargneMoyen > 0) {
+      reassure.push(`ton rythme d’épargne de ${euro(epargneMoyen)} par mois peut soutenir tes projets`);
+    }
+
+    if (epargneProjet !== null && epargneProjet <= 0) {
+      friction.push('ton épargne disponible est encore entièrement absorbée par ta sécurité');
+    }
+
+    return {
+      reassure: reassure.slice(0, 2),
+      friction: friction[0] || '',
     };
   }
 
   return {
-    forces: profileAnalysis.forces.slice(0, 2),
-    vigilances: profileAnalysis.vigilances.slice(0, 1),
+    reassure: [],
+    friction: '',
   };
 }
 
 function choosePriority(intent, analysis) {
   if (intent === 'analyse_mensuelle') {
-    const highestIncrease = analysis.monthly.variationCategories
-      .filter((category) => category.amount > 0)
-      .sort((a, b) => b.amount - a.amount)[0];
+    const highestIncrease = analysis.monthly.highestIncrease;
 
     if (highestIncrease) {
       return {
         title: `Comprendre la hausse de ${highestIncrease.label}`,
-        action: `Reprends les opérations de la catégorie ${highestIncrease.label} pour identifier ce qui explique les +${euro(highestIncrease.amount)} du mois.`,
-        why: `Il est plus utile d’agir sur la variation la plus importante que de réduire toutes tes dépenses sans distinction.`,
+        action: `Reprends les opérations de cette catégorie pour identifier ce qui explique les +${euro(highestIncrease.amount)} du mois.`,
+        why: `C’est le levier le plus concret pour comprendre le dépassement sans réduire toutes tes dépenses au hasard.`,
       };
     }
 
     return {
       title: 'Comprendre l’équilibre du mois',
-      action: 'Compare tes charges fixes, tes dépenses variables et ton épargne avec les repères 50/30/20.',
-      why: 'Cela permet de comprendre si le déséquilibre vient des charges fixes, des dépenses variables ou d’un effort d’épargne insuffisant.',
+      action: 'Compare tes charges fixes, tes dépenses variables et ton épargne avec les repères Fi-One.',
+      why: 'Cela permet d’identifier ce qui influence réellement ton budget.',
     };
   }
 
@@ -418,7 +403,7 @@ function choosePriority(intent, analysis) {
     return {
       title: 'Tester ton projet immobilier',
       action: 'Lance une simulation avec ton budget cible, ton apport mobilisable et deux durées de crédit.',
-      why: 'Avant de te projeter, il faut vérifier la mensualité, les frais et ton reste à vivre.',
+      why: 'Le simulateur permettra de vérifier si le projet reste confortable une fois la mensualité, les frais et le reste à vivre intégrés.',
     };
   }
 
@@ -426,23 +411,23 @@ function choosePriority(intent, analysis) {
     return {
       title: 'Clarifier ta capacité d’emprunt',
       action: 'Simule ta capacité avec tes revenus, tes charges et ton endettement actuel.',
-      why: 'Tu dois savoir jusqu’où tu peux aller sans fragiliser ton équilibre.',
+      why: 'Tu dois connaître ta limite confortable avant de chercher un projet.',
     };
   }
 
   if (intent === 'budget') {
     return {
-      title: 'Clarifier tes dépenses',
-      action: 'Identifie les catégories qui pèsent le plus et celles qui progressent le plus.',
-      why: 'Le montant total ne suffit pas : c’est l’évolution par catégorie qui permet d’agir utilement.',
+      title: 'Identifier le vrai levier budgétaire',
+      action: 'Repère la catégorie qui explique le plus l’évolution de tes dépenses.',
+      why: 'Un bon ajustement commence par la cause principale, pas par une réduction générale.',
     };
   }
 
   if (intent === 'epargne') {
     return {
       title: 'Structurer ton épargne',
-      action: 'Distingue clairement ton matelas de sécurité de l’épargne mobilisable pour tes projets.',
-      why: 'Chaque partie de ton épargne doit avoir un rôle précis.',
+      action: 'Sépare clairement ton matelas de sécurité de l’épargne mobilisable pour tes projets.',
+      why: 'Chaque euro doit avoir un rôle précis : sécurité, projet ou investissement.',
     };
   }
 
@@ -450,14 +435,14 @@ function choosePriority(intent, analysis) {
     return {
       title: 'Prioriser tes crédits',
       action: 'Liste tes crédits avec mensualité, taux et durée restante.',
-      why: 'Cette vision permettra d’arbitrer entre remboursement anticipé et constitution d’épargne.',
+      why: 'Cette vision permet d’arbitrer entre remboursement anticipé et construction d’épargne.',
     };
   }
 
   return {
-    title: 'Renforcer tes bases',
-    action: 'Revois les fondamentaux de ton budget et de ton épargne.',
-    why: 'Des données claires rendent chaque décision financière plus simple.',
+    title: 'Clarifier la prochaine décision',
+    action: 'Identifie la décision financière que tu veux prendre maintenant.',
+    why: 'Le coach est plus utile lorsqu’il travaille sur une décision précise.',
   };
 }
 
@@ -476,8 +461,8 @@ function buildCoachAnalysis(query) {
     module,
     mission,
     decisionDrivers,
-    relevantForces: decisionDrivers.forces,
-    relevantVigilances: decisionDrivers.vigilances,
+    relevantForces: decisionDrivers.reassure,
+    relevantVigilances: decisionDrivers.friction ? [decisionDrivers.friction] : [],
   };
 }
 
