@@ -9,7 +9,7 @@ const modules = [
     id: 'analyse_mensuelle',
     name: 'Analyse du mois',
     description:
-      'Comprendre l’évolution de tes revenus, dépenses, épargne et catégories par rapport au mois précédent.',
+      'Comprendre ton équilibre mensuel avec la méthode 50/30/20, les dépassements et les variations par catégorie.',
   },
   {
     id: 'epargne',
