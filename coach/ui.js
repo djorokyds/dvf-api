@@ -27,79 +27,32 @@ function renderCoachHtml(data = {}) {
     : [];
 
   const safe = {
-    intention: escapeHtml(
-      data.intention || 'Faisons le point'
-    ),
-
+    intention: escapeHtml(data.intention || 'Faisons le point'),
     phrase: escapeHtml(data.phrase_choc),
-
-    messageHtml: formatCoachMessage(
-      data.message_coach
-    ),
-
-    reassurance:
-      reassurance
-        .slice(0, 2)
-        .map(formatMarkdownText),
-
-    friction: formatMarkdownText(
-      data.ce_qui_te_freine
-    ),
-
-    prioriteTitre: escapeHtml(
-      data.priorite_titre
-    ),
-
-    prioriteAction: formatMarkdownText(
-      data.priorite_action
-    ),
-
-    prioritePourquoi: formatMarkdownText(
-      data.priorite_pourquoi
-    ),
-
-    moduleNom: escapeHtml(
-      data.module_recommande?.nom
-    ),
-
-    moduleRaison: formatMarkdownText(
-      data.module_recommande?.raison
-    ),
-
-    moduleAction: formatMarkdownText(
-      data.module_recommande?.action
-    ),
-
-    reflection: formatMarkdownText(
-      data.reflection
-    ),
+    messageHtml: formatCoachMessage(data.message_coach),
+    reassurance: reassurance.slice(0, 2).map(formatMarkdownText),
+    friction: formatMarkdownText(data.ce_qui_te_freine),
+    prioriteTitre: escapeHtml(data.priorite_titre),
+    prioriteAction: formatMarkdownText(data.priorite_action),
+    prioritePourquoi: formatMarkdownText(data.priorite_pourquoi),
+    moduleNom: escapeHtml(data.module_recommande?.nom),
+    moduleRaison: formatMarkdownText(data.module_recommande?.raison),
+    moduleAction: formatMarkdownText(data.module_recommande?.action),
+    reflection: formatMarkdownText(data.reflection),
   };
 
   return `<!DOCTYPE html>
 <html lang="fr">
 <head>
 <meta charset="UTF-8" />
-<meta
-  name="viewport"
-  content="width=device-width, initial-scale=1.0"
-/>
-
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 <title>ONE Coach - Fi-One</title>
 
 <style>
-  * {
-    box-sizing: border-box;
-    margin: 0;
-    padding: 0;
-  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
 
   body {
-    font-family:
-      -apple-system,
-      BlinkMacSystemFont,
-      "Segoe UI",
-      sans-serif;
-
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     background: #151515;
     color: #F2F0EC;
     padding-bottom: 28px;
@@ -295,14 +248,8 @@ function renderCoachHtml(data = {}) {
     line-height: 1.55;
   }
 
-  .module-reason {
-    color: #AFAFAF;
-  }
-
-  .module-action {
-    color: #D8D6D2;
-    margin-top: 8px;
-  }
+  .module-reason { color: #AFAFAF; }
+  .module-action { color: #D8D6D2; margin-top: 8px; }
 
   .reflection {
     background: #181818;
@@ -351,9 +298,7 @@ function renderCoachHtml(data = {}) {
     outline: none;
   }
 
-  .chat input:focus {
-    border-color: #C38F5A;
-  }
+  .chat input:focus { border-color: #C38F5A; }
 
   .chat button {
     background: #C38F5A;
@@ -373,9 +318,7 @@ function renderCoachHtml(data = {}) {
     font-size: 12px;
   }
 
-  .loading.visible {
-    display: block;
-  }
+  .loading.visible { display: block; }
 
   .legal {
     text-align: center;
@@ -390,49 +333,33 @@ function renderCoachHtml(data = {}) {
 <body>
 <header class="header">
   <div class="topline">
-    <div class="avatar">1</div>
-
+    <div class="avatar">🧠</div>
     <div>
       <div class="name">ONE Coach</div>
-      <div class="sub">
-        Ton rendez-vous financier · Fi-One
-      </div>
+      <div class="sub">Ton rendez-vous financier</div>
     </div>
   </div>
 </header>
 
 <main class="wrap">
-  <div class="intent">
-    ${safe.intention}
-  </div>
+  <div class="intent">${safe.intention}</div>
 
   <section class="card main-card">
-    <div class="phrase">
-      ${safe.phrase}
-    </div>
-
-    <div
-      class="message"
-      id="coachMessage"
-    >
-      ${safe.messageHtml}
-    </div>
+    <div class="phrase">${safe.phrase}</div>
+    <div class="message" id="coachMessage">${safe.messageHtml}</div>
   </section>
 
   ${
     safe.reassurance.length
       ? `
         <section class="card reassurance-card">
-          <div class="kicker">
-            Ce qui me rassure
-          </div>
-
+          <div class="kicker">Ce qui me rassure</div>
           <div class="reassurance-list">
             ${safe.reassurance
               .map(
                 (item) => `
                   <div class="reassurance-item">
-                    ✓ ${item}
+                    ✅ ${item}
                   </div>
                 `
               )
@@ -447,57 +374,27 @@ function renderCoachHtml(data = {}) {
     safe.friction
       ? `
         <section class="card friction-card">
-          <div class="kicker">
-            Ce qui te freine
-          </div>
-
-          <div class="friction-text">
-            ⚠ ${safe.friction}
-          </div>
+          <div class="kicker">Ce qui te freine</div>
+          <div class="friction-text">⚠️ ${safe.friction}</div>
         </section>
       `
       : ''
   }
 
   <section class="card priority">
-    <div class="kicker">
-      Priorité du moment
-    </div>
-
-    <div class="priority-title">
-      ${safe.prioriteTitre}
-    </div>
-
-    <div class="text">
-      ${safe.prioriteAction}
-    </div>
-
-    <div class="muted">
-      ${safe.prioritePourquoi}
-    </div>
+    <div class="kicker">Priorité du moment</div>
+    <div class="priority-title">${safe.prioriteTitre}</div>
+    <div class="text">${safe.prioriteAction}</div>
+    <div class="muted">${safe.prioritePourquoi}</div>
   </section>
 
   <section class="card module-card">
-    <div class="module-icon">
-      ↗
-    </div>
-
+    <div class="module-icon">↗️</div>
     <div>
-      <div class="kicker">
-        Module conseillé
-      </div>
-
-      <div class="module-name">
-        ${safe.moduleNom}
-      </div>
-
-      <div class="module-reason">
-        ${safe.moduleRaison}
-      </div>
-
-      <div class="module-action">
-        ${safe.moduleAction}
-      </div>
+      <div class="kicker">Module conseillé</div>
+      <div class="module-name">${safe.moduleNom}</div>
+      <div class="module-reason">${safe.moduleRaison}</div>
+      <div class="module-action">${safe.moduleAction}</div>
     </div>
   </section>
 
@@ -512,111 +409,57 @@ function renderCoachHtml(data = {}) {
   }
 
   <section class="actions">
-    <button
-      type="button"
-      class="monthly-button"
-      id="monthlyBtn"
-    >
+    <button type="button" class="monthly-button" id="monthlyBtn">
       Analyser le mois en cours
     </button>
 
     <div class="chat">
-      <input
-        id="chatInput"
-        type="text"
-        placeholder="Répondre à ONE Coach..."
-      />
-
-      <button
-        type="button"
-        id="sendBtn"
-      >
-        →
-      </button>
+      <input id="chatInput" type="text" placeholder="Répondre à ONE Coach..." />
+      <button type="button" id="sendBtn">→</button>
     </div>
   </section>
 
-  <div
-    id="loading"
-    class="loading"
-  >
+  <div id="loading" class="loading">
     ONE Coach prépare sa réponse...
   </div>
 
   <div class="legal">
-    ONE Coach n'est pas un conseiller financier réglementé.
-    <br />
+    ⚠️ ONE Coach n'est pas un conseiller financier réglementé.<br />
     Ses recommandations sont basées sur les informations partagées.
   </div>
 </main>
 
 <script>
-  const baseUrl =
-    window.location.href.split('?')[0];
-
-  const params =
-    new URLSearchParams(window.location.search);
+  const baseUrl = window.location.href.split('?')[0];
+  const params = new URLSearchParams(window.location.search);
 
   function saveConversationContext() {
-    const currentQuestion =
-      params.get('message') || '';
+    const currentQuestion = params.get('message') || '';
+    const currentAnswer = document.getElementById('coachMessage')?.innerText || '';
 
-    const currentAnswer =
-      document.getElementById('coachMessage')
-        ?.innerText || '';
-
-    params.set(
-      'previous_question',
-      currentQuestion
-    );
-
-    params.set(
-      'previous_answer',
-      currentAnswer.slice(0, 900)
-    );
+    params.set('previous_question', currentQuestion);
+    params.set('previous_answer', currentAnswer.slice(0, 900));
   }
 
   function startLoading() {
-    document
-      .getElementById('loading')
-      .classList
-      .add('visible');
-
-    document
-      .getElementById('chatInput')
-      .disabled = true;
-
-    document
-      .getElementById('sendBtn')
-      .disabled = true;
-
-    document
-      .getElementById('monthlyBtn')
-      .disabled = true;
+    document.getElementById('loading').classList.add('visible');
+    document.getElementById('chatInput').disabled = true;
+    document.getElementById('sendBtn').disabled = true;
+    document.getElementById('monthlyBtn').disabled = true;
   }
 
   function navigateWithParams() {
-    window.location.href =
-      baseUrl + '?' + params.toString();
+    window.location.href = baseUrl + '?' + params.toString();
   }
 
   function sendMessage() {
-    const input =
-      document.getElementById('chatInput');
+    const input = document.getElementById('chatInput');
+    const message = input.value.trim();
 
-    const message =
-      input.value.trim();
-
-    if (!message) {
-      return;
-    }
+    if (!message) return;
 
     saveConversationContext();
-
-    params.set(
-      'message',
-      message
-    );
+    params.set('message', message);
 
     startLoading();
     navigateWithParams();
@@ -624,40 +467,18 @@ function renderCoachHtml(data = {}) {
 
   function analyzeCurrentMonth() {
     saveConversationContext();
-
-    params.set(
-      'message',
-      'Analyse mon mois en cours'
-    );
+    params.set('message', 'Analyse mon mois en cours');
 
     startLoading();
     navigateWithParams();
   }
 
-  document
-    .getElementById('sendBtn')
-    .addEventListener(
-      'click',
-      sendMessage
-    );
+  document.getElementById('sendBtn').addEventListener('click', sendMessage);
+  document.getElementById('monthlyBtn').addEventListener('click', analyzeCurrentMonth);
 
-  document
-    .getElementById('monthlyBtn')
-    .addEventListener(
-      'click',
-      analyzeCurrentMonth
-    );
-
-  document
-    .getElementById('chatInput')
-    .addEventListener(
-      'keydown',
-      function (event) {
-        if (event.key === 'Enter') {
-          sendMessage();
-        }
-      }
-    );
+  document.getElementById('chatInput').addEventListener('keydown', function (event) {
+    if (event.key === 'Enter') sendMessage();
+  });
 </script>
 </body>
 </html>`;
