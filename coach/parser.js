@@ -24,8 +24,7 @@ function fallbackData(raw = '', analysis = {}) {
         : 'Tu avances, maintenant il faut transformer tes chiffres en décision utile.',
 
     message_coach:
-      raw ||
-      'Je n’ai pas pu structurer complètement ma réponse.',
+      raw || 'Je n’ai pas pu structurer complètement ma réponse.',
 
     ce_qui_me_rassure:
       analysis.relevantForces?.slice(0, 2) || [],
