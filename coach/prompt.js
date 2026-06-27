@@ -1,17 +1,12 @@
 const identity = require('./identity');
 
 function formatList(items = []) {
-  if (!items.length) {
-    return '- aucune information notable';
-  }
-
+  if (!items.length) return '- aucune information notable';
   return items.map((item) => `- ${item}`).join('\n');
 }
 
 function formatCategoryList(categories = []) {
-  if (!categories.length) {
-    return '- non renseigné';
-  }
+  if (!categories.length) return '- non renseigné';
 
   return categories
     .map((category) => {
@@ -22,16 +17,39 @@ function formatCategoryList(categories = []) {
 }
 
 function formatTransactions(categories = []) {
-  if (!categories.length) {
-    return '- non renseigné';
-  }
+  if (!categories.length) return '- non renseigné';
 
   return categories
-    .map(
-      (category) =>
-        `- ${category.label} : ${category.averageTransactions} transactions en moyenne`
-    )
+    .map((category) => `- ${category.label} : ${category.averageTransactions} transactions en moyenne`)
     .join('\n');
+}
+
+function formatBudgetRule(budgetRule = {}) {
+  return `
+Diagnostic budgétaire :
+${budgetRule.summary || 'non calculable'}
+
+Budget prévisionnel respecté :
+${budgetRule.budgetRespecte === null ? 'non renseigné' : budgetRule.budgetRespecte ? 'oui' : 'non'}
+
+Dépassement :
+${budgetRule.depassement ?? 'non renseigné'} €
+
+Charges fixes :
+${budgetRule.totalFixes ?? 'non renseigné'} € soit ${budgetRule.fixesRatio ?? 'non calculable'} %
+Repère Fi-One : <= 50 %
+Respecté : ${budgetRule.fixesOk === null ? 'non calculable' : budgetRule.fixesOk ? 'oui' : 'non'}
+
+Autres dépenses :
+${budgetRule.totalAutres ?? 'non renseigné'} € soit ${budgetRule.autresRatio ?? 'non calculable'} %
+Repère Fi-One : <= 30 %
+Respecté : ${budgetRule.autresOk === null ? 'non calculable' : budgetRule.autresOk ? 'oui' : 'non'}
+
+Épargne :
+${budgetRule.epargneRatio ?? 'non calculable'} %
+Repère Fi-One : >= 20 %
+Respecté : ${budgetRule.epargneOk === null ? 'non calculable' : budgetRule.epargneOk ? 'oui' : 'non'}
+`;
 }
 
 function buildPrompt(query, analysis) {
@@ -72,9 +90,17 @@ RÈGLES DE FORME :
 - Ne fais pas de liste dans le message principal.
 - Intègre naturellement 2 à 4 chiffres clés.
 - Mets en valeur 2 à 4 éléments importants avec du markdown gras.
-- Exemple : **9 000 € mobilisables** ou **12 % d’endettement**.
 - Ne mets pas tout le texte en gras.
 - Ne pose pas systématiquement de question finale.
+
+RÈGLE D’ANALYSE MENSUELLE :
+- Si la demande porte sur le mois, utilise le diagnostic Fi-One avant les chiffres.
+- Ne mets pas la méthode 50/30/20 au centre du discours.
+- Utilise-la comme preuve pour expliquer le diagnostic.
+- Exemple de formulation recherchée :
+  "Aujourd’hui, ton budget est principalement déséquilibré par les dépenses variables."
+- Si le budget est respecté, indique-le clairement.
+- Si le budget est dépassé, explique le dépassement avec les catégories si elles sont disponibles.
 
 INTENTION DE CONVERSATION :
 Produis une courte invitation liée à la question.
@@ -99,7 +125,6 @@ RÈGLE SUR LA RÉFLEXION :
 - Elle doit amener l’utilisateur à prendre du recul.
 - Elle ne doit pas répéter le message principal.
 - Elle ne doit pas proposer une action déjà réalisée par un module.
-- Elle ne doit pas servir uniquement à relancer la conversation.
 - Si elle n’apporte pas une vraie valeur, retourne une chaîne vide.
 
 CONTEXTE GLOBAL :
@@ -112,39 +137,21 @@ ${formatList(analysis.forces)}
 Points de vigilance du profil :
 ${formatList(analysis.vigilances)}
 
-Épargne disponible totale :
-${analysis.numbers.epargneDispo ?? 'non renseigné'} €
+Épargne disponible totale : ${analysis.numbers.epargneDispo ?? 'non renseigné'} €
+Matelas de sécurité à conserver : ${analysis.numbers.matelas ?? 'non renseigné'} €
+Épargne mobilisable pour les projets : ${analysis.numbers.epargneProjet ?? 'non calculable'} €
+Taux d’endettement : ${analysis.numbers.tauxEndettement ?? 'non renseigné'} %
+Épargne moyenne mensuelle : ${analysis.numbers.epargneMoyen ?? 'non renseigné'} €
+FI-Score : ${analysis.numbers.fiScore ?? 'non renseigné'}/100
 
-Matelas de sécurité à conserver :
-${analysis.numbers.matelas ?? 'non renseigné'} €
+SITUATION DU MOIS :
+Revenus : ${analysis.monthly.numbers.revenus ?? 'non renseigné'} €
+Dépenses : ${analysis.monthly.numbers.depenses ?? 'non renseigné'} €
+Épargne : ${analysis.monthly.numbers.epargne ?? 'non renseigné'} €
+Variation dépenses : ${analysis.monthly.numbers.variationDepenses ?? 'non renseigné'} €
+Variation épargne : ${analysis.monthly.numbers.variationEpargne ?? 'non renseigné'} €
 
-Épargne mobilisable pour les projets :
-${analysis.numbers.epargneProjet ?? 'non calculable'} €
-
-Taux d’endettement :
-${analysis.numbers.tauxEndettement ?? 'non renseigné'} %
-
-Épargne moyenne mensuelle :
-${analysis.numbers.epargneMoyen ?? 'non renseigné'} €
-
-FI-Score :
-${analysis.numbers.fiScore ?? 'non renseigné'}/100
-
-SITUATION DU MOIS EN COURS :
-Revenus du mois :
-${analysis.monthly.numbers.revenus ?? 'non renseigné'} €
-
-Dépenses du mois :
-${analysis.monthly.numbers.depenses ?? 'non renseigné'} €
-
-Épargne du mois :
-${analysis.monthly.numbers.epargne ?? 'non renseigné'} €
-
-Variation globale des dépenses :
-${analysis.monthly.numbers.variationDepenses ?? 'non renseigné'} €
-
-Variation globale de l’épargne :
-${analysis.monthly.numbers.variationEpargne ?? 'non renseigné'} €
+${formatBudgetRule(analysis.monthly.budgetRule)}
 
 Variations par catégorie :
 ${formatCategoryList(analysis.monthly.variationCategories)}
@@ -152,7 +159,7 @@ ${formatCategoryList(analysis.monthly.variationCategories)}
 Nombre moyen de transactions par catégorie :
 ${formatTransactions(analysis.monthly.transactionsByCategory)}
 
-Observations mensuelles calculées par Fi-One :
+Observations mensuelles :
 ${formatList(analysis.monthly.observations)}
 
 Forces mensuelles :
@@ -165,11 +172,9 @@ TYPE DE RÉPONSE :
 ${
   isMonthly
     ? `La demande concerne le mois en cours.
-Concentre ton message principalement sur les données mensuelles.
-Tu peux faire le lien avec l’objectif global uniquement si cela apporte une vraie valeur.`
+Concentre ton message sur le comportement budgétaire du mois.`
     : `La demande concerne principalement le profil ou un projet.
-Concentre ton message sur le profil global.
-Utilise les données mensuelles uniquement si elles sont utiles pour répondre à la question.`
+Utilise les données mensuelles uniquement si elles sont utiles.`
 }
 
 MODULE À RECOMMANDER :
