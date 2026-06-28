@@ -1,7 +1,7 @@
 const { getModuleById } = require('./modules');
 const { euro } = require('./profileEngine');
 
-function choosePriority(intent, { budgetAnalysis, behaviorInsights }) {
+function choosePriority(intent, { budgetAnalysis, behaviorInsights, debtAnalysis }) {
   if (intent === 'analyse_mensuelle') {
     const mainBehavior = behaviorInsights[0];
 
@@ -23,15 +23,15 @@ function choosePriority(intent, { budgetAnalysis, behaviorInsights }) {
   if (intent === 'simulateur_immobilier') {
     return {
       title: 'Tester ton projet immobilier',
-      action: 'Lance une simulation avec ton budget cible, ton apport mobilisable et deux durées de crédit.',
-      why: 'Le simulateur permettra de vérifier si le projet reste confortable une fois la mensualité, les frais et le reste à vivre intégrés.',
+      action: 'Lance une simulation avec ton budget cible, ton apport mobilisable, tes crédits actuels et deux durées de crédit.',
+      why: 'Le simulateur permettra de vérifier si le projet reste confortable une fois la mensualité, les frais, les crédits existants et le reste à vivre intégrés.',
     };
   }
 
   if (intent === 'capacite_emprunt') {
     return {
       title: 'Clarifier ta capacité d’emprunt',
-      action: 'Simule ta capacité avec tes revenus, tes charges et ton endettement actuel.',
+      action: 'Simule ta capacité avec tes revenus, tes charges, tes crédits actuels et ton endettement.',
       why: 'Tu dois connaître ta limite confortable avant de chercher un projet.',
     };
   }
@@ -53,10 +53,16 @@ function choosePriority(intent, { budgetAnalysis, behaviorInsights }) {
   }
 
   if (intent === 'dettes') {
+    const mainCredit = debtAnalysis?.mainCredit;
+
     return {
-      title: 'Prioriser tes crédits',
-      action: 'Liste tes crédits avec mensualité, taux et durée restante.',
-      why: 'Cette vision permet d’arbitrer entre remboursement anticipé et construction d’épargne.',
+      title: mainCredit
+        ? `Analyser ton crédit ${mainCredit.type}`
+        : 'Analyser tes crédits',
+      action: mainCredit
+        ? `Regarde l’impact du crédit ${mainCredit.type} sur ton budget et tes prochains projets.`
+        : 'Liste tes crédits avec mensualité, capital restant et durée restante.',
+      why: 'La mensualité compte pour ton budget mensuel, mais le capital restant influence aussi ta stratégie de remboursement.',
     };
   }
 
@@ -71,12 +77,13 @@ function chooseModule(intent) {
   return getModuleById(intent);
 }
 
-function buildRecommendation({ intent, budgetAnalysis, behaviorInsights }) {
+function buildRecommendation({ intent, budgetAnalysis, behaviorInsights, debtAnalysis }) {
   return {
     module: chooseModule(intent),
     mission: choosePriority(intent, {
       budgetAnalysis,
       behaviorInsights,
+      debtAnalysis,
     }),
   };
 }
