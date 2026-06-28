@@ -76,7 +76,7 @@ function renderCoachHtml(data = {}) {
     width: 42px;
     height: 42px;
     border-radius: 14px;
-    background: #C38F5A;
+    background: #78522B;
     color: #151515;
     display: flex;
     align-items: center;
