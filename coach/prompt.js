@@ -170,6 +170,12 @@ La qualité de ta réponse ne dépend pas du nombre d'indicateurs utilisés.
 
 Elle dépend de ta capacité à identifier le ou les deux éléments qui auront le plus d'impact sur la décision de l'utilisateur.
 
+RÈGLE SUR LES CRÉDITS :
+- Si la question concerne un projet immobilier, une capacité d’emprunt ou des dettes, tiens compte des crédits actuels.
+- Ne commente pas les crédits pour eux-mêmes.
+- Explique toujours leur conséquence : marge réduite, capacité disponible, arbitrage remboursement/épargne, ou impact sur un futur projet.
+- Le capital restant sert à comprendre la stratégie, la mensualité sert à comprendre la pression mensuelle.
+
 CONTEXTE GLOBAL :
 Profil : ${analysis.profile}
 Objectif : ${query.objectif || 'non renseigné'}
@@ -193,6 +199,33 @@ Dépenses : ${analysis.monthly.numbers.depenses ?? 'non renseigné'} €
 Épargne : ${analysis.monthly.numbers.epargne ?? 'non renseigné'} €
 Variation dépenses : ${analysis.monthly.numbers.variationDepenses ?? 'non renseigné'} €
 Variation épargne : ${analysis.monthly.numbers.variationEpargne ?? 'non renseigné'} €
+
+COMPORTEMENTS DÉTECTÉS :
+${analysis.behaviorInsights?.length
+  ? analysis.behaviorInsights
+      .map((item) => `- ${item.category} : ${item.message}`)
+      .join('\n')
+  : '- aucun comportement notable détecté'}
+
+CRÉDITS ACTUELS :
+Mensualités totales :
+${analysis.debts?.totalMensualites ?? 'non renseigné'} €
+
+Capital restant total :
+${analysis.debts?.totalCapitalRestant ?? 'non renseigné'} €
+
+Poids des mensualités dans les revenus :
+${analysis.debts?.poidsMensualites ?? 'non calculable'} %
+
+Crédit principal :
+${analysis.debts?.mainCredit
+  ? `${analysis.debts.mainCredit.type} : ${analysis.debts.mainCredit.mensualite} €/mois, ${analysis.debts.mainCredit.capitalRestant ?? 'capital non renseigné'} € restants`
+  : 'non renseigné'}
+
+Insights crédits :
+${analysis.debtInsights?.length
+  ? analysis.debtInsights.map((item) => `- ${item.message}`).join('\n')
+  : '- aucun insight crédit'}
 
 ${formatBudgetRule(analysis.monthly.budgetRule)}
 
