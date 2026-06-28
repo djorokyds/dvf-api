@@ -1,6 +1,7 @@
 const { analyzeProfile } = require('./profileEngine');
 const { analyzeBudget } = require('./budgetEngine');
 const { analyzeBehavior } = require('./behaviorEngine');
+const { analyzeDebts } = require('./debtEngine');
 const { buildDecisionInsights } = require('./decisionEngine');
 const { buildRecommendation } = require('./recommendationEngine');
 
@@ -50,6 +51,7 @@ function detectIntent(query) {
   if (
     text.includes('dette') ||
     text.includes('crédit') ||
+    text.includes('credit') ||
     text.includes('auto') ||
     text.includes('conso')
   ) {
@@ -79,6 +81,8 @@ function buildCoachAnalysis(query) {
   const profileAnalysis = analyzeProfile(query);
   const budgetAnalysis = analyzeBudget(query);
   const behaviorInsights = analyzeBehavior(budgetAnalysis);
+  const debtAnalysis = analyzeDebts(query);
+
   const intent = detectIntent(query);
 
   const decisionInsights = buildDecisionInsights({
@@ -86,6 +90,7 @@ function buildCoachAnalysis(query) {
     profileAnalysis,
     budgetAnalysis,
     behaviorInsights,
+    debtAnalysis,
     query,
   });
 
@@ -93,6 +98,7 @@ function buildCoachAnalysis(query) {
     intent,
     budgetAnalysis,
     behaviorInsights,
+    debtAnalysis,
   });
 
   return {
@@ -101,11 +107,13 @@ function buildCoachAnalysis(query) {
 
     monthly: budgetAnalysis,
     behaviorInsights,
+    debts: debtAnalysis,
 
     intent,
 
     profileInsights: profileAnalysis.profileInsights,
     budgetInsights: budgetAnalysis.budgetInsights,
+    debtInsights: debtAnalysis.debtInsights,
 
     decisionInsights,
 
