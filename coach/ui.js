@@ -82,7 +82,7 @@ function renderCoachHtml(data = {}) {
     width: 42px;
     height: 42px;
     border-radius: 14px;
-    background: #C38F5A;
+    background: #231D17;
     color: #151515;
     display: flex;
     align-items: center;
@@ -465,10 +465,10 @@ function renderCoachHtml(data = {}) {
 
 <header class="header">
   <div class="topline">
-    <div class="avatar">1</div>
+    <div class="avatar">🧠</div>
     <div>
       <div class="name">ONE Coach</div>
-      <div class="sub">Ton rendez-vous financier · Fi-One</div>
+      <div class="sub">Ton rendez-vous financier</div>
     </div>
   </div>
 </header>
@@ -532,7 +532,7 @@ function renderCoachHtml(data = {}) {
   </section>
 
   <div class="legal">
-    ONE Coach n'est pas un conseiller financier réglementé.<br />
+   ⚠️ ONE Coach n'est pas un conseiller financier réglementé.<br />
     Ses recommandations sont basées sur les informations partagées.
   </div>
 </main>
