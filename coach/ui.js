@@ -8,8 +8,7 @@ function escapeHtml(value = '') {
 }
 
 function formatMarkdownText(value = '') {
-  return escapeHtml(value)
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+  return escapeHtml(value).replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
 }
 
 function formatCoachMessage(message = '') {
@@ -56,6 +55,13 @@ function renderCoachHtml(data = {}) {
     background: #151515;
     color: #F2F0EC;
     padding-bottom: 28px;
+    opacity: 0;
+    animation: pageIn .35s ease forwards;
+  }
+
+  @keyframes pageIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
   }
 
   .header {
@@ -76,7 +82,7 @@ function renderCoachHtml(data = {}) {
     width: 42px;
     height: 42px;
     border-radius: 14px;
-    background: #231D17;
+    background: #C38F5A;
     color: #151515;
     display: flex;
     align-items: center;
@@ -142,9 +148,7 @@ function renderCoachHtml(data = {}) {
     margin-bottom: 14px;
   }
 
-  .message p:last-child {
-    margin-bottom: 0;
-  }
+  .message p:last-child { margin-bottom: 0; }
 
   strong {
     color: #F3D2AD;
@@ -158,10 +162,6 @@ function renderCoachHtml(data = {}) {
     text-transform: uppercase;
     letter-spacing: .8px;
     margin-bottom: 9px;
-  }
-
-  .reassurance-card {
-    padding-bottom: 12px;
   }
 
   .reassurance-list {
@@ -180,9 +180,7 @@ function renderCoachHtml(data = {}) {
     line-height: 1.45;
   }
 
-  .friction-card {
-    background: #1D1D1D;
-  }
+  .friction-card { background: #1D1D1D; }
 
   .friction-text {
     font-size: 14px;
@@ -277,9 +275,7 @@ function renderCoachHtml(data = {}) {
     cursor: pointer;
   }
 
-  .monthly-button:hover {
-    background: #1F1B17;
-  }
+  .monthly-button:hover { background: #1F1B17; }
 
   .chat {
     display: flex;
@@ -311,15 +307,6 @@ function renderCoachHtml(data = {}) {
     cursor: pointer;
   }
 
-  .loading {
-    display: none;
-    margin-top: 10px;
-    color: #777777;
-    font-size: 12px;
-  }
-
-  .loading.visible { display: block; }
-
   .legal {
     text-align: center;
     color: #666666;
@@ -327,16 +314,161 @@ function renderCoachHtml(data = {}) {
     line-height: 1.5;
     margin-top: 18px;
   }
+
+  .loading-screen {
+    position: fixed;
+    inset: 0;
+    background: #151515;
+    z-index: 999;
+    display: none;
+    align-items: center;
+    justify-content: center;
+    padding: 22px;
+  }
+
+  .loading-screen.visible { display: flex; }
+
+  .loading-card {
+    width: 100%;
+    max-width: 420px;
+    background: #1B1B1B;
+    border: 1px solid #2D2D2D;
+    border-radius: 24px;
+    padding: 26px;
+    text-align: center;
+  }
+
+  .loading-logo {
+    width: 46px;
+    height: 46px;
+    border-radius: 15px;
+    background: #C38F5A;
+    color: #151515;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 900;
+    margin: 0 auto 14px;
+  }
+
+  .loading-title {
+    color: #C38F5A;
+    font-weight: 800;
+    font-size: 15px;
+  }
+
+  .loading-main {
+    margin-top: 14px;
+    font-size: 19px;
+    font-weight: 800;
+    color: white;
+  }
+
+  .loading-sub {
+    margin-top: 8px;
+    font-size: 13px;
+    color: #9C9C9C;
+    line-height: 1.5;
+  }
+
+  .steps {
+    margin-top: 22px;
+    text-align: left;
+    display: grid;
+    gap: 11px;
+  }
+
+  .step {
+    font-size: 13px;
+    color: #777;
+    display: flex;
+    gap: 9px;
+    align-items: center;
+  }
+
+  .step.active { color: #F2F0EC; }
+  .step.done { color: #C9E5CE; }
+
+  .loader-line {
+    height: 4px;
+    overflow: hidden;
+    border-radius: 999px;
+    background: #2A2A2A;
+    margin-top: 22px;
+  }
+
+  .loader-line::before {
+    content: "";
+    display: block;
+    width: 42%;
+    height: 100%;
+    border-radius: inherit;
+    background: #C38F5A;
+    animation: loadingMove 1.4s ease-in-out infinite;
+  }
+
+  @keyframes loadingMove {
+    0% { transform: translateX(-120%); }
+    100% { transform: translateX(260%); }
+  }
+
+  .timer-label {
+    margin-top: 18px;
+    font-size: 11px;
+    color: #777;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+  }
+
+  .timer {
+    margin-top: 4px;
+    font-size: 22px;
+    font-weight: 800;
+    color: #F2F0EC;
+  }
+
+  .loading-note {
+    margin-top: 16px;
+    font-size: 12px;
+    line-height: 1.5;
+    color: #777;
+  }
 </style>
 </head>
 
 <body>
+<div class="loading-screen" id="loadingScreen">
+  <div class="loading-card">
+    <div class="loading-logo">1</div>
+    <div class="loading-title">ONE Coach</div>
+    <div class="loading-main">Préparation de ton analyse</div>
+    <div class="loading-sub">ONE Coach relie tes chiffres à leur impact concret.</div>
+
+    <div class="steps">
+      <div class="step active" data-step="0">🟢 Compréhension de ta situation</div>
+      <div class="step" data-step="1">⚪ Analyse de tes finances</div>
+      <div class="step" data-step="2">⚪ Recherche des points clés</div>
+      <div class="step" data-step="3">⚪ Préparation des recommandations</div>
+      <div class="step" data-step="4">⚪ Rédaction de ton analyse</div>
+    </div>
+
+    <div class="loader-line"></div>
+
+    <div class="timer-label">Temps d'analyse</div>
+    <div class="timer" id="timer">00:00</div>
+
+    <div class="loading-note" id="loadingNote">
+      Chaque analyse est personnalisée selon ta situation.
+    </div>
+  </div>
+</div>
+
 <header class="header">
   <div class="topline">
-    <div class="avatar">🧠</div>
+    <div class="avatar">1</div>
     <div>
       <div class="name">ONE Coach</div>
-      <div class="sub">Ton rendez-vous financier</div>
+      <div class="sub">Ton rendez-vous financier · Fi-One</div>
     </div>
   </div>
 </header>
@@ -351,33 +483,21 @@ function renderCoachHtml(data = {}) {
 
   ${
     safe.reassurance.length
-      ? `
-        <section class="card reassurance-card">
+      ? `<section class="card reassurance-card">
           <div class="kicker">Ce qui me rassure</div>
           <div class="reassurance-list">
-            ${safe.reassurance
-              .map(
-                (item) => `
-                  <div class="reassurance-item">
-                    ✅ ${item}
-                  </div>
-                `
-              )
-              .join('')}
+            ${safe.reassurance.map((item) => `<div class="reassurance-item">✅ ${item}</div>`).join('')}
           </div>
-        </section>
-      `
+        </section>`
       : ''
   }
 
   ${
     safe.friction
-      ? `
-        <section class="card friction-card">
+      ? `<section class="card friction-card">
           <div class="kicker">Ce qui te freine</div>
           <div class="friction-text">⚠️ ${safe.friction}</div>
-        </section>
-      `
+        </section>`
       : ''
   }
 
@@ -398,15 +518,7 @@ function renderCoachHtml(data = {}) {
     </div>
   </section>
 
-  ${
-    safe.reflection
-      ? `
-        <section class="card reflection">
-          ${safe.reflection}
-        </section>
-      `
-      : ''
-  }
+  ${safe.reflection ? `<section class="card reflection">${safe.reflection}</section>` : ''}
 
   <section class="actions">
     <button type="button" class="monthly-button" id="monthlyBtn">
@@ -419,12 +531,8 @@ function renderCoachHtml(data = {}) {
     </div>
   </section>
 
-  <div id="loading" class="loading">
-    ONE Coach prépare sa réponse...
-  </div>
-
   <div class="legal">
-    ⚠️ ONE Coach n'est pas un conseiller financier réglementé.<br />
+    ONE Coach n'est pas un conseiller financier réglementé.<br />
     Ses recommandations sont basées sur les informations partagées.
   </div>
 </main>
@@ -433,19 +541,64 @@ function renderCoachHtml(data = {}) {
   const baseUrl = window.location.href.split('?')[0];
   const params = new URLSearchParams(window.location.search);
 
+  let timerInterval;
+  let seconds = 0;
+
+  const notes = [
+    "Chaque analyse est personnalisée selon ta situation.",
+    "Le coach relie tes chiffres à leur impact concret.",
+    "Les recommandations tiennent compte de ton projet.",
+    "ONE Coach prépare la prochaine décision utile."
+  ];
+
+  function formatTime(value) {
+    const m = String(Math.floor(value / 60)).padStart(2, '0');
+    const s = String(value % 60).padStart(2, '0');
+    return m + ':' + s;
+  }
+
+  function updateSteps() {
+    const steps = document.querySelectorAll('.step');
+    const index = Math.min(Math.floor(seconds / 2), steps.length - 1);
+
+    steps.forEach((step, i) => {
+      step.classList.remove('active', 'done');
+
+      if (i < index) {
+        step.classList.add('done');
+        step.innerHTML = '✅ ' + step.innerText.replace(/^🟢 |^⚪ |^✅ /, '');
+      } else if (i === index) {
+        step.classList.add('active');
+        step.innerHTML = '🟢 ' + step.innerText.replace(/^🟢 |^⚪ |^✅ /, '');
+      } else {
+        step.innerHTML = '⚪ ' + step.innerText.replace(/^🟢 |^⚪ |^✅ /, '');
+      }
+    });
+
+    document.getElementById('loadingNote').innerText =
+      notes[Math.min(Math.floor(seconds / 3), notes.length - 1)];
+  }
+
+  function showLoading() {
+    document.getElementById('loadingScreen').classList.add('visible');
+
+    seconds = 0;
+    document.getElementById('timer').innerText = formatTime(seconds);
+    updateSteps();
+
+    timerInterval = setInterval(() => {
+      seconds += 1;
+      document.getElementById('timer').innerText = formatTime(seconds);
+      updateSteps();
+    }, 1000);
+  }
+
   function saveConversationContext() {
     const currentQuestion = params.get('message') || '';
     const currentAnswer = document.getElementById('coachMessage')?.innerText || '';
 
     params.set('previous_question', currentQuestion);
     params.set('previous_answer', currentAnswer.slice(0, 900));
-  }
-
-  function startLoading() {
-    document.getElementById('loading').classList.add('visible');
-    document.getElementById('chatInput').disabled = true;
-    document.getElementById('sendBtn').disabled = true;
-    document.getElementById('monthlyBtn').disabled = true;
   }
 
   function navigateWithParams() {
@@ -461,16 +614,16 @@ function renderCoachHtml(data = {}) {
     saveConversationContext();
     params.set('message', message);
 
-    startLoading();
-    navigateWithParams();
+    showLoading();
+    setTimeout(navigateWithParams, 300);
   }
 
   function analyzeCurrentMonth() {
     saveConversationContext();
     params.set('message', 'Analyse mon mois en cours');
 
-    startLoading();
-    navigateWithParams();
+    showLoading();
+    setTimeout(navigateWithParams, 300);
   }
 
   document.getElementById('sendBtn').addEventListener('click', sendMessage);
