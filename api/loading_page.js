@@ -1,11 +1,4 @@
 module.exports = async function handler(req, res) {
-  const target = req.query.target;
-
-  const query = new URLSearchParams(req.query);
-  query.delete('target');
-
-  const redirectUrl =
-    target + (query.toString() ? `?${query.toString()}` : '');
 
   const html = `<!DOCTYPE html>
 <html lang="fr">
@@ -162,8 +155,6 @@ module.exports = async function handler(req, res) {
   </div>
 
 <script>
-  const redirectUrl = ${JSON.stringify(redirectUrl)};
-
   let seconds = 0;
 
   const notes = [
@@ -208,10 +199,6 @@ module.exports = async function handler(req, res) {
     document.getElementById('timer').innerText = formatTime(seconds);
     updateSteps();
   }, 1000);
-
-  setTimeout(() => {
-    window.location.href = redirectUrl;
-  }, 500);
 </script>
 </body>
 </html>`;
