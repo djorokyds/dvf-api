@@ -1,5 +1,5 @@
 module.exports = async function handler(req, res) {
-  const target = req.query.target || '/api/one_coach';
+  const target = req.query.target;
 
   const query = new URLSearchParams(req.query);
   query.delete('target');
