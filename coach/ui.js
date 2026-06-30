@@ -342,7 +342,7 @@ function renderCoachHtml(data = {}) {
     width: 46px;
     height: 46px;
     border-radius: 15px;
-    background: #C38F5A;
+    background: #231D17;
     color: #151515;
     display: flex;
     align-items: center;
@@ -439,7 +439,7 @@ function renderCoachHtml(data = {}) {
 <body>
 <div class="loading-screen" id="loadingScreen">
   <div class="loading-card">
-    <div class="loading-logo">1</div>
+    <div class="loading-logo">🧠</div>
     <div class="loading-title">ONE Coach</div>
     <div class="loading-main">Préparation de ton analyse</div>
     <div class="loading-sub">ONE Coach relie tes chiffres à leur impact concret.</div>
