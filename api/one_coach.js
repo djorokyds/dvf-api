@@ -21,7 +21,7 @@ body{min-height:100vh;background:#151515;color:#F2F0EC;font-family:-apple-system
 .main{margin-top:14px;font-size:19px;font-weight:800;color:white}
 .sub{margin-top:8px;font-size:13px;color:#9C9C9C;line-height:1.5}
 .steps{margin-top:22px;text-align:left;display:grid;gap:11px}
-.step{font-size:13px;color:#777;display:flex;gap:9px;align-items:center}
+.step{font-size:13px;color:#777}
 .step.active{color:#F2F0EC}.step.done{color:#C9E5CE}
 .loader-line{height:4px;overflow:hidden;border-radius:999px;background:#2A2A2A;margin-top:22px}
 .loader-line:before{content:"";display:block;width:42%;height:100%;border-radius:inherit;background:#C38F5A;animation:move 1.4s ease-in-out infinite}
@@ -29,12 +29,11 @@ body{min-height:100vh;background:#151515;color:#F2F0EC;font-family:-apple-system
 .timer-label{margin-top:18px;font-size:11px;color:#777;text-transform:uppercase;letter-spacing:.8px}
 .timer{margin-top:4px;font-size:22px;font-weight:800;color:#F2F0EC}
 .note{margin-top:16px;font-size:12px;line-height:1.5;color:#777}
-.error{margin-top:16px;color:#ffb4b4;font-size:13px;line-height:1.5;display:none}
 </style>
 </head>
 <body>
 <div class="card">
-  <div class="logo">1</div>
+  <div class="logo">🧠</div>
   <div class="title">ONE Coach</div>
   <div class="main">Préparation de ton analyse</div>
   <div class="sub">ONE Coach relie tes chiffres à leur impact concret.</div>
@@ -51,7 +50,6 @@ body{min-height:100vh;background:#151515;color:#F2F0EC;font-family:-apple-system
   <div class="timer-label">Temps d'analyse</div>
   <div class="timer" id="timer">00:00</div>
   <div class="note" id="note">Chaque analyse est personnalisée selon ta situation.</div>
-  <div class="error" id="error">Une erreur est survenue. Réessaie dans quelques instants.</div>
 </div>
 
 <script>
@@ -100,24 +98,20 @@ setInterval(() => {
   updateSteps();
 }, 1000);
 
-fetch(dataUrl)
-  .then(async (response) => {
-    const html = await response.text();
-    document.open();
-    document.write(html);
-    document.close();
-  })
-  .catch(() => {
-    document.getElementById('error').style.display = 'block';
-  });
+setTimeout(() => {
+  window.location.replace(dataUrl);
+}, 500);
 </script>
 </body>
 </html>`;
 }
 
 async function renderFinalCoach(req, res) {
-  const analysis = buildCoachAnalysis(req.query);
-  const prompt = buildPrompt(req.query, analysis);
+  const query = { ...req.query };
+  delete query.action;
+
+  const analysis = buildCoachAnalysis(query);
+  const prompt = buildPrompt(query, analysis);
   const raw = await askGemini(prompt);
   const data = parseCoachResponse(raw, analysis);
   const html = renderCoachHtml(data);
