@@ -16,7 +16,7 @@ function renderLoadingShell(dataUrl) {
 *{box-sizing:border-box;margin:0;padding:0}
 body{min-height:100vh;background:#151515;color:#F2F0EC;font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;display:flex;align-items:center;justify-content:center;padding:22px}
 .card{width:100%;max-width:420px;background:#1B1B1B;border:1px solid #2D2D2D;border-radius:24px;padding:26px;text-align:center}
-.logo{width:46px;height:46px;border-radius:15px;background:#C38F5A;color:#151515;display:flex;align-items:center;justify-content:center;font-weight:900;margin:0 auto 14px}
+.logo{width:46px;height:46px;border-radius:15px;background:#231D17;color:#151515;display:flex;align-items:center;justify-content:center;font-weight:900;margin:0 auto 14px}
 .title{color:#C38F5A;font-weight:800;font-size:15px}
 .main{margin-top:14px;font-size:19px;font-weight:800;color:white}
 .sub{margin-top:8px;font-size:13px;color:#9C9C9C;line-height:1.5}
