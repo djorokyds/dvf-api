@@ -1,6 +1,8 @@
 const { GoogleGenAI } = require('@google/genai');
 
 const DEFAULT_MODELS = [
+  'gemini-2.0-flash',
+  'gemini-2.0-flash-lite',
   'gemini-2.5-flash',
   'gemini-2.5-flash-lite',
   'gemini-3-flash',
@@ -34,7 +36,13 @@ function isRetryableGeminiError(error) {
     text.includes('quota') ||
     text.includes('503') ||
     text.includes('UNAVAILABLE') ||
-    text.includes('high demand')
+    text.includes('high demand') ||
+
+    // Modèle inexistant / non supporté
+    text.includes('404') ||
+    text.includes('NOT_FOUND') ||
+    text.includes('is not found') ||
+    text.includes('not supported for generateContent')
   );
 }
 
