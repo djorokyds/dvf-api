@@ -39,11 +39,11 @@ function generateHTML(params) {
     scoreEmoji = '🚀'; scoreLabel = 'Bonne opportunité';
     scoreDesc = 'Ce projet présente de solides indicateurs financiers et de marché.';
   } else if (total >= 40) {
-    scoreEmoji = '🤔'; scoreLabel = 'Projet acceptable';
-    scoreDesc = 'Ce projet est viable mais certains indicateurs méritent attention.';
+    scoreEmoji = '⚠️'; scoreLabel = 'Projet acceptable';
+    scoreDesc = 'Ce projet est viable mais certains indicateurs financiers (TRI, CoC, casflow hors revente ...) méritent attention.';
   } else {
-    scoreEmoji = '❌'; scoreLabel = 'Projet risqué';
-    scoreDesc = 'Ce projet présente des signaux faibles — à analyser en détail.';
+    scoreEmoji = '🔻'; scoreLabel = 'Projet risqué';
+    scoreDesc = 'Ce projet présente des signaux financiers (TRI, CoC, casflow hors revente ...) faibles — à analyser en détail.';
   }
 
   const pct = total;
