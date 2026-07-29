@@ -162,23 +162,11 @@ module.exports = async function handler(req, res) {
       font-weight: 700;
       margin-top: 4px;
     }
-    .explain-text {
-      margin-top: 12px;
-      font-size: 12px;
-      line-height: 1.5;
-      color: #666;
-      padding: 0 4px;
-    }
-    .explain-text strong {
-      color: #888;
-    }
   </style>
 </head>
 <body>
 
-  <p class="explain-text"><strong>Le matelas de sécurité</strong> est une épargne de précaution qui couvre tes dépenses essentielles en cas d'imprévu, sans avoir à t'endetter ou à revendre tes investissements. On recommande généralement l'équivalent de 3 à 6 mois de revenus.</p>
-
-  <div class="markers">
+ <div class="markers">
     <span class="marker">0</span>
     <span class="marker">25</span>
     <span class="marker">50</span>
