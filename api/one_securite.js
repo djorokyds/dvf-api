@@ -176,6 +176,8 @@ module.exports = async function handler(req, res) {
 </head>
 <body>
 
+  <p class="explain-text"><strong>Le matelas de sécurité</strong> est une épargne de précaution qui couvre tes dépenses essentielles en cas d'imprévu, sans avoir à t'endetter ou à revendre tes investissements. On recommande généralement l'équivalent de 3 à 6 mois de revenus.</p>
+
   <div class="markers">
     <span class="marker">0</span>
     <span class="marker">25</span>
@@ -219,9 +221,7 @@ module.exports = async function handler(req, res) {
     </div>
 
   </div>
-
-  <p class="explain-text"><strong>Le matelas de sécurité</strong> est une épargne de précaution qui couvre tes dépenses essentielles en cas d'imprévu, sans avoir à t'endetter ou à revendre tes investissements. On recommande généralement l'équivalent de 3 à 6 mois de revenus.</p>
-
+  
 </body>
 </html>`;
 
