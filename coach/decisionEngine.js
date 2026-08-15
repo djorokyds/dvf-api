@@ -1,16 +1,55 @@
 const { euro } = require('./profileEngine');
 const { ratio, pct } = require('./budgetEngine');
 
+// Mots-clés qui indiquent qu'un montant fait référence au bien/projet visé,
+// pour éviter de capturer par erreur un revenu, un salaire ou une mensualité
+// mentionnés ailleurs dans le texte.
+const PROJECT_KEYWORDS = [
+  'bien',
+  'achat',
+  'acheter',
+  'projet',
+  'prix',
+  'budget de',
+  'à hauteur de',
+  'appartement',
+  'maison',
+];
+
 function extractProjectAmount(query) {
   const text = `${query.objectif || ''} ${query.message || ''}`;
-  const matches = text.match(/(\d[\d\s]{3,})\s*(€|euros)?/i);
+  const amountPattern = /(\d[\d\s]{3,})\s*(€|euros)?/gi;
 
-  if (!matches) return null;
+  const matches = [...text.matchAll(amountPattern)];
+  if (!matches.length) return null;
 
-  const normalized = matches[1].replace(/\s/g, '');
-  const amount = Number(normalized);
+  const toAmount = (match) => {
+    const normalized = match[1].replace(/\s/g, '');
+    const amount = Number(normalized);
+    return Number.isFinite(amount) ? amount : null;
+  };
 
-  return Number.isFinite(amount) ? amount : null;
+  // 1. Cherche un montant précédé de près par un mot-clé de projet
+  //    (ex: "un bien à 250000€", "achat de 250 000 euros").
+  for (const match of matches) {
+    const windowStart = Math.max(0, match.index - 30);
+    const contextBefore = text.slice(windowStart, match.index).toLowerCase();
+
+    if (PROJECT_KEYWORDS.some((keyword) => contextBefore.includes(keyword))) {
+      const amount = toAmount(match);
+      if (amount !== null) return amount;
+    }
+  }
+
+  // 2. Repli : si un seul montant est mentionné dans tout le texte, on
+  //    suppose qu'il s'agit du montant du projet.
+  if (matches.length === 1) {
+    return toAmount(matches[0]);
+  }
+
+  // 3. Sinon (plusieurs montants sans mot-clé identifiable), on ne devine
+  //    pas : mieux vaut ne pas afficher de calcul basé sur un montant erroné.
+  return null;
 }
 
 function buildRealEstateDecision(profileAnalysis, debtAnalysis, query) {
@@ -174,4 +213,5 @@ function buildDecisionInsights({
 
 module.exports = {
   buildDecisionInsights,
+  extractProjectAmount,
 };
