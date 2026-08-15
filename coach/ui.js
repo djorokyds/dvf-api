@@ -514,7 +514,6 @@ function renderCoachHtml(data = {}) {
       <div class="kicker">Module conseillé</div>
       <div class="module-name">${safe.moduleNom}</div>
       <div class="module-reason">${safe.moduleRaison}</div>
-      <div class="module-action">${safe.moduleAction}</div>
     </div>
   </section>
 
