@@ -173,7 +173,7 @@ module.exports = async function handler(req, res) {
     <div class="bar-legend">
       <div class="legend-item green">
         <div class="legend-dot green"></div>
-        Épargne dispo brut (${brut.toLocaleString('fr-FR')} €)
+        Épargne dispo. brute (${brut.toLocaleString('fr-FR')} €)
       </div>
       <div class="legend-sep"></div>
       <div class="legend-item red">
