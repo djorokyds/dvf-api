@@ -160,7 +160,7 @@ module.exports = async function handler(req, res) {
   <div class="card">
     <div class="card-icon green">🟢</div>
     <div class="card-info">
-      <div class="card-label">Épargne nette disponible</div>
+      <div class="card-label">Épargne disponible nette</div>
       <div class="card-value green">${dispo.toLocaleString('fr-FR')} €</div>
     </div>
   </div>
