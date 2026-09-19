@@ -178,7 +178,7 @@ module.exports = async function handler(req, res) {
       <div class="legend-sep"></div>
       <div class="legend-item red">
         <div class="legend-dot red"></div>
-        Dettes (${dette.toLocaleString('fr-FR')} €)
+        Dettes hors credits bancaires (${dette.toLocaleString('fr-FR')} €)
       </div>
     </div>
   </div>
