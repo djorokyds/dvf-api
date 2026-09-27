@@ -37,7 +37,7 @@ module.exports = async function handler(req, res) {
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-      background: #1f1f1f;
+      background: #171717;
       color: #eaeaea;
       display: flex;
       flex-direction: column;
@@ -91,7 +91,7 @@ module.exports = async function handler(req, res) {
     .card-value.green  { color: #27AE60; }
 
     .bar-card {
-      background: #242424;
+      background: #171717;
       border-radius: 0;
       padding: 16px 18px;
       border: none;
