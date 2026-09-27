@@ -46,7 +46,7 @@ module.exports = async function handler(req, res) {
     }
 
     .card {
-      background: #242424;
+      background: #171717;
       border-radius: 0;
       padding: 16px 18px;
       display: flex;
